@@ -17,6 +17,7 @@ class RectangularSection:
     stirrup_diameter: float
     main_bar_diameter: float
     compression_bar_diameter: float | None = None
+    h0_override: float | None = None
 
     def gross_area(self) -> float:
         """Return gross concrete area b*h, mm^2."""
@@ -26,7 +27,9 @@ class RectangularSection:
     def effective_depth(self) -> float:
         """Return h0 for tensile reinforcement centroid, mm."""
         self._validate_positive_dimensions()
-        h0 = self.h - self.cover - self.stirrup_diameter - self.main_bar_diameter / 2.0
+        h0 = self.h0_override
+        if h0 is None:
+            h0 = self.h - self.cover - self.stirrup_diameter - self.main_bar_diameter / 2.0
         if h0 <= 0:
             raise ValueError("effective depth h0 must be positive")
         return h0
@@ -58,6 +61,8 @@ class RectangularSection:
         }
         if self.compression_bar_diameter is not None:
             checks["compression_bar_diameter"] = self.compression_bar_diameter
+        if self.h0_override is not None:
+            checks["h0_override"] = self.h0_override
 
         for name, value in checks.items():
             if value <= 0:
