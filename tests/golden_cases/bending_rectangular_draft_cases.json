@@ -1,0 +1,54 @@
+[
+  {
+    "case_id": "draft_bending_pass_001",
+    "requires_engineer_review": true,
+    "inputs": {
+      "b": 300,
+      "h": 500,
+      "h0": 450,
+      "a_prime": 40,
+      "concrete_class": "B25",
+      "rebar_class": "A500",
+      "Rb": 14.5,
+      "Rs": 435,
+      "Rsc": 400,
+      "Es": 200000,
+      "As": 942.48,
+      "As_prime": 0,
+      "M": 150000000
+    },
+    "expected": {
+      "x": 94.25,
+      "xi": 0.209,
+      "xi_R": 0.493,
+      "Mult": 165170000,
+      "utilization": 0.908,
+      "status": "pass"
+    }
+  },
+  {
+    "case_id": "draft_bending_fail_001",
+    "requires_engineer_review": true,
+    "inputs": {
+      "b": 300,
+      "h": 500,
+      "h0": 450,
+      "a_prime": 40,
+      "concrete_class": "B25",
+      "rebar_class": "A500",
+      "Rb": 14.5,
+      "Rs": 435,
+      "Rsc": 400,
+      "Es": 200000,
+      "As": 402.12,
+      "As_prime": 0,
+      "M": 150000000
+    },
+    "expected": {
+      "x": 40.21,
+      "Mult": 75200000,
+      "utilization": 1.995,
+      "status": "fail"
+    }
+  }
+]

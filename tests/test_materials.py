@@ -1,0 +1,46 @@
+import pytest
+
+from sp63_core.materials import (
+    LONGITUDINAL_DIAMETERS,
+    STIRRUP_DIAMETERS,
+    area_by_diameter,
+    get_concrete,
+    get_rebar,
+)
+
+
+def test_get_concrete_b25_draft_values():
+    concrete = get_concrete("B25")
+
+    assert concrete.Rb == 14.5
+    assert concrete.Rbt == 1.05
+    assert concrete.Eb == 30_000
+    assert concrete.draft_requires_engineer_review is True
+
+
+def test_unknown_concrete_class_raises():
+    with pytest.raises(ValueError, match="unsupported concrete class"):
+        get_concrete("B45")
+
+
+def test_get_rebar_a500_draft_values():
+    rebar = get_rebar("A500")
+
+    assert rebar.Rs == 435
+    assert rebar.Rsc == 400
+    assert rebar.Rsw == 300
+    assert rebar.draft_requires_engineer_review is True
+
+
+def test_area_by_diameter():
+    assert area_by_diameter(8) == pytest.approx(50.265, rel=1e-4)
+
+
+def test_area_by_diameter_rejects_non_positive_values():
+    with pytest.raises(ValueError, match="diameter must be positive"):
+        area_by_diameter(0)
+
+
+def test_mvp_diameter_catalogs():
+    assert LONGITUDINAL_DIAMETERS == (10, 12, 14, 16, 18, 20, 22, 25, 28, 32)
+    assert STIRRUP_DIAMETERS == (6, 8, 10, 12)
