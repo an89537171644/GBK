@@ -6,10 +6,12 @@ D2 is not a new normative formula. Each candidate is accepted only after
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Literal
 
 from sp63_core.checks import BendingResult, check_bending_rectangular
 from sp63_core.materials.concrete import Concrete
 from sp63_core.materials.rebar import LONGITUDINAL_DIAMETERS, Rebar, area_by_diameter
+from sp63_core.rebar.layout import RebarLayout, check_single_layer_layout
 from sp63_core.sections.rectangular import RectangularSection
 
 DEFAULT_BAR_COUNTS: tuple[int, ...] = (2, 3, 4, 5, 6, 7, 8)
@@ -24,6 +26,11 @@ class LongitudinalRebarOption:
     As: float
     scheme: str
     bending: BendingResult
+    section: RectangularSection
+    layout: RebarLayout
+    status: str
+    utilization: float
+    warnings: tuple[str, ...]
     requires_engineer_review: bool = True
 
 
@@ -38,6 +45,7 @@ def select_longitudinal_rebar(
     max_results: int = 5,
     As_prime: float = 0.0,
     Rsc_override: float | None = None,
+    load_duration: Literal["short", "long"] = "short",
 ) -> tuple[LongitudinalRebarOption, ...]:
     """Return top passing longitudinal reinforcement options.
 
@@ -54,15 +62,32 @@ def select_longitudinal_rebar(
             raise ValueError("bar_count must be positive")
 
         for diameter in diameters:
+            candidate_section = RectangularSection(
+                b=section.b,
+                h=section.h,
+                cover=section.cover,
+                stirrup_diameter=section.stirrup_diameter,
+                main_bar_diameter=diameter,
+                compression_bar_diameter=section.compression_bar_diameter,
+            )
+            layout = check_single_layer_layout(
+                section=candidate_section,
+                bar_count=bar_count,
+                diameter=diameter,
+            )
+            if not layout.layout_feasible:
+                continue
+
             As = bar_count * area_by_diameter(diameter)
             bending = check_bending_rectangular(
-                section=section,
+                section=candidate_section,
                 concrete=concrete,
                 rebar=rebar,
                 As=As,
                 As_prime=As_prime,
                 M=M,
                 Rsc_override=Rsc_override,
+                load_duration=load_duration,
             )
             if bending.status != "pass":
                 continue
@@ -74,6 +99,11 @@ def select_longitudinal_rebar(
                     As=As,
                     scheme=f"{bar_count}D{diameter}",
                     bending=bending,
+                    section=candidate_section,
+                    layout=layout,
+                    status=bending.status,
+                    utilization=bending.utilization,
+                    warnings=layout.warnings + bending.warnings,
                 )
             )
 

@@ -48,6 +48,8 @@ class RectangularSection:
         """Validate basic MVP geometry constraints."""
         self._validate_positive_dimensions()
         self.effective_depth()
+        if self.h0_override is not None and self.h0_override >= self.h:
+            raise ValueError("h0_override must be less than section height")
         if self.compression_rebar_depth() >= self.h:
             raise ValueError("compression reinforcement depth must be less than section height")
 

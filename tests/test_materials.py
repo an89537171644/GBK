@@ -27,9 +27,21 @@ def test_get_rebar_a500_draft_values():
     rebar = get_rebar("A500")
 
     assert rebar.Rs == 435
+    assert rebar.Rsc_long == 435
+    assert rebar.Rsc_short == 400
     assert rebar.Rsc == 400
     assert rebar.Rsw == 300
     assert rebar.draft_requires_engineer_review is True
+
+
+def test_rebar_compression_resistance_by_load_duration():
+    rebar = get_rebar("A500")
+
+    assert rebar.compression_resistance("short") == 400
+    assert rebar.compression_resistance("long") == 435
+
+    with pytest.raises(ValueError, match="load_duration must be 'short' or 'long'"):
+        rebar.compression_resistance("medium")  # type: ignore[arg-type]
 
 
 def test_area_by_diameter():

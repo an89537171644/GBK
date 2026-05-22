@@ -11,6 +11,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
+ml = ["scikit-learn", "joblib"]
+ui = ["streamlit"]
 
 [project.scripts]
 sp63-core = "sp63_core.cli:main"

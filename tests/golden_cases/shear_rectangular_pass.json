@@ -1,0 +1,26 @@
+{
+  "case_id": "shear_rectangular_pass",
+  "approved_by_engineer": false,
+  "requires_engineer_review": true,
+  "input": {
+    "b": 300,
+    "h": 500,
+    "cover": 32,
+    "stirrup_diameter": 8,
+    "main_bar_diameter": 20,
+    "concrete_class": "B25",
+    "stirrup_rebar_class": "A240",
+    "Asw": 100.53096491487338,
+    "sw": 200,
+    "Q": 80000
+  },
+  "expected": {
+    "qsw": 85.45,
+    "Q_strip": 587250,
+    "C": 900,
+    "Qb": 106310,
+    "Qsw": 57680,
+    "Qult": 163990,
+    "status": "pass"
+  }
+}

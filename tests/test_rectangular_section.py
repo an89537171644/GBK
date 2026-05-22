@@ -89,3 +89,44 @@ def test_non_positive_effective_depth_raises():
 
     with pytest.raises(ValueError, match="effective depth h0 must be positive"):
         section.validate_geometry()
+
+
+def test_h0_override_is_used_in_effective_depth():
+    section = RectangularSection(
+        b=300,
+        h=500,
+        cover=30,
+        stirrup_diameter=8,
+        main_bar_diameter=20,
+        h0_override=450,
+    )
+
+    assert section.effective_depth() == 450
+
+
+def test_h0_override_must_be_positive():
+    section = RectangularSection(
+        b=300,
+        h=500,
+        cover=30,
+        stirrup_diameter=8,
+        main_bar_diameter=20,
+        h0_override=0,
+    )
+
+    with pytest.raises(ValueError, match="h0_override must be positive"):
+        section.validate_geometry()
+
+
+def test_h0_override_must_be_less_than_section_height():
+    section = RectangularSection(
+        b=300,
+        h=500,
+        cover=30,
+        stirrup_diameter=8,
+        main_bar_diameter=20,
+        h0_override=500,
+    )
+
+    with pytest.raises(ValueError, match="h0_override must be less than section height"):
+        section.validate_geometry()

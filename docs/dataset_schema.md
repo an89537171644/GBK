@@ -43,3 +43,35 @@
 - доля проходящих вариантов с первого кандидата;
 - средний перерасход арматуры;
 - `unsafe_accept_rate = 0`.
+
+## K6 dataset generation notes
+
+Target values are produced by the deterministic `design_rectangular_element()` service.
+ML is not used to generate dataset rows.
+
+Rows are exported only when:
+- design status is `pass`;
+- selected longitudinal and transverse reinforcement exist;
+- protocol exists;
+- bending and shear utilization are not greater than 1.0;
+- single-layer longitudinal layout is feasible.
+
+Additional v0.2 columns:
+
+| Field | Type | Units | Description |
+|---|---|---|---|
+| `main_bar_count` | int | - | selected longitudinal bar count |
+| `main_bar_diameter` | float | mm | selected longitudinal bar diameter |
+| `stirrup_diameter` | float | mm | selected stirrup diameter |
+| `stirrup_legs` | int | - | selected stirrup legs |
+| `stirrup_spacing` | float | mm | selected stirrup spacing |
+| `Asw` | float | mm2 | selected transverse reinforcement area |
+| `layout_clear_width` | float | mm | clear width available for one reinforcement layer |
+| `layout_required_width` | float | mm | required width for the selected one-layer layout |
+| `layout_feasible` | bool | - | selected layout feasibility flag |
+| `requires_engineer_review` | bool | - | draft calculation review marker |
+
+Split export creates deterministic files by row order:
+- `train.csv`;
+- `validation.csv`;
+- `test.csv`.
