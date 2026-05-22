@@ -30,6 +30,13 @@ def test_generate_dataset_cases_uses_selected_option_section_h0():
     assert case.h0 == pytest.approx(case.h - 32.0 - 8.0 - selected_diameter / 2.0)
 
 
+def test_generate_dataset_cases_writes_load_duration():
+    case = generate_dataset_cases(limit=1, load_duration="long")[0]
+
+    assert case.load_duration == "long"
+    assert case.as_row()["load_duration"] == "long"
+
+
 def test_generate_dataset_cases_rejects_invalid_limit():
     with pytest.raises(ValueError, match="limit must be positive"):
         generate_dataset_cases(limit=0)

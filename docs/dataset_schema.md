@@ -16,6 +16,7 @@
 | `concrete_class` | str | - | класс бетона |
 | `rebar_class` | str | - | класс продольной арматуры |
 | `stirrup_class` | str | - | класс поперечной арматуры |
+| `load_duration` | str | - | load duration for compression reinforcement resistance: short or long |
 | `M` | float | Н*мм | изгибающий момент |
 | `Q` | float | Н | поперечная сила |
 | `As_required` | float | мм² | требуемая/рациональная площадь продольной арматуры |
@@ -29,6 +30,12 @@
 | `status` | str | - | pass/fail |
 | `sp63_core_version` | str | - | версия расчетного ядра |
 | `dataset_version` | str | - | версия датасета |
+
+## K2 load duration note
+
+`load_duration` controls the selected `Rsc` value for compression reinforcement.
+Allowed values are `short` and `long`. For A500, the MVP catalog uses
+`Rsc_short = 400 MPa` and `Rsc_long = 435 MPa`.
 
 ## Разделение выборки
 

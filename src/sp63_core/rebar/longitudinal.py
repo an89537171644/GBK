@@ -9,7 +9,12 @@ from dataclasses import dataclass
 
 from sp63_core.checks import BendingResult, check_bending_rectangular
 from sp63_core.materials.concrete import Concrete
-from sp63_core.materials.rebar import LONGITUDINAL_DIAMETERS, Rebar, area_by_diameter
+from sp63_core.materials.rebar import (
+    LONGITUDINAL_DIAMETERS,
+    LoadDuration,
+    Rebar,
+    area_by_diameter,
+)
 from sp63_core.rebar.layout import RebarLayout, check_single_layer_layout
 from sp63_core.sections.rectangular import RectangularSection
 
@@ -44,6 +49,7 @@ def select_longitudinal_rebar(
     max_results: int = 5,
     As_prime: float = 0.0,
     Rsc_override: float | None = None,
+    load_duration: LoadDuration = "short",
     min_clear_spacing: float = 25.0,
 ) -> tuple[LongitudinalRebarOption, ...]:
     """Return top passing longitudinal reinforcement options.
@@ -87,6 +93,7 @@ def select_longitudinal_rebar(
                 As_prime=As_prime,
                 M=M,
                 Rsc_override=Rsc_override,
+                load_duration=load_duration,
             )
             if bending.status != "pass":
                 continue

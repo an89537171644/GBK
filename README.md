@@ -43,3 +43,11 @@
 - Infeasible one-layer layouts are filtered out.
 - Dataset rows use the selected option section when writing `h0` and running shear checks.
 - Stirrup selection, ML, and Streamlit are outside K1.
+
+## K2 load duration / Rsc status
+
+- Reinforcement catalog separates `Rsc_short` and `Rsc_long`.
+- A500 uses `Rsc_short = 400 MPa` and `Rsc_long = 435 MPa`.
+- `check_bending_rectangular` accepts `load_duration = short/long`.
+- `Rsc_override` still has priority for manual review cases.
+- ML, stirrup selection, and Streamlit are outside K2.

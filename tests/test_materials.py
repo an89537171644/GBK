@@ -28,8 +28,32 @@ def test_get_rebar_a500_draft_values():
 
     assert rebar.Rs == 435
     assert rebar.Rsc == 400
+    assert rebar.Rsc_short == 400
+    assert rebar.Rsc_long == 435
     assert rebar.Rsw == 300
     assert rebar.draft_requires_engineer_review is True
+
+
+def test_get_rebar_a500_rsc_by_load_duration():
+    rebar = get_rebar("A500")
+
+    assert rebar.Rsc_short == 400
+    assert rebar.Rsc_long == 435
+    assert rebar.Rsc == 400
+    assert rebar.get_Rsc("short") == 400
+    assert rebar.get_Rsc("long") == 435
+
+
+def test_get_rebar_a400_rsc_same_for_short_and_long():
+    rebar = get_rebar("A400")
+
+    assert rebar.get_Rsc("short") == 350
+    assert rebar.get_Rsc("long") == 350
+
+
+def test_get_Rsc_rejects_unknown_load_duration():
+    with pytest.raises(ValueError, match="load_duration must be 'short' or 'long'"):
+        get_rebar("A500").get_Rsc("invalid")
 
 
 def test_area_by_diameter():

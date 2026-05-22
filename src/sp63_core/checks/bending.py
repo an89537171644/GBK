@@ -20,7 +20,7 @@ from math import inf
 from typing import Literal
 
 from sp63_core.materials.concrete import Concrete
-from sp63_core.materials.rebar import Rebar
+from sp63_core.materials.rebar import LoadDuration, Rebar
 from sp63_core.sections.rectangular import RectangularSection
 
 BendingStatus = Literal["pass", "fail", "review_or_fail"]
@@ -52,6 +52,7 @@ def check_bending_rectangular(
     M: float,
     As_prime: float = 0.0,
     Rsc_override: float | None = None,
+    load_duration: LoadDuration = "short",
 ) -> BendingResult:
     """Check rectangular bending capacity using the approved MVP formula card."""
     section.validate_geometry()
@@ -60,7 +61,7 @@ def check_bending_rectangular(
     a_prime = section.compression_rebar_depth()
     Rb = concrete.Rb
     Rs = rebar.Rs
-    Rsc = Rsc_override if Rsc_override is not None else rebar.Rsc
+    Rsc = Rsc_override if Rsc_override is not None else rebar.get_Rsc(load_duration)
     Es = rebar.Es
 
     _validate_inputs(
@@ -107,6 +108,7 @@ def check_bending_rectangular(
         "Rs": Rs,
         "Rsc": Rsc,
         "Es": Es,
+        "load_duration": load_duration,
         "As": As,
         "As_prime": As_prime,
         "M": M,

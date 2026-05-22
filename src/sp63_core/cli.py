@@ -36,6 +36,12 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--concrete", default="B25", help="concrete class")
     parser.add_argument("--rebar", default="A500", help="longitudinal reinforcement class")
     parser.add_argument(
+        "--load-duration",
+        choices=("short", "long"),
+        default="short",
+        help="load duration for compression reinforcement resistance",
+    )
+    parser.add_argument(
         "--as-area",
         type=float,
         default=942.48,
@@ -72,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
         As=args.as_area,
         As_prime=args.as_prime,
         M=args.moment,
+        load_duration=args.load_duration,
     )
 
     print(f"sp63-core {__version__}")
@@ -79,7 +86,12 @@ def main(argv: list[str] | None = None) -> int:
     print("Calculation checks: bending is implemented; shear awaits a separate command.")
     print()
     print(f"Concrete {concrete.class_name}: Rb={concrete.Rb:g} MPa, Rbt={concrete.Rbt:g} MPa")
-    print(f"Rebar {rebar.class_name}: Rs={rebar.Rs:g} MPa, Rsc={rebar.Rsc:g} MPa")
+    print(
+        f"Rebar {rebar.class_name}: Rs={rebar.Rs:g} MPa, "
+        f"Rsc short={rebar.Rsc_short:g} MPa, Rsc long={rebar.Rsc_long:g} MPa"
+    )
+    print(f"Load duration: {args.load_duration}")
+    print(f"Rsc used: {bending.intermediate_values['Rsc']:g} MPa")
     print(f"Section: b={section.b:g} mm, h={section.h:g} mm")
     print(f"Gross area: {section.gross_area():.2f} mm2")
     print(f"Effective depth h0: {section.effective_depth():.2f} mm")

@@ -29,3 +29,12 @@ def test_cli_main_accepts_golden_h0_override(capsys):
     assert exit_code == 0
     assert "Effective depth h0: 450.00 mm" in captured.out
     assert "Mult: 165170619.03 N*mm" in captured.out
+
+
+def test_cli_accepts_load_duration_long(capsys):
+    exit_code = main(["--load-duration", "long"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Load duration: long" in captured.out
+    assert "Rsc used: 435 MPa" in captured.out

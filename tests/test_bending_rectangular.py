@@ -122,3 +122,57 @@ def test_bending_rectangular_zero_reinforcement_fails_with_warning():
     assert result.Mult == 0.0
     assert result.utilization == inf
     assert result.warnings == ("non-positive compression zone height",)
+
+
+def test_bending_uses_rsc_by_load_duration_for_compression_rebar():
+    section = RectangularSection(
+        b=300,
+        h=500,
+        cover=32,
+        stirrup_diameter=8,
+        main_bar_diameter=20,
+        compression_bar_diameter=16,
+    )
+    concrete = get_concrete("B25")
+    rebar = get_rebar("A500")
+
+    short_result = check_bending_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        As=942.48,
+        As_prime=402.12,
+        M=150_000_000,
+        load_duration="short",
+    )
+    long_result = check_bending_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        As=942.48,
+        As_prime=402.12,
+        M=150_000_000,
+        load_duration="long",
+    )
+
+    assert short_result.intermediate_values["Rsc"] == 400
+    assert long_result.intermediate_values["Rsc"] == 435
+    assert short_result.intermediate_values["load_duration"] == "short"
+    assert long_result.intermediate_values["load_duration"] == "long"
+    assert long_result.Mult > short_result.Mult
+
+
+def test_bending_rsc_override_has_priority_over_load_duration():
+    result = check_bending_rectangular(
+        section=golden_section(),
+        concrete=get_concrete("B25"),
+        rebar=get_rebar("A500"),
+        As=942.48,
+        As_prime=100.0,
+        M=150_000_000,
+        load_duration="long",
+        Rsc_override=390,
+    )
+
+    assert result.intermediate_values["Rsc"] == 390
+    assert result.intermediate_values["load_duration"] == "long"

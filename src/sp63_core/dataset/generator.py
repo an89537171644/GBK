@@ -12,7 +12,7 @@ from typing import Any
 
 from sp63_core import __version__
 from sp63_core.checks import check_shear_rectangular
-from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
+from sp63_core.materials import LoadDuration, area_by_diameter, get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar
 from sp63_core.sections import RectangularSection
 
@@ -26,6 +26,7 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "concrete_class",
     "rebar_class",
     "stirrup_class",
+    "load_duration",
     "M",
     "Q",
     "As_required",
@@ -54,6 +55,7 @@ class DatasetCase:
     concrete_class: str
     rebar_class: str
     stirrup_class: str
+    load_duration: str
     M: float
     Q: float
     As_required: float
@@ -86,6 +88,7 @@ def generate_dataset_cases(
     concrete_classes: Iterable[str] = ("B20", "B25", "B30", "B35"),
     rebar_classes: Iterable[str] = ("A400", "A500"),
     stirrup_classes: Iterable[str] = ("A240", "A400"),
+    load_duration: LoadDuration = "short",
     moments: Iterable[float] = (80_000_000, 120_000_000, 150_000_000, 200_000_000),
     shears: Iterable[float] = (50_000, 80_000, 120_000, 160_000),
     stirrup_diameter: float = 8.0,
@@ -129,6 +132,7 @@ def generate_dataset_cases(
                                     rebar=rebar,
                                     M=M,
                                     max_results=1,
+                                    load_duration=load_duration,
                                 )
                                 if not options:
                                     continue
@@ -157,6 +161,7 @@ def generate_dataset_cases(
                                             concrete_class=concrete_class,
                                             rebar_class=rebar_class,
                                             stirrup_class=stirrup_class,
+                                            load_duration=load_duration,
                                             M=M,
                                             Q=Q,
                                             As_required=option.As,

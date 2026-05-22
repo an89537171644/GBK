@@ -102,6 +102,19 @@ def test_select_longitudinal_rebar_filters_infeasible_single_layer_layout():
     assert options == ()
 
 
+def test_select_longitudinal_rebar_forwards_load_duration():
+    options = select_longitudinal_rebar(
+        section=mvp_section(),
+        concrete=get_concrete("B25"),
+        rebar=get_rebar("A500"),
+        M=150_000_000,
+        load_duration="long",
+    )
+
+    assert options
+    assert all(option.bending.intermediate_values["load_duration"] == "long" for option in options)
+
+
 def test_select_longitudinal_rebar_returns_empty_when_no_candidate_passes():
     options = select_longitudinal_rebar(
         section=mvp_section(),
