@@ -1,40 +1,195 @@
+import json
+
 from sp63_core.cli import main
 
 
-def test_cli_main_outputs_mvp_summary(capsys):
-    exit_code = main([])
+def section_args() -> list[str]:
+    return [
+        "--b",
+        "300",
+        "--h",
+        "500",
+        "--cover",
+        "32",
+        "--stirrup-diameter",
+        "8",
+        "--main-bar-diameter",
+        "20",
+    ]
+
+
+def test_cli_bending_command_text_output(capsys):
+    exit_code = main(
+        [
+            "bending",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--as-area",
+            "942.48",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+        ]
+    )
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "sp63-core 0.1.0" in captured.out
-    assert "MVP status" in captured.out
-    assert "Effective depth h0: 452.00 mm" in captured.out
     assert "Bending check" in captured.out
     assert "status: pass" in captured.out
 
 
-def test_cli_main_accepts_custom_section(capsys):
-    exit_code = main(["--b", "250", "--h", "450", "--cover", "25"])
+def test_cli_shear_command_text_output(capsys):
+    exit_code = main(
+        [
+            "shear",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--stirrup-rebar",
+            "A240",
+            "--Q",
+            "80000",
+            "--Asw",
+            "100.53",
+            "--sw",
+            "200",
+        ]
+    )
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Section: b=250 mm, h=450 mm" in captured.out
-    assert "Effective depth h0: 407.00 mm" in captured.out
+    assert "Shear check" in captured.out
+    assert "status: pass" in captured.out
 
 
-def test_cli_main_accepts_golden_h0_override(capsys):
-    exit_code = main(["--h0-override", "450"])
+def test_cli_select_longitudinal_command_text_output(capsys):
+    exit_code = main(
+        [
+            "select-longitudinal",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+        ]
+    )
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Effective depth h0: 450.00 mm" in captured.out
-    assert "Mult: 165170619.03 N*mm" in captured.out
+    assert "Longitudinal reinforcement options" in captured.out
+    assert "status: pass" in captured.out
 
 
-def test_cli_accepts_load_duration_long(capsys):
-    exit_code = main(["--load-duration", "long"])
+def test_cli_select_transverse_command_text_output(capsys):
+    exit_code = main(
+        [
+            "select-transverse",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--stirrup-rebar",
+            "A240",
+            "--Q",
+            "80000",
+        ]
+    )
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Load duration: long" in captured.out
-    assert "Rsc used: 435 MPa" in captured.out
+    assert "Transverse reinforcement options" in captured.out
+    assert "status: pass" in captured.out
+
+
+def test_cli_design_rectangular_command_text_output(capsys):
+    exit_code = main(
+        [
+            "design-rectangular",
+            "--b",
+            "300",
+            "--h",
+            "500",
+            "--cover",
+            "32",
+            "--stirrup-diameter",
+            "8",
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--stirrup-rebar",
+            "A240",
+            "--moment",
+            "150000000",
+            "--shear",
+            "80000",
+            "--load-duration",
+            "short",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Rectangular design" in captured.out
+    assert "status: pass" in captured.out
+
+
+def test_cli_design_rectangular_json_output(capsys):
+    exit_code = main(
+        [
+            "design-rectangular",
+            "--b",
+            "300",
+            "--h",
+            "500",
+            "--cover",
+            "32",
+            "--stirrup-diameter",
+            "8",
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--stirrup-rebar",
+            "A240",
+            "--moment",
+            "150000000",
+            "--shear",
+            "80000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "design-rectangular"
+    assert data["status"] == "pass"
+
+
+def test_cli_generate_dataset_command(tmp_path, capsys):
+    output_path = tmp_path / "dataset_v001.csv"
+
+    exit_code = main(
+        [
+            "generate-dataset",
+            "--limit",
+            "2",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert output_path.exists()
+    assert "rows: 2" in captured.out

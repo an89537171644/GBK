@@ -67,3 +67,18 @@
 - The function combines longitudinal and transverse reinforcement selection.
 - The result contains `CalculationProtocol` for passing full designs.
 - ML and UI are not implemented yet.
+
+## K5 CLI status
+
+The CLI uses subcommands for the main MVP scenarios:
+
+```bash
+python -m sp63_core bending --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --rebar A500 --as-area 942.48 --moment 150000000 --load-duration short
+python -m sp63_core shear --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --stirrup-rebar A240 --Q 80000 --Asw 100.53 --sw 200
+python -m sp63_core select-longitudinal --b 300 --h 500 --cover 32 --stirrup-diameter 8 --concrete B25 --rebar A500 --moment 150000000 --load-duration short
+python -m sp63_core select-transverse --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --stirrup-rebar A240 --Q 80000
+python -m sp63_core design-rectangular --b 300 --h 500 --cover 32 --stirrup-diameter 8 --concrete B25 --rebar A500 --stirrup-rebar A240 --moment 150000000 --shear 80000 --load-duration short
+python -m sp63_core generate-dataset --limit 100 --output data/generated/dataset_v001.csv --load-duration short
+```
+
+Each calculation command also supports `--json`.

@@ -13,6 +13,7 @@
 | `design/rectangular.py` | implemented draft end-to-end rectangular design | yes | yes | engineer review and CLI integration |
 | `report/protocol.py` | draft | yes | yes | keep protocol structure stable |
 | `dataset/generator.py` | draft; includes `load_duration` and selected option section `h0` | yes | yes | engineer review dataset ranges |
+| `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | not started | no | yes | separate approved step |
 | UI | not started | no | yes | separate approved step |
