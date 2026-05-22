@@ -116,7 +116,6 @@ def generate_dataset_cases(
                     stirrup_diameter=section_stirrup_diameter,
                     main_bar_diameter=section_main_bar_diameter,
                 )
-                h0 = section.effective_depth()
                 for concrete_class in concrete_classes:
                     concrete = get_concrete(concrete_class)
                     for rebar_class in rebar_classes:
@@ -137,7 +136,7 @@ def generate_dataset_cases(
                                 option = options[0]
                                 for Q in shears:
                                     shear = check_shear_rectangular(
-                                        section=section,
+                                        section=option.section,
                                         concrete=concrete,
                                         stirrup_rebar=stirrup_rebar,
                                         Q=Q,
@@ -154,7 +153,7 @@ def generate_dataset_cases(
                                             element_type=element_type,
                                             b=b,
                                             h=h,
-                                            h0=h0,
+                                            h0=option.section.effective_depth(),
                                             concrete_class=concrete_class,
                                             rebar_class=rebar_class,
                                             stirrup_class=stirrup_class,

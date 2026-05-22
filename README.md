@@ -34,3 +34,12 @@
 - `sp63_core.rebar.select_longitudinal_rebar` — D2-перебор продольной арматуры 2–8 стержней D10–D32 с проверкой каждого варианта через изгиб.
 - `sp63_core.report.build_calculation_protocol` — F1-структура расчетного протокола: исходные данные, материалы, геометрия, армирование, проверки, предупреждения и итоговый статус.
 - `sp63_core.dataset.generate_dataset_cases` и `export_dataset_csv` — G1-генерация безопасно проверенных строк датасета и экспорт CSV по `docs/dataset_schema.md`.
+
+## K1 stabilization status
+
+- Longitudinal reinforcement selection recalculates `h0` for each candidate diameter.
+- Each candidate uses its own `RectangularSection` with `main_bar_diameter = diameter`.
+- Draft single-layer reinforcement layout check is applied before bending checks.
+- Infeasible one-layer layouts are filtered out.
+- Dataset rows use the selected option section when writing `h0` and running shear checks.
+- Stirrup selection, ML, and Streamlit are outside K1.

@@ -28,6 +28,8 @@ class RectangularSection:
         """Return h0 for tensile reinforcement centroid, mm."""
         self._validate_positive_dimensions()
         h0 = self.h0_override
+        if h0 is not None and h0 >= self.h:
+            raise ValueError("h0_override must be less than section height")
         if h0 is None:
             h0 = self.h - self.cover - self.stirrup_diameter - self.main_bar_diameter / 2.0
         if h0 <= 0:
