@@ -32,6 +32,8 @@ class RectangularSection:
             h0 = self.h - self.cover - self.stirrup_diameter - self.main_bar_diameter / 2.0
         if h0 <= 0:
             raise ValueError("effective depth h0 must be positive")
+        if self.h0_override is not None and h0 >= self.h:
+            raise ValueError("h0_override must be less than section height")
         return h0
 
     def compression_rebar_depth(self) -> float:
@@ -48,8 +50,6 @@ class RectangularSection:
         """Validate basic MVP geometry constraints."""
         self._validate_positive_dimensions()
         self.effective_depth()
-        if self.h0_override is not None and self.h0_override >= self.h:
-            raise ValueError("h0_override must be less than section height")
         if self.compression_rebar_depth() >= self.h:
             raise ValueError("compression reinforcement depth must be less than section height")
 

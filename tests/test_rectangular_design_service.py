@@ -30,6 +30,8 @@ def test_design_rectangular_element_returns_passing_protocol():
     assert result.protocol.status == "pass"
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is not None
+    assert result.selected_longitudinal.bending.status == "pass"
+    assert result.selected_transverse.shear.status == "pass"
     assert result.longitudinal_options
     assert result.transverse_options
     assert result.selected_longitudinal is result.longitudinal_options[0]

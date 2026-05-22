@@ -1,6 +1,7 @@
 [
   {
     "case_id": "draft_bending_pass_001",
+    "approved_by_engineer": false,
     "requires_engineer_review": true,
     "inputs": {
       "b": 300,
@@ -28,6 +29,7 @@
   },
   {
     "case_id": "draft_bending_fail_001",
+    "approved_by_engineer": false,
     "requires_engineer_review": true,
     "inputs": {
       "b": 300,

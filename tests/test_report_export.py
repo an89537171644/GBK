@@ -51,6 +51,8 @@ def test_protocol_to_html_contains_sections_status_and_review_warning():
     html = protocol_to_html(passing_protocol())
 
     assert "Исходные данные" in html or "Input data" in html
+    assert "Проверки" in html or "Checks" in html
+    assert "Итоговый статус" in html or "Overall status" in html
     assert "status" in html
     assert "pass" in html
     assert "requires_engineer_review" in html
@@ -89,3 +91,5 @@ def test_cli_design_report_export_creates_json_and_html(tmp_path, capsys):
     assert "overall status: pass" in captured.out
     assert json_path.exists()
     assert html_path.exists()
+    assert json.loads(json_path.read_text(encoding="utf-8"))["status"] == "pass"
+    assert "MVP/draft" in html_path.read_text(encoding="utf-8")

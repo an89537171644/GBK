@@ -1,6 +1,6 @@
 """Draft single-layer longitudinal reinforcement layout checks."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sp63_core.materials.rebar import area_by_diameter
 from sp63_core.sections.rectangular import RectangularSection
@@ -17,7 +17,7 @@ class RebarLayout:
     clear_width: float
     required_width: float
     layout_feasible: bool
-    warnings: tuple[str, ...]
+    warnings: tuple[str, ...] = field(default_factory=tuple)
     requires_engineer_review: bool = True
 
 
@@ -39,6 +39,8 @@ def check_single_layer_layout(
     area = bar_count * area_by_diameter(diameter)
     scheme = f"{bar_count}D{diameter:g}"
     clear_width = section.b - 2.0 * (section.cover + section.stirrup_diameter)
+    if clear_width <= 0:
+        raise ValueError("clear_width must be positive")
     required_width = bar_count * diameter + (bar_count - 1) * min_clear_spacing
     layout_feasible = required_width <= clear_width
     warnings = () if layout_feasible else ("single-layer layout is not feasible",)

@@ -4,6 +4,7 @@ import pytest
 
 from sp63_core.dataset import (
     DATASET_COLUMNS,
+    DATASET_VERSION,
     export_dataset_csv,
     export_dataset_splits,
     generate_dataset_cases,
@@ -28,6 +29,7 @@ def test_generate_dataset_cases_matches_schema_and_uses_safe_design_results():
     assert all(case.stirrup_diameter > 0 for case in cases)
     assert all(case.stirrup_spacing > 0 for case in cases)
     assert all(case.Asw > 0 for case in cases)
+    assert all(case.dataset_version == DATASET_VERSION for case in cases)
 
 
 def test_generate_dataset_cases_respects_limit():

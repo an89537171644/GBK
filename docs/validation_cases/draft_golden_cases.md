@@ -4,6 +4,7 @@ These cases are preliminary and must be reviewed by the engineering reviewer bef
 they become acceptance tests for calculation modules.
 
 `requires_engineer_review = true`
+`approved_by_engineer = false`
 
 ## Bending, passing case
 

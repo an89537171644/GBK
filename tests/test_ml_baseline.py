@@ -64,6 +64,12 @@ def test_mean_absolute_percentage_error_safe_ignores_zero_true_values():
     assert value == pytest.approx(0.1)
 
 
+def test_mean_absolute_percentage_error_safe_returns_zero_for_all_zero_targets():
+    value = mean_absolute_percentage_error_safe([0.0, 0.0], [10.0, 20.0])
+
+    assert value == 0.0
+
+
 def test_predict_as_required_requires_feature_columns(tmp_path):
     cases = generate_dataset_cases(limit=20)
     csv_path = export_dataset_csv(cases, tmp_path / "train.csv")

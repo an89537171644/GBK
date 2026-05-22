@@ -51,7 +51,9 @@ streamlit run apps/streamlit_app.py
 ```bash
 sp63-core demo
 sp63-core bending --cover 32 --as-area 942.48 --moment 150000000
+sp63-core bending --cover 32 --as-area 942.48 --moment 150000000 --json
 sp63-core shear --cover 32 --q 80000 --asw 100.53 --sw 200
+sp63-core shear --cover 32 --q 80000 --asw 100.53 --sw 200 --json
 sp63-core select-longitudinal --moment 150000000 --max-results 5
 sp63-core select-transverse --cover 32 --q 80000 --max-results 5
 sp63-core design --cover 32 --moment 150000000 --q 80000
@@ -59,6 +61,16 @@ sp63-core design --cover 32 --moment 150000000 --q 80000 --json
 sp63-core design --cover 32 --moment 150000000 --q 80000 --report-html reports/demo.html
 sp63-core generate-dataset --limit 10 --output data/generated/sample.csv
 sp63-core generate-dataset --limit 100 --output-dir data/generated --split
+```
+
+## Report export
+
+Calculation protocols can be exported as JSON for machine processing and HTML for review.
+Both formats keep `requires_engineer_review` and the MVP/draft warning.
+
+```bash
+sp63-core design --moment 150000000 --q 80000 --report-json reports/demo.json
+sp63-core design --moment 150000000 --q 80000 --report-html reports/demo.html
 ```
 
 ## Streamlit
@@ -104,3 +116,16 @@ ruff check .
 См. [docs/applicability_limits.md](docs/applicability_limits.md). MVP применим
 только для предварительного анализа прямоугольных изгибаемых элементов без
 предварительного напряжения и не заменяет полный проектный расчет.
+
+## Текущие ограничения MVP
+
+- Все материалы и расчетные примеры имеют draft-статус и требуют инженерной проверки.
+- Draft-справочник арматуры различает `Rsc_long` и `Rsc_short`; значения требуют инженерной проверки.
+- Подбор продольной арматуры пересчитывает `h0` для каждого диаметра кандидата.
+- Подбор продольной арматуры учитывает draft-проверку однослойной раскладки.
+- Подбор поперечной арматуры выполняет draft-перебор хомутов и проверяет каждый вариант через `check_shear_rectangular()`.
+- End-to-end сервис подбирает продольную и поперечную арматуру и возвращает расчётный протокол с `requires_engineer_review`.
+- Baseline ML прогнозирует только `As_required`; любой предложенный вариант обязан проходить deterministic checks.
+- Neural surrogate использует `MLPRegressor` только как помощник; `unsafe_accept_rate` остаётся 0 за счёт deterministic selection.
+- Golden cases имеют draft-статус: `approved_by_engineer = false`, `requires_engineer_review = true`.
+- ML и UI остаются вспомогательными слоями и не заменяют deterministic checks.

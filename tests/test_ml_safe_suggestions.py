@@ -64,3 +64,24 @@ def test_suggest_checked_longitudinal_options_rejects_invalid_limit():
             M=150_000_000,
             max_results=0,
         )
+
+
+def test_suggest_checked_longitudinal_options_returns_empty_when_no_candidate_passes():
+    suggestion = suggest_checked_longitudinal_options(
+        predicted_As=950,
+        section=RectangularSection(
+            b=300,
+            h=500,
+            cover=32,
+            stirrup_diameter=8,
+            main_bar_diameter=20,
+        ),
+        concrete=get_concrete("B25"),
+        rebar=get_rebar("A500"),
+        M=10_000_000_000,
+        max_results=5,
+    )
+
+    assert suggestion.selected_options == ()
+    assert suggestion.unsafe_accept_rate == 0.0
+    assert suggestion.requires_deterministic_check is True

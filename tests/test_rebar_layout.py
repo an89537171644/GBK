@@ -47,3 +47,16 @@ def test_single_layer_layout_rejects_invalid_inputs():
             diameter=20,
             min_clear_spacing=-1,
         )
+
+    with pytest.raises(ValueError, match="clear_width must be positive"):
+        check_single_layer_layout(
+            RectangularSection(
+                b=70,
+                h=500,
+                cover=32,
+                stirrup_diameter=8,
+                main_bar_diameter=20,
+            ),
+            bar_count=2,
+            diameter=20,
+        )

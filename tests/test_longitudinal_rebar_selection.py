@@ -84,6 +84,21 @@ def test_select_longitudinal_rebar_filters_impossible_single_layer_layout():
     assert options == ()
 
 
+def test_select_longitudinal_rebar_respects_min_clear_spacing():
+    common = {
+        "section": mvp_section(),
+        "concrete": get_concrete("B25"),
+        "rebar": get_rebar("A500"),
+        "M": 10_000_000,
+        "bar_counts": (5,),
+        "diameters": (20,),
+        "max_results": 10,
+    }
+
+    assert select_longitudinal_rebar(**common, min_clear_spacing=25)
+    assert select_longitudinal_rebar(**common, min_clear_spacing=40) == ()
+
+
 def test_select_longitudinal_rebar_returns_empty_when_no_candidate_passes():
     options = select_longitudinal_rebar(
         section=mvp_section(),

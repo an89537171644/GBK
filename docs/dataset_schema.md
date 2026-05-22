@@ -1,4 +1,4 @@
-# Схема датасета v0.1
+# Схема датасета v0.2
 
 ## Назначение
 
@@ -46,6 +46,7 @@
 
 ## K6 dataset generation notes
 
+Dataset schema version is `0.2`.
 Target values are produced by the deterministic `design_rectangular_element()` service.
 ML is not used to generate dataset rows.
 

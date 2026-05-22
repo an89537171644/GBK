@@ -46,6 +46,7 @@ def select_longitudinal_rebar(
     As_prime: float = 0.0,
     Rsc_override: float | None = None,
     load_duration: Literal["short", "long"] = "short",
+    min_clear_spacing: float = 25.0,
 ) -> tuple[LongitudinalRebarOption, ...]:
     """Return top passing longitudinal reinforcement options.
 
@@ -74,6 +75,7 @@ def select_longitudinal_rebar(
                 section=candidate_section,
                 bar_count=bar_count,
                 diameter=diameter,
+                min_clear_spacing=min_clear_spacing,
             )
             if not layout.layout_feasible:
                 continue

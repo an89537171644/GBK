@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from sp63_core.cli import main
@@ -33,6 +34,28 @@ def test_cli_bending_outputs_pass_status(capsys):
     assert "status: pass" in captured.out
 
 
+def test_cli_bending_json_outputs_json_only(capsys):
+    exit_code = main(
+        [
+            "bending",
+            "--cover",
+            "32",
+            "--as-area",
+            "942.48",
+            "--moment",
+            "150000000",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exit_code == 0
+    assert payload["status"] == "pass"
+    assert payload["requires_engineer_review"] is True
+    assert "Bending check" not in captured.out
+
+
 def test_cli_shear_outputs_pass_status(capsys):
     exit_code = main(
         [
@@ -52,6 +75,30 @@ def test_cli_shear_outputs_pass_status(capsys):
     assert exit_code == 0
     assert "Shear check" in captured.out
     assert "status: pass" in captured.out
+
+
+def test_cli_shear_json_outputs_json_only(capsys):
+    exit_code = main(
+        [
+            "shear",
+            "--cover",
+            "32",
+            "--q",
+            "80000",
+            "--asw",
+            "100.53",
+            "--sw",
+            "200",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exit_code == 0
+    assert payload["status"] == "pass"
+    assert payload["requires_engineer_review"] is True
+    assert "Shear check" not in captured.out
 
 
 def test_cli_select_longitudinal_outputs_at_least_one_option(capsys):

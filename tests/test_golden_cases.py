@@ -14,6 +14,19 @@ def load_case(file_name: str) -> dict:
     return json.loads((GOLDEN_CASES_DIR / file_name).read_text(encoding="utf-8"))
 
 
+def iter_case_records(payload: dict | list[dict]) -> list[dict]:
+    if isinstance(payload, list):
+        return payload
+    return [payload]
+
+
+def test_all_golden_case_files_are_draft_and_unapproved():
+    for path in GOLDEN_CASES_DIR.glob("*.json"):
+        for case in iter_case_records(json.loads(path.read_text(encoding="utf-8"))):
+            assert case["approved_by_engineer"] is False, path.name
+            assert case["requires_engineer_review"] is True, path.name
+
+
 @pytest.mark.parametrize(
     "file_name",
     ["bending_rectangular_pass.json", "bending_rectangular_fail.json"],
