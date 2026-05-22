@@ -27,6 +27,11 @@ def test_select_longitudinal_rebar_returns_top_five_passing_options():
     assert [option.As for option in options] == sorted(option.As for option in options)
     assert all(option.status == "pass" for option in options)
     assert all(option.bending.status == "pass" for option in options)
+    assert all(option.constructive.status == "pass" for option in options)
+    assert all(
+        option.constructive.intermediate_values["reinforcement_ratio_percent"] >= 0.1
+        for option in options
+    )
     assert all(option.utilization <= 1.0 for option in options)
     assert all(option.layout.layout_feasible is True for option in options)
     assert all(option.requires_engineer_review is True for option in options)

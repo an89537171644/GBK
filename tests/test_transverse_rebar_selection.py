@@ -26,7 +26,7 @@ def test_select_transverse_rebar_returns_passing_options():
     assert options
     assert all(option.status == "pass" for option in options)
     assert all(option.shear.status == "pass" for option in options)
-    assert all(option.constructive.status == "pass" for option in options)
+    assert all(option.constructive.status in ("pass", "warning") for option in options)
     assert all(option.utilization <= 1.0 for option in options)
     assert all(option.requires_engineer_review is True for option in options)
 

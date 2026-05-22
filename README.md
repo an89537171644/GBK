@@ -85,7 +85,7 @@ Each calculation command also supports `--json`.
 
 ## K6 constructive checks status
 
-- Draft constructive spacing check for stirrups is implemented.
-- Transverse reinforcement selection now filters candidates by shear capacity and constructive spacing.
+- Draft constructive checks for longitudinal and transverse reinforcement are implemented.
+- Reinforcement selection now filters candidates by calculation checks and draft constructive requirements.
 - Serviceability limit states are not implemented yet.
 - ML is not implemented yet.

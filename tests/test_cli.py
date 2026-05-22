@@ -86,6 +86,8 @@ def test_cli_select_longitudinal_command_text_output(capsys):
     assert exit_code == 0
     assert "Longitudinal reinforcement options" in captured.out
     assert "status: pass" in captured.out
+    assert "constructive" in captured.out
+    assert "reinforcement ratio" in captured.out
 
 
 def test_cli_select_transverse_command_text_output(capsys):
@@ -143,6 +145,7 @@ def test_cli_design_rectangular_command_text_output(capsys):
     assert "status: pass" in captured.out
     assert "constructive" in captured.out
     assert "max_spacing" in captured.out
+    assert "reinforcement ratio" in captured.out
 
 
 def test_cli_design_rectangular_json_output(capsys):

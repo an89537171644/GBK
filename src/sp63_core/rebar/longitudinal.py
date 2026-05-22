@@ -15,6 +15,10 @@ from sp63_core.materials.rebar import (
     Rebar,
     area_by_diameter,
 )
+from sp63_core.rebar.constructive import (
+    ConstructiveCheckResult,
+    check_longitudinal_constructive,
+)
 from sp63_core.rebar.layout import RebarLayout, check_single_layer_layout
 from sp63_core.sections.rectangular import RectangularSection
 
@@ -32,6 +36,7 @@ class LongitudinalRebarOption:
     bending: BendingResult
     section: RectangularSection
     layout: RebarLayout
+    constructive: ConstructiveCheckResult
     status: str
     utilization: float
     warnings: tuple[str, ...]
@@ -85,6 +90,15 @@ def select_longitudinal_rebar(
                 continue
 
             As = bar_count * area_by_diameter(diameter)
+            constructive = check_longitudinal_constructive(
+                section=candidate_section,
+                bar_count=bar_count,
+                As=As,
+                element_type="beam",
+            )
+            if constructive.status == "fail":
+                continue
+
             bending = check_bending_rectangular(
                 section=candidate_section,
                 concrete=concrete,
@@ -107,9 +121,10 @@ def select_longitudinal_rebar(
                     bending=bending,
                     section=candidate_section,
                     layout=layout,
+                    constructive=constructive,
                     status=bending.status,
                     utilization=bending.utilization,
-                    warnings=layout.warnings + bending.warnings,
+                    warnings=layout.warnings + constructive.warnings + bending.warnings,
                 )
             )
 

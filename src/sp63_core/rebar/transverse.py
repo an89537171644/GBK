@@ -12,7 +12,7 @@ from sp63_core.materials.concrete import Concrete
 from sp63_core.materials.rebar import STIRRUP_DIAMETERS, Rebar, area_by_diameter
 from sp63_core.rebar.constructive import (
     ConstructiveCheckResult,
-    check_transverse_spacing_constructive,
+    check_transverse_constructive,
 )
 from sp63_core.sections.rectangular import RectangularSection
 
@@ -72,12 +72,15 @@ def select_transverse_rebar(
                 if shear.status != "pass":
                     continue
 
-                constructive = check_transverse_spacing_constructive(
+                constructive = check_transverse_constructive(
                     section=section,
-                    Q=Q,
                     concrete=concrete,
+                    stirrup_rebar=stirrup_rebar,
+                    Q=Q,
                     stirrup_diameter=diameter,
+                    Asw=Asw,
                     spacing=spacing,
+                    element_type="beam",
                 )
                 if constructive.status == "fail":
                     continue

@@ -244,10 +244,15 @@ def _handle_select_longitudinal(args: Namespace) -> int:
     print("Longitudinal reinforcement options")
     print(f"status: {status}")
     for option in options:
+        reinforcement_ratio = option.constructive.intermediate_values[
+            "reinforcement_ratio_percent"
+        ]
         print(
             f"{option.scheme}: As={option.As:.2f} mm2, "
             f"h0={option.section.effective_depth():.2f} mm, "
             f"utilization={option.utilization:.3f}, "
+            f"constructive={option.constructive.status}, "
+            f"reinforcement ratio={reinforcement_ratio:.3f}%, "
             f"layout_feasible={option.layout.layout_feasible}, status={option.status}"
         )
     _print_warnings(warnings)
@@ -314,6 +319,11 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"As: {longitudinal.As:.2f} mm2")
         print(f"h0: {longitudinal.section.effective_depth():.2f} mm")
         print(f"bending utilization: {longitudinal.utilization:.3f}")
+        print(f"longitudinal constructive status: {longitudinal.constructive.status}")
+        print(
+            "longitudinal reinforcement ratio: "
+            f"{longitudinal.constructive.intermediate_values['reinforcement_ratio_percent']:.3f}%"
+        )
     if design.selected_transverse is not None:
         transverse = design.selected_transverse
         print(f"selected transverse scheme: {transverse.scheme}")
@@ -385,6 +395,10 @@ def _longitudinal_option_to_dict(option: Any) -> dict[str, Any]:
         "h0": option.section.effective_depth(),
         "utilization": option.utilization,
         "layout_feasible": option.layout.layout_feasible,
+        "constructive_status": option.constructive.status,
+        "reinforcement_ratio_percent": option.constructive.intermediate_values[
+            "reinforcement_ratio_percent"
+        ],
         "status": option.status,
     }
 
