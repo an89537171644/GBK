@@ -32,6 +32,7 @@
 - `sp63_core.checks.check_bending_rectangular` — MVP-проверка прямоугольного сечения по изгибу по карточке `docs/formulas/SP63_8_1_9_bending_rectangular.md`.
 - `sp63_core.checks.check_shear_rectangular` — MVP-проверка поперечной силы по карточке `docs/formulas/SP63_8_1_33_shear.md`.
 - `sp63_core.rebar.select_longitudinal_rebar` — D2-перебор продольной арматуры 2–8 стержней D10–D32 с проверкой каждого варианта через изгиб.
+- `sp63_core.rebar.select_transverse_rebar` — K3-перебор поперечной арматуры D6–D12, 2/4 ветви и шагов 100–300 мм с проверкой каждого варианта через поперечную силу.
 - `sp63_core.report.build_calculation_protocol` — F1-структура расчетного протокола: исходные данные, материалы, геометрия, армирование, проверки, предупреждения и итоговый статус.
 - `sp63_core.dataset.generate_dataset_cases` и `export_dataset_csv` — G1-генерация безопасно проверенных строк датасета и экспорт CSV по `docs/dataset_schema.md`.
 
@@ -51,3 +52,10 @@
 - `check_bending_rectangular` accepts `load_duration = short/long`.
 - `Rsc_override` still has priority for manual review cases.
 - ML, stirrup selection, and Streamlit are outside K2.
+
+## K3 transverse reinforcement selection status
+
+- Transverse reinforcement selection is implemented as a draft enumeration.
+- Candidates are accepted only when `check_shear_rectangular` returns `pass`.
+- Dataset rows now store the selected stirrup scheme and shear result.
+- ML and UI are still not started.

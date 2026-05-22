@@ -11,9 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from sp63_core import __version__
-from sp63_core.checks import check_shear_rectangular
-from sp63_core.materials import LoadDuration, area_by_diameter, get_concrete, get_rebar
-from sp63_core.rebar import select_longitudinal_rebar
+from sp63_core.materials import LoadDuration, get_concrete, get_rebar
+from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 
 DATASET_VERSION = "0.1"
@@ -91,9 +90,6 @@ def generate_dataset_cases(
     load_duration: LoadDuration = "short",
     moments: Iterable[float] = (80_000_000, 120_000_000, 150_000_000, 200_000_000),
     shears: Iterable[float] = (50_000, 80_000, 120_000, 160_000),
-    stirrup_diameter: float = 8.0,
-    stirrup_legs: int = 2,
-    stirrup_spacing: float = 200.0,
 ) -> tuple[DatasetCase, ...]:
     """Generate checked dataset rows following docs/dataset_schema.md.
 
@@ -102,12 +98,8 @@ def generate_dataset_cases(
     """
     if limit <= 0:
         raise ValueError("limit must be positive")
-    if stirrup_legs <= 0:
-        raise ValueError("stirrup_legs must be positive")
 
     rows: list[DatasetCase] = []
-    Asw = stirrup_legs * area_by_diameter(stirrup_diameter)
-    stirrup_scheme = f"D{stirrup_diameter:g}/{stirrup_spacing:g}, {stirrup_legs} legs"
 
     for element_type in element_types:
         for b in widths:
@@ -139,16 +131,16 @@ def generate_dataset_cases(
 
                                 option = options[0]
                                 for Q in shears:
-                                    shear = check_shear_rectangular(
+                                    transverse_options = select_transverse_rebar(
                                         section=option.section,
                                         concrete=concrete,
                                         stirrup_rebar=stirrup_rebar,
                                         Q=Q,
-                                        Asw=Asw,
-                                        sw=stirrup_spacing,
+                                        max_results=1,
                                     )
-                                    if shear.status != "pass":
+                                    if not transverse_options:
                                         continue
+                                    transverse_option = transverse_options[0]
 
                                     case_id = f"case_{len(rows) + 1:06d}"
                                     rows.append(
@@ -167,11 +159,11 @@ def generate_dataset_cases(
                                             As_required=option.As,
                                             As_provided=option.As,
                                             main_rebar_scheme=option.scheme,
-                                            stirrup_scheme=stirrup_scheme,
+                                            stirrup_scheme=transverse_option.scheme,
                                             Mult=option.bending.Mult,
-                                            Qult=shear.Qult,
+                                            Qult=transverse_option.shear.Qult,
                                             bending_utilization=option.bending.utilization,
-                                            shear_utilization=shear.utilization,
+                                            shear_utilization=transverse_option.shear.utilization,
                                             status="pass",
                                             sp63_core_version=__version__,
                                             dataset_version=DATASET_VERSION,
