@@ -106,6 +106,8 @@ def test_cli_select_transverse_command_text_output(capsys):
     assert exit_code == 0
     assert "Transverse reinforcement options" in captured.out
     assert "status: pass" in captured.out
+    assert "constructive" in captured.out
+    assert "max_spacing" in captured.out
 
 
 def test_cli_design_rectangular_command_text_output(capsys):
@@ -139,6 +141,8 @@ def test_cli_design_rectangular_command_text_output(capsys):
     assert exit_code == 0
     assert "Rectangular design" in captured.out
     assert "status: pass" in captured.out
+    assert "constructive" in captured.out
+    assert "max_spacing" in captured.out
 
 
 def test_cli_design_rectangular_json_output(capsys):
@@ -174,6 +178,8 @@ def test_cli_design_rectangular_json_output(capsys):
     assert exit_code == 0
     assert data["command"] == "design-rectangular"
     assert data["status"] == "pass"
+    assert "constructive_status" in data["result"]["selected_transverse"]
+    assert "constructive_max_spacing" in data["result"]["selected_transverse"]
 
 
 def test_cli_generate_dataset_command(tmp_path, capsys):

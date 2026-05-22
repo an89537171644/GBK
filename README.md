@@ -82,3 +82,10 @@ python -m sp63_core generate-dataset --limit 100 --output data/generated/dataset
 ```
 
 Each calculation command also supports `--json`.
+
+## K6 constructive checks status
+
+- Draft constructive spacing check for stirrups is implemented.
+- Transverse reinforcement selection now filters candidates by shear capacity and constructive spacing.
+- Serviceability limit states are not implemented yet.
+- ML is not implemented yet.

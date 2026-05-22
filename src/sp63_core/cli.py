@@ -275,9 +275,13 @@ def _handle_select_transverse(args: Namespace) -> int:
     print("Transverse reinforcement options")
     print(f"status: {status}")
     for option in options:
+        max_spacing = option.constructive.intermediate_values["max_spacing"]
         print(
             f"{option.scheme}: Asw={option.Asw:.2f} mm2, spacing={option.spacing:g} mm, "
-            f"legs={option.legs}, utilization={option.utilization:.3f}, status={option.status}"
+            f"legs={option.legs}, utilization={option.utilization:.3f}, "
+            f"steel_consumption={option.steel_consumption:.4f}, "
+            f"constructive={option.constructive.status}, max_spacing={max_spacing:.2f} mm, "
+            f"status={option.status}"
         )
     _print_warnings(warnings)
     return 0
@@ -317,6 +321,11 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"spacing: {transverse.spacing:g} mm")
         print(f"legs: {transverse.legs}")
         print(f"shear utilization: {transverse.utilization:.3f}")
+        print(f"stirrup constructive status: {transverse.constructive.status}")
+        print(
+            "stirrup max_spacing: "
+            f"{transverse.constructive.intermediate_values['max_spacing']:.2f} mm"
+        )
     _print_warnings(design.warnings)
     return 0
 
@@ -387,6 +396,9 @@ def _transverse_option_to_dict(option: Any) -> dict[str, Any]:
         "spacing": option.spacing,
         "legs": option.legs,
         "utilization": option.utilization,
+        "steel_consumption": option.steel_consumption,
+        "constructive_status": option.constructive.status,
+        "constructive_max_spacing": option.constructive.intermediate_values["max_spacing"],
         "status": option.status,
     }
 

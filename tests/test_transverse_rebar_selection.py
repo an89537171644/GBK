@@ -26,6 +26,7 @@ def test_select_transverse_rebar_returns_passing_options():
     assert options
     assert all(option.status == "pass" for option in options)
     assert all(option.shear.status == "pass" for option in options)
+    assert all(option.constructive.status == "pass" for option in options)
     assert all(option.utilization <= 1.0 for option in options)
     assert all(option.requires_engineer_review is True for option in options)
 
@@ -41,6 +42,24 @@ def test_select_transverse_rebar_sorts_by_steel_consumption():
 
     consumptions = [option.Asw / option.spacing for option in options]
     assert consumptions == sorted(consumptions)
+
+
+def test_select_transverse_rebar_includes_constructive_values():
+    options = select_transverse_rebar(
+        section=mvp_section(),
+        concrete=get_concrete("B25"),
+        stirrup_rebar=get_rebar("A240"),
+        Q=80_000,
+    )
+
+    assert all(
+        option.spacing <= option.constructive.intermediate_values["max_spacing"]
+        for option in options
+    )
+    assert all(
+        option.steel_consumption == pytest.approx(option.Asw / option.spacing)
+        for option in options
+    )
 
 
 def test_select_transverse_rebar_returns_empty_when_no_candidate_passes():

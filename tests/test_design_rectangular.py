@@ -30,6 +30,7 @@ def test_design_rectangular_element_returns_passing_result():
     assert result.protocol.status == "pass"
     assert result.selected_longitudinal.bending.status == "pass"
     assert result.selected_transverse.shear.status == "pass"
+    assert result.selected_transverse.constructive.status == "pass"
     assert result.selected_longitudinal.section.effective_depth() > 0
     assert result.selected_transverse.utilization <= 1.0
 
@@ -62,6 +63,8 @@ def test_design_rectangular_protocol_contains_selected_reinforcement():
     assert result.protocol is not None
     assert result.protocol.reinforcement["main"] == result.selected_longitudinal.scheme
     assert result.protocol.reinforcement["stirrups"] == result.selected_transverse.scheme
+    assert result.protocol.reinforcement["stirrup_constructive_status"] == "pass"
+    assert "stirrup_constructive_max_spacing" in result.protocol.reinforcement
     assert result.protocol.geometry["h0"] == pytest.approx(
         result.selected_longitudinal.section.effective_depth()
     )
