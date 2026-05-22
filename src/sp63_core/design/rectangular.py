@@ -139,6 +139,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
     selected_transverse = transverse_options[0]
     longitudinal_constructive_values = selected_longitudinal.constructive.intermediate_values
     constructive_values = selected_transverse.constructive.intermediate_values
+    shear_values = selected_transverse.shear.intermediate_values
     protocol = build_calculation_protocol(
         input_data={
             "M": input_data.M,
@@ -171,6 +172,11 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             "stirrup_constructive_status": selected_transverse.constructive.status,
             "stirrup_constructive_max_spacing": constructive_values["max_spacing"],
             "stirrup_steel_consumption": selected_transverse.steel_consumption,
+            "stirrup_sw_max_by_shear_rule": shear_values["sw_max_by_shear_rule"],
+            "stirrup_qsw_rule_status": shear_values["qsw_rule_status"],
+            "stirrup_transverse_reinforcement_countable": shear_values[
+                "transverse_reinforcement_countable"
+            ],
         },
         checks={
             "bending": selected_longitudinal.bending,

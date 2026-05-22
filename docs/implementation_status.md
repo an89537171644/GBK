@@ -7,7 +7,7 @@
 | `materials/rebar.py` | implemented draft with `Rsc_short`/`Rsc_long` | yes | yes | engineer review of material values |
 | `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
 | `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
-| `checks/shear.py` | implemented | yes | yes | engineer review of formula card and golden cases |
+| `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |
 | `rebar/constructive.py` | implemented draft constructive checks | yes | yes | engineer review |
 | `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
@@ -15,6 +15,7 @@
 | `report/protocol.py` | draft | yes | yes | keep protocol structure stable |
 | `dataset/generator.py` | draft; includes `load_duration` and selected option section `h0` | yes | yes | engineer review dataset ranges |
 | `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
+| `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | not started | no | yes | separate approved step |
 | UI | not started | no | yes | separate approved step |

@@ -106,6 +106,12 @@ def check_transverse_constructive(
         sw=spacing,
     )
     transverse_required_by_calculation = shear_without_stirrups.status != "pass"
+    sw_max_by_shear_rule = _sw_max_by_shear_rule(
+        Rbt=concrete.Rbt,
+        b=section.b,
+        h0=h0,
+        Q=Q,
+    )
     if transverse_required_by_calculation:
         max_spacing = min(0.5 * h0, 300.0)
     else:
@@ -118,12 +124,18 @@ def check_transverse_constructive(
 
     if spacing > max_spacing:
         warnings.append("stirrup spacing exceeds constructive maximum")
+    if transverse_required_by_calculation and spacing > sw_max_by_shear_rule:
+        warnings.append(
+            "stirrup spacing exceeds shear rule maximum for counting transverse reinforcement"
+        )
 
     status = _transverse_status(
         warnings=warnings,
         stirrup_diameter=stirrup_diameter,
         spacing=spacing,
         max_spacing=max_spacing,
+        sw_max_by_shear_rule=sw_max_by_shear_rule,
+        transverse_required_by_calculation=transverse_required_by_calculation,
     )
     intermediate_values: dict[str, float | str | bool] = {
         "h0": h0,
@@ -133,6 +145,7 @@ def check_transverse_constructive(
         "spacing": spacing,
         "min_stirrup_diameter": MIN_STIRRUP_DIAMETER,
         "max_spacing": max_spacing,
+        "sw_max_by_shear_rule": sw_max_by_shear_rule,
         "transverse_required_by_calculation": transverse_required_by_calculation,
         "shear_without_stirrups_status": shear_without_stirrups.status,
         "source_clause": TRANSVERSE_SOURCE_CLAUSE,
@@ -187,9 +200,22 @@ def _transverse_status(
     stirrup_diameter: float,
     spacing: float,
     max_spacing: float,
+    sw_max_by_shear_rule: float,
+    transverse_required_by_calculation: bool,
 ) -> str:
-    if stirrup_diameter < MIN_STIRRUP_DIAMETER or spacing > max_spacing:
+    if (
+        stirrup_diameter < MIN_STIRRUP_DIAMETER
+        or spacing > max_spacing
+        or (transverse_required_by_calculation and spacing > sw_max_by_shear_rule)
+    ):
         return "fail"
     if warnings:
         return "warning"
     return "pass"
+
+
+def _sw_max_by_shear_rule(*, Rbt: float, b: float, h0: float, Q: float) -> float:
+    """Return draft spacing limit for counting transverse reinforcement."""
+    if Q <= 0:
+        return float("inf")
+    return Rbt * b * h0**2 / Q

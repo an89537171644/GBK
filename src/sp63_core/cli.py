@@ -205,6 +205,11 @@ def _handle_shear(args: Namespace) -> int:
         "Qsw": shear.Qsw,
         "Qult": shear.Qult,
         "utilization": shear.utilization,
+        "sw_max_by_shear_rule": shear.intermediate_values["sw_max_by_shear_rule"],
+        "qsw_rule_status": shear.intermediate_values["qsw_rule_status"],
+        "transverse_reinforcement_countable": shear.intermediate_values[
+            "transverse_reinforcement_countable"
+        ],
     }
     if args.json:
         _print_json("shear", shear.status, result, shear.warnings)
@@ -218,6 +223,12 @@ def _handle_shear(args: Namespace) -> int:
     print(f"Qsw: {shear.Qsw:.2f} N")
     print(f"Qult: {shear.Qult:.2f} N")
     print(f"utilization: {shear.utilization:.3f}")
+    print(f"sw_max_by_shear_rule: {shear.intermediate_values['sw_max_by_shear_rule']:.2f} mm")
+    print(f"qsw_rule_status: {shear.intermediate_values['qsw_rule_status']}")
+    print(
+        "transverse_reinforcement_countable: "
+        f"{shear.intermediate_values['transverse_reinforcement_countable']}"
+    )
     _print_warnings(shear.warnings)
     return 0
 
@@ -281,11 +292,16 @@ def _handle_select_transverse(args: Namespace) -> int:
     print(f"status: {status}")
     for option in options:
         max_spacing = option.constructive.intermediate_values["max_spacing"]
+        sw_max_by_shear_rule = option.shear.intermediate_values["sw_max_by_shear_rule"]
         print(
             f"{option.scheme}: Asw={option.Asw:.2f} mm2, spacing={option.spacing:g} mm, "
             f"legs={option.legs}, utilization={option.utilization:.3f}, "
             f"steel_consumption={option.steel_consumption:.4f}, "
             f"constructive={option.constructive.status}, max_spacing={max_spacing:.2f} mm, "
+            f"sw_max_by_shear_rule={sw_max_by_shear_rule:.2f} mm, "
+            f"qsw_rule_status={option.shear.intermediate_values['qsw_rule_status']}, "
+            "transverse_reinforcement_countable="
+            f"{option.shear.intermediate_values['transverse_reinforcement_countable']}, "
             f"status={option.status}"
         )
     _print_warnings(warnings)
@@ -335,6 +351,15 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(
             "stirrup max_spacing: "
             f"{transverse.constructive.intermediate_values['max_spacing']:.2f} mm"
+        )
+        print(
+            "stirrup sw_max_by_shear_rule: "
+            f"{transverse.shear.intermediate_values['sw_max_by_shear_rule']:.2f} mm"
+        )
+        print(f"stirrup qsw_rule_status: {transverse.shear.intermediate_values['qsw_rule_status']}")
+        print(
+            "stirrup transverse_reinforcement_countable: "
+            f"{transverse.shear.intermediate_values['transverse_reinforcement_countable']}"
         )
     _print_warnings(design.warnings)
     return 0
@@ -413,6 +438,11 @@ def _transverse_option_to_dict(option: Any) -> dict[str, Any]:
         "steel_consumption": option.steel_consumption,
         "constructive_status": option.constructive.status,
         "constructive_max_spacing": option.constructive.intermediate_values["max_spacing"],
+        "sw_max_by_shear_rule": option.shear.intermediate_values["sw_max_by_shear_rule"],
+        "qsw_rule_status": option.shear.intermediate_values["qsw_rule_status"],
+        "transverse_reinforcement_countable": option.shear.intermediate_values[
+            "transverse_reinforcement_countable"
+        ],
         "status": option.status,
     }
 

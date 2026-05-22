@@ -10,6 +10,7 @@ requires_engineer_review = true
 - Draft shear check for rectangular sections.
 - Longitudinal reinforcement selection with layout and constructive filters.
 - Transverse reinforcement selection with shear and constructive filters.
+- K7 draft warnings for conditions of counting transverse reinforcement in shear.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -31,7 +32,8 @@ requires_engineer_review = true
 ## Not Implemented
 
 - Serviceability limit states, including cracks and deflections.
-- T-sections, columns, punching, torsion, prestress, anchorage, and support zones.
+- T-sections, columns, punching, torsion, prestress, anchorage, support zones,
+  and bar curtailment.
 - HTML/PDF protocol rendering.
 - ML training and ML-backed recommendations.
 - Streamlit or other UI.
@@ -42,6 +44,10 @@ The deterministic calculation core is still draft and requires engineering revie
 ML can only be used after the calculation rules, constructive filters, datasets,
 and validation cases are reviewed. Even then, ML output must remain advisory and
 must be checked by deterministic SP 63 calculation modules.
+
+K7 strengthens the shear check by reporting draft Qsw-counting conditions. This
+does not make ML acceptable as a final stage; deterministic checks and manual
+engineering review are still required.
 
 ## Next Stages
 

@@ -27,6 +27,20 @@ def test_select_transverse_rebar_returns_passing_options():
     assert all(option.status == "pass" for option in options)
     assert all(option.shear.status == "pass" for option in options)
     assert all(option.constructive.status in ("pass", "warning") for option in options)
+    assert all(
+        "stirrup spacing exceeds shear rule maximum for counting transverse reinforcement"
+        not in option.shear.warnings
+        for option in options
+    )
+    assert all(
+        "qsw is below draft minimum rule for counting transverse reinforcement"
+        not in option.shear.warnings
+        for option in options
+    )
+    assert all(
+        option.shear.intermediate_values["transverse_reinforcement_countable"] is True
+        for option in options
+    )
     assert all(option.utilization <= 1.0 for option in options)
     assert all(option.requires_engineer_review is True for option in options)
 

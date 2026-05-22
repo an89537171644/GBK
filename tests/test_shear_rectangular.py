@@ -53,6 +53,54 @@ def test_shear_rectangular_without_stirrups_can_pass_for_low_shear():
     assert result.status == "pass"
 
 
+def test_shear_reports_sw_max_and_qsw_rule():
+    result = check_shear_rectangular(
+        section=mvp_section(),
+        concrete=get_concrete("B25"),
+        stirrup_rebar=get_rebar("A240"),
+        Asw=2 * area_by_diameter(8),
+        sw=200,
+        Q=80_000,
+    )
+
+    assert "sw_max_by_shear_rule" in result.intermediate_values
+    assert "qsw_rule_status" in result.intermediate_values
+    assert "transverse_reinforcement_countable" in result.intermediate_values
+    assert result.intermediate_values["qsw_rule_status"] == "pass"
+    assert result.intermediate_values["transverse_reinforcement_countable"] is True
+
+
+def test_shear_warns_when_spacing_exceeds_shear_rule():
+    result = check_shear_rectangular(
+        section=mvp_section(),
+        concrete=get_concrete("B25"),
+        stirrup_rebar=get_rebar("A240"),
+        Asw=2 * area_by_diameter(8),
+        sw=500,
+        Q=160_000,
+    )
+
+    assert (
+        "stirrup spacing exceeds shear rule maximum for counting transverse reinforcement"
+        in result.warnings
+    )
+
+
+def test_shear_warns_when_qsw_below_min_rule():
+    result = check_shear_rectangular(
+        section=mvp_section(),
+        concrete=get_concrete("B25"),
+        stirrup_rebar=get_rebar("A240"),
+        Asw=2 * area_by_diameter(6),
+        sw=300,
+        Q=80_000,
+    )
+
+    assert "qsw is below draft minimum rule for counting transverse reinforcement" in (
+        result.warnings
+    )
+
+
 def test_shear_rectangular_fails_when_inclined_section_capacity_is_exceeded():
     result = check_shear_rectangular(
         section=mvp_section(),

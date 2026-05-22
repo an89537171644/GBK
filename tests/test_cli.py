@@ -183,6 +183,9 @@ def test_cli_design_rectangular_json_output(capsys):
     assert data["status"] == "pass"
     assert "constructive_status" in data["result"]["selected_transverse"]
     assert "constructive_max_spacing" in data["result"]["selected_transverse"]
+    assert "sw_max_by_shear_rule" in data["result"]["selected_transverse"]
+    assert "qsw_rule_status" in data["result"]["selected_transverse"]
+    assert "transverse_reinforcement_countable" in data["result"]["selected_transverse"]
 
 
 def test_cli_generate_dataset_command(tmp_path, capsys):

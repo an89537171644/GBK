@@ -73,6 +73,13 @@ def check_shear_rectangular(
 
     Q_strip = PHI_B1 * Rb * b * h0
     qsw = Rsw * Asw / sw
+    sw_max_by_shear_rule = Rbt * b * h0**2 / Q if Q > 0 else inf
+    transverse_reinforcement_countable = Asw > 0 and sw <= sw_max_by_shear_rule
+    qsw_min_rule = 0.25 * Rbt * b
+    if Asw > 0:
+        qsw_rule_status = "pass" if qsw >= qsw_min_rule else "warning"
+    else:
+        qsw_rule_status = "not_applicable"
     best = _find_minimum_qult(b=b, h0=h0, Rbt=Rbt, qsw=qsw, c_points=c_points)
     Qult = best["Qult"]
     utilization = _utilization(Q=Q, Qult=Qult)
@@ -82,6 +89,12 @@ def check_shear_rectangular(
         warnings.append("shear force exceeds concrete strip capacity")
     if Qult < Q:
         warnings.append("shear force exceeds inclined section capacity")
+    if Asw > 0 and sw > sw_max_by_shear_rule:
+        warnings.append(
+            "stirrup spacing exceeds shear rule maximum for counting transverse reinforcement"
+        )
+    if Asw > 0 and qsw < qsw_min_rule:
+        warnings.append("qsw is below draft minimum rule for counting transverse reinforcement")
 
     status: ShearStatus = "pass" if Q_strip >= Q and Qult >= Q else "fail"
     intermediate_values: dict[str, float | str | bool] = {
@@ -93,6 +106,10 @@ def check_shear_rectangular(
         "Q": Q,
         "Asw": Asw,
         "sw": sw,
+        "sw_max_by_shear_rule": sw_max_by_shear_rule,
+        "transverse_reinforcement_countable": transverse_reinforcement_countable,
+        "qsw_min_rule": qsw_min_rule,
+        "qsw_rule_status": qsw_rule_status,
         "phi_b1": PHI_B1,
         "phi_b2": PHI_B2,
         "phi_sw": PHI_SW,

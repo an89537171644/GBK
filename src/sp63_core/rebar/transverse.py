@@ -18,6 +18,10 @@ from sp63_core.sections.rectangular import RectangularSection
 
 DEFAULT_STIRRUP_LEGS: tuple[int, ...] = (2, 4)
 DEFAULT_STIRRUP_SPACINGS: tuple[int, ...] = (100, 150, 200, 250, 300)
+SHEAR_RULE_MAX_WARNING = (
+    "stirrup spacing exceeds shear rule maximum for counting transverse reinforcement"
+)
+QSW_MIN_RULE_WARNING = "qsw is below draft minimum rule for counting transverse reinforcement"
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,8 @@ def select_transverse_rebar(
                 )
                 if shear.status != "pass":
                     continue
+                if _has_uncountable_transverse_warning(shear.warnings):
+                    continue
 
                 constructive = check_transverse_constructive(
                     section=section,
@@ -106,3 +112,7 @@ def select_transverse_rebar(
         key=lambda option: (option.steel_consumption, option.utilization, option.spacing)
     )
     return tuple(options[:max_results])
+
+
+def _has_uncountable_transverse_warning(warnings: tuple[str, ...]) -> bool:
+    return SHEAR_RULE_MAX_WARNING in warnings or QSW_MIN_RULE_WARNING in warnings

@@ -68,6 +68,9 @@ def test_design_rectangular_protocol_contains_selected_reinforcement():
     assert "longitudinal_reinforcement_ratio_percent" in result.protocol.reinforcement
     assert result.protocol.reinforcement["stirrup_constructive_status"] == "pass"
     assert "stirrup_constructive_max_spacing" in result.protocol.reinforcement
+    assert "stirrup_sw_max_by_shear_rule" in result.protocol.reinforcement
+    assert "stirrup_qsw_rule_status" in result.protocol.reinforcement
+    assert "stirrup_transverse_reinforcement_countable" in result.protocol.reinforcement
     assert result.protocol.geometry["h0"] == pytest.approx(
         result.selected_longitudinal.section.effective_depth()
     )

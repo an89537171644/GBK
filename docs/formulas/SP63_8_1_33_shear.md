@@ -93,6 +93,41 @@ status = pass if Q <= Q_strip and Q <= min(Qb + Qsw)
 status = fail otherwise
 ```
 
+## Draft Conditions For Counting Transverse Reinforcement
+
+`requires_engineer_review = true`
+
+K7 adds draft warnings for conditions that affect whether transverse
+reinforcement may be counted in the MVP shear result. These warnings do not
+change the base formula `Qb + Qsw`.
+
+Maximum spacing for counting transverse reinforcement:
+
+```text
+sw_max_by_shear_rule = Rbt * b * h0^2 / Q, if Q > 0
+sw_max_by_shear_rule = infinity, if Q = 0
+```
+
+Counting status:
+
+```text
+transverse_reinforcement_countable = Asw > 0 and sw <= sw_max_by_shear_rule
+```
+
+Minimum draft qsw rule:
+
+```text
+qsw_min_rule = 0.25 * Rbt * b
+qsw_rule_status = pass if qsw >= qsw_min_rule
+qsw_rule_status = warning if Asw > 0 and qsw < qsw_min_rule
+qsw_rule_status = not_applicable if Asw = 0
+```
+
+Warnings:
+
+- `stirrup spacing exceeds shear rule maximum for counting transverse reinforcement`
+- `qsw is below draft minimum rule for counting transverse reinforcement`
+
 ## Draft golden case 1: pass
 
 `requires_engineer_review = true`
