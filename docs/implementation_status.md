@@ -10,6 +10,7 @@
 | `checks/shear.py` | implemented | yes | yes | engineer review of formula card and golden cases |
 | `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
+| `design/rectangular.py` | implemented draft end-to-end rectangular design | yes | yes | engineer review and CLI integration |
 | `report/protocol.py` | draft | yes | yes | keep protocol structure stable |
 | `dataset/generator.py` | draft; includes `load_duration` and selected option section `h0` | yes | yes | engineer review dataset ranges |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |

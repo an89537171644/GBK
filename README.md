@@ -33,6 +33,7 @@
 - `sp63_core.checks.check_shear_rectangular` — MVP-проверка поперечной силы по карточке `docs/formulas/SP63_8_1_33_shear.md`.
 - `sp63_core.rebar.select_longitudinal_rebar` — D2-перебор продольной арматуры 2–8 стержней D10–D32 с проверкой каждого варианта через изгиб.
 - `sp63_core.rebar.select_transverse_rebar` — K3-перебор поперечной арматуры D6–D12, 2/4 ветви и шагов 100–300 мм с проверкой каждого варианта через поперечную силу.
+- `sp63_core.design.design_rectangular_element` — K4-end-to-end расчет прямоугольного элемента: подбор продольной арматуры, подбор хомутов, расчетный протокол и итоговый статус.
 - `sp63_core.report.build_calculation_protocol` — F1-структура расчетного протокола: исходные данные, материалы, геометрия, армирование, проверки, предупреждения и итоговый статус.
 - `sp63_core.dataset.generate_dataset_cases` и `export_dataset_csv` — G1-генерация безопасно проверенных строк датасета и экспорт CSV по `docs/dataset_schema.md`.
 
@@ -59,3 +60,10 @@
 - Candidates are accepted only when `check_shear_rectangular` returns `pass`.
 - Dataset rows now store the selected stirrup scheme and shear result.
 - ML and UI are still not started.
+
+## K4 end-to-end rectangular design status
+
+- `design_rectangular_element()` is available.
+- The function combines longitudinal and transverse reinforcement selection.
+- The result contains `CalculationProtocol` for passing full designs.
+- ML and UI are not implemented yet.
