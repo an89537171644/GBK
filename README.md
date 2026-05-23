@@ -191,3 +191,10 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - `evaluate_ml_quality_gate()` reports sandbox quality status using
   `unsafe_prediction_rate`, `deterministic_accept_rate`, and `As_MAPE`.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
+## K13 service material properties status
+
+- Concrete catalog now includes `Rbser` and `Rbtser`.
+- Serviceability checks are not implemented yet.
+- Crack formation and deflection calculations are not implemented yet.
+- Next planned serviceability step is normal crack formation `Mcrc`.

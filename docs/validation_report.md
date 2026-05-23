@@ -171,6 +171,15 @@ gate checks `As_MAPE`, `deterministic_accept_rate`, and
 `unsafe_prediction_rate`. A pass is only a sandbox-quality result, not a design
 approval.
 
+## K13 Service Material Properties
+
+K13 adds concrete service properties `Rbser` and `Rbtser` for heavy concrete
+B15-B40. These values must be reviewed against SP 63 tables before future Mcrc
+golden cases are created.
+
+The current automated validation still covers the strength MVP only. Crack
+formation, crack width, and deflection checks are not implemented yet.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

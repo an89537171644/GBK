@@ -24,6 +24,8 @@ requires_engineer_review = true
   reinforcement proposals.
 - K12.2 target hygiene removing `stirrup_diameter` prediction and adding an ML
   sandbox quality gate.
+- K13 service concrete properties `Rbser` and `Rbtser` for future second
+  limit-state preparation.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -98,6 +100,16 @@ removes `stirrup_diameter` from ML targets because they are equal in the current
 dataset MVP. The ML quality gate monitors `As_MAPE`,
 `deterministic_accept_rate`, and `unsafe_prediction_rate`, but even a passing
 gate leaves ML advisory-only.
+
+## K13 Service Concrete Properties
+
+K13 adds `Rbser` and `Rbtser` to the heavy concrete B15-B40 draft catalog. These
+properties prepare the core for future second limit-state checks such as normal
+crack formation and deflection calculations.
+
+Crack checks and deflection checks are not implemented in K13. ML is not trained
+on serviceability data, and the current validation still covers the strength MVP
+only.
 
 ## Next Stages
 

@@ -7,6 +7,7 @@ from sp63_core.materials import (
     get_concrete,
     get_rebar,
 )
+from sp63_core.materials.concrete import CONCRETE_CATALOG
 
 
 def test_get_concrete_b25_draft_values():
@@ -14,8 +15,27 @@ def test_get_concrete_b25_draft_values():
 
     assert concrete.Rb == 14.5
     assert concrete.Rbt == 1.05
+    assert concrete.Rbser == 18.5
+    assert concrete.Rbtser == 1.55
     assert concrete.Eb == 30_000
     assert concrete.draft_requires_engineer_review is True
+
+
+def test_concrete_service_properties_b25():
+    concrete = get_concrete("B25")
+
+    assert concrete.Rb == pytest.approx(14.5)
+    assert concrete.Rbt == pytest.approx(1.05)
+    assert concrete.Rbser == pytest.approx(18.5)
+    assert concrete.Rbtser == pytest.approx(1.55)
+    assert concrete.Eb == pytest.approx(30_000)
+
+
+def test_all_concrete_classes_have_service_properties():
+    for concrete in CONCRETE_CATALOG.values():
+        assert concrete.Rbser > concrete.Rb
+        assert concrete.Rbtser > concrete.Rbt
+        assert concrete.Eb > 0
 
 
 def test_unknown_concrete_class_raises():
