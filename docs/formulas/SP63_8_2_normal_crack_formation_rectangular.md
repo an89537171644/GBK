@@ -5,6 +5,8 @@ requires_engineer_review = true
 ## Purpose
 
 Draft-MVP check for normal crack formation in a rectangular reinforced concrete beam.
+SP 63 reference: section 8.2, normal cracks. This card contains only a short
+project algorithm description, not normative text.
 
 ## Scope
 
@@ -13,7 +15,7 @@ Draft-MVP check for normal crack formation in a rectangular reinforced concrete 
 - no axial force;
 - no prestress;
 - heavy concrete B15-B40;
-- service limit-state material properties Rbtser and Eb;
+- service limit-state material property `Concrete.Rbtser`;
 - normal cracks only.
 
 ## Units
@@ -51,6 +53,7 @@ It does not yet include transformed section with reinforcement.
 It does not yet include nonlinear deformation model.
 It does not yet include long-term effects.
 It does not calculate crack width.
+It does not use `Eb` in K14.
 
 ## Outputs
 

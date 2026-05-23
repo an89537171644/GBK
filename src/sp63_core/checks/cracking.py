@@ -1,4 +1,21 @@
-"""Draft serviceability checks for normal crack formation."""
+"""Draft serviceability checks for normal crack formation.
+
+SP 63 scope:
+    Section 8.2, normal crack formation, draft MVP formula card
+    ``docs/formulas/SP63_8_2_normal_crack_formation_rectangular.md``.
+
+Inputs:
+    RectangularSection with b, h, cover and reinforcement geometry in mm;
+    Concrete with Rbtser in MPa = N/mm2; Mser in N*mm.
+
+Outputs:
+    Mcrc in N*mm, utilization Mser/Mcrc, status, warnings, and intermediate
+    values for protocol logging.
+
+Applicability limits:
+    Rectangular reinforced concrete beam, bending only, no axial force,
+    no prestress, heavy concrete B15-B40, gross elastic section only.
+"""
 
 from dataclasses import dataclass
 
@@ -24,7 +41,7 @@ def check_normal_crack_formation_rectangular(
     concrete: Concrete,
     Mser: float,
 ) -> CrackFormationResult:
-    """Check normal crack formation using a gross elastic rectangular section."""
+    """Check normal crack formation using the K14 gross elastic section draft."""
     section.validate_geometry()
     if Mser < 0:
         raise ValueError("Mser must be non-negative")
