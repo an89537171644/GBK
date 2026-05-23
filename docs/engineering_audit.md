@@ -13,6 +13,8 @@ requires_engineer_review = true
 - K7 draft warnings for conditions of counting transverse reinforcement in shear.
 - K8 hardened dataset generation with consistent stirrup geometry, deterministic
   shuffled limits, group split, and extended dataset reports.
+- K9 validation package for draft golden cases, dataset checks, and SCAD/LIRA
+  comparison template.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -31,6 +33,7 @@ requires_engineer_review = true
 - Reinforcement layout assumptions.
 - Dataset ranges before bulk generation.
 - Dataset reports, group split behavior, and golden cases before ML work.
+- K9 validation reports before any baseline ML training.
 
 ## Not Implemented
 
@@ -56,6 +59,9 @@ K8 makes the dataset pipeline more stable, but it still does not cover cracks,
 deflections, T-sections, columns, slabs, punching, torsion, anchorage, support
 zones, or bar curtailment. ML may begin only after reviewing `dataset_report`
 outputs and manually checking the draft golden cases.
+
+K9 adds automated validation summaries, but this is not certification. The
+outputs still require manual engineering review and external comparison.
 
 ## Next Stages
 

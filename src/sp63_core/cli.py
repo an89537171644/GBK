@@ -2,12 +2,15 @@
 
 import json as jsonlib
 from argparse import ArgumentParser, Namespace
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
 from sp63_core.dataset import (
+    DATASET_COLUMNS,
     DATASET_VERSION,
+    DatasetCase,
     build_dataset_report,
     export_dataset_csv,
     export_dataset_report_json,
@@ -19,6 +22,12 @@ from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
+from sp63_core.validation import (
+    run_bending_golden_cases,
+    run_design_golden_cases,
+    run_shear_golden_cases,
+    validate_dataset_cases,
+)
 
 
 def build_parser() -> ArgumentParser:
@@ -91,6 +100,14 @@ def build_parser() -> ArgumentParser:
     dataset.add_argument("--load-duration", choices=("short", "long"), default="short")
     dataset.add_argument("--json", action="store_true", help="print JSON output")
     dataset.set_defaults(handler=_handle_generate_dataset)
+
+    validate = subparsers.add_parser("validate", help="run draft validation package checks")
+    validate.add_argument("--golden", action="store_true", help="run draft golden cases")
+    validate.add_argument("--dataset", help="validate an existing dataset CSV")
+    validate.add_argument("--generate-dataset-limit", type=int)
+    validate.add_argument("--output-report")
+    validate.add_argument("--json", action="store_true", help="print JSON output")
+    validate.set_defaults(handler=_handle_validate)
 
     return parser
 
@@ -464,6 +481,64 @@ def _handle_generate_dataset(args: Namespace) -> int:
     return 0
 
 
+def _handle_validate(args: Namespace) -> int:
+    golden_results = []
+    if args.golden:
+        golden_results = [
+            *run_bending_golden_cases(),
+            *run_shear_golden_cases(),
+            *run_design_golden_cases(),
+        ]
+
+    dataset_result = None
+    if args.generate_dataset_limit is not None:
+        cases = generate_dataset_cases(limit=args.generate_dataset_limit)
+        split = split_dataset_cases(cases, group_by="group_key")
+        dataset_result = validate_dataset_cases(cases, split)
+    elif args.dataset is not None:
+        cases = _load_dataset_csv(Path(args.dataset))
+        dataset_result = validate_dataset_cases(cases)
+
+    golden_passed = all(result.passed for result in golden_results)
+    dataset_passed = dataset_result is None or dataset_result.status == "pass"
+    status = "pass" if golden_passed and dataset_passed else "fail"
+    payload: dict[str, Any] = {
+        "command": "validate",
+        "status": status,
+        "golden": [asdict(result) for result in golden_results],
+        "dataset": None if dataset_result is None else asdict(dataset_result),
+    }
+
+    if args.output_report is not None:
+        report_path = Path(args.output_report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            jsonlib.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        payload["output_report"] = str(report_path)
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Validation")
+    print(f"status: {status}")
+    if golden_results:
+        passed_count = sum(1 for result in golden_results if result.passed)
+        print(f"golden: {passed_count}/{len(golden_results)} passed")
+        for result in golden_results:
+            print(f"{result.case_id}: {result.status}")
+    if dataset_result is not None:
+        print(f"dataset: {dataset_result.status}")
+        print(f"total_rows: {dataset_result.total_rows}")
+        print(f"unsafe_rows_count: {dataset_result.unsafe_rows_count}")
+        print(f"group_leakage_count: {dataset_result.group_leakage_count}")
+    if args.output_report is not None:
+        print(f"output_report: {payload['output_report']}")
+    return 0
+
+
 def _print_json(command: str, status: str, result: Any, warnings: tuple[str, ...]) -> None:
     print(
         jsonlib.dumps(
@@ -535,3 +610,69 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
         ),
         "protocol_status": None if design.protocol is None else design.protocol.status,
     }
+
+
+def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
+    import csv
+
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    cases = []
+    for row in rows:
+        missing_columns = [column for column in DATASET_COLUMNS if column not in row]
+        if missing_columns:
+            raise ValueError(f"dataset CSV is missing columns: {', '.join(missing_columns)}")
+        cases.append(
+            DatasetCase(
+                case_id=row["case_id"],
+                group_key=row["group_key"],
+                element_type=row["element_type"],
+                b=float(row["b"]),
+                h=float(row["h"]),
+                h0=float(row["h0"]),
+                geometry_stirrup_diameter=int(row["geometry_stirrup_diameter"]),
+                concrete_class=row["concrete_class"],
+                rebar_class=row["rebar_class"],
+                stirrup_class=row["stirrup_class"],
+                load_duration=row["load_duration"],
+                M=float(row["M"]),
+                Q=float(row["Q"]),
+                As_required=float(row["As_required"]),
+                As_provided=float(row["As_provided"]),
+                main_bar_count=int(row["main_bar_count"]),
+                main_bar_diameter=int(row["main_bar_diameter"]),
+                main_rebar_scheme=row["main_rebar_scheme"],
+                main_rebar_constructive_status=row["main_rebar_constructive_status"],
+                main_rebar_ratio_percent=float(row["main_rebar_ratio_percent"]),
+                main_rebar_layout_feasible=_parse_bool(row["main_rebar_layout_feasible"]),
+                stirrup_scheme=row["stirrup_scheme"],
+                stirrup_diameter=int(row["stirrup_diameter"]),
+                stirrup_legs=int(row["stirrup_legs"]),
+                stirrup_spacing=int(row["stirrup_spacing"]),
+                stirrup_Asw=float(row["stirrup_Asw"]),
+                stirrup_steel_consumption=float(row["stirrup_steel_consumption"]),
+                stirrup_constructive_status=row["stirrup_constructive_status"],
+                stirrup_constructive_max_spacing=float(row["stirrup_constructive_max_spacing"]),
+                stirrup_sw_max_by_shear_rule=float(row["stirrup_sw_max_by_shear_rule"]),
+                stirrup_qsw_rule_status=row["stirrup_qsw_rule_status"],
+                stirrup_transverse_reinforcement_countable=_parse_bool(
+                    row["stirrup_transverse_reinforcement_countable"]
+                ),
+                Mult=float(row["Mult"]),
+                Qult=float(row["Qult"]),
+                bending_utilization=float(row["bending_utilization"]),
+                shear_utilization=float(row["shear_utilization"]),
+                status=row["status"],
+                sp63_core_version=row["sp63_core_version"],
+                dataset_version=row["dataset_version"],
+            )
+        )
+    return tuple(cases)
+
+
+def _parse_bool(value: str) -> bool:
+    if value == "True":
+        return True
+    if value == "False":
+        return False
+    raise ValueError(f"cannot parse boolean value {value!r}")

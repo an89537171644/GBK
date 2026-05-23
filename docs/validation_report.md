@@ -89,6 +89,27 @@ K8 strengthens dataset generation before any ML work:
 No ML baseline should be started before reviewing the dataset report and the
 draft golden cases manually.
 
+## K9 Validation Package
+
+K9 adds a programmable validation package:
+
+- `run_bending_golden_cases()`;
+- `run_shear_golden_cases()`;
+- `run_design_golden_cases()`;
+- `validate_dataset_cases()`;
+- `build_scad_lira_comparison_template()`.
+
+The CLI entry point is:
+
+```bash
+python -m sp63_core validate --golden
+python -m sp63_core validate --generate-dataset-limit 100 --json
+```
+
+This package checks draft golden cases, validates generated datasets, and
+prepares a manual SCAD/LIRA comparison table. It is a readiness step before ML,
+not final certification.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

@@ -107,3 +107,17 @@ Each calculation command also supports `--json`.
 - `--group-split` performs train/validation/test split by `group_key` to reduce ML leakage.
 - Dataset reports include group counts, stirrup geometry mismatch counts, duplicate case id counts, and reinforcement scheme counts.
 - ML is still not started.
+
+## K9 validation package status
+
+The validation package is available before baseline ML:
+
+```bash
+python -m sp63_core validate --golden
+python -m sp63_core validate --generate-dataset-limit 100 --json
+```
+
+- Golden validation checks draft bending, shear, and end-to-end design cases.
+- Dataset validation checks unsafe rows, stirrup geometry mismatches, duplicate case ids, and group split leakage.
+- `build_scad_lira_comparison_template()` provides a manual comparison template.
+- ML is still not started.

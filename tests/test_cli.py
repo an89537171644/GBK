@@ -263,3 +263,25 @@ def test_cli_generate_dataset_split_group_command(tmp_path, capsys):
     assert report_path.exists()
     assert "unique_group_count" in captured.out
     assert "unsafe_rows_count" in captured.out
+
+
+def test_cli_validate_golden(capsys):
+    exit_code = main(["validate", "--golden"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Validation" in captured.out
+    assert "status: pass" in captured.out
+    assert "golden:" in captured.out
+
+
+def test_cli_validate_generated_dataset_json(capsys):
+    exit_code = main(["validate", "--generate-dataset-limit", "10", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "validate"
+    assert data["status"] == "pass"
+    assert data["dataset"]["total_rows"] == 10
+    assert data["dataset"]["group_leakage_count"] == 0
