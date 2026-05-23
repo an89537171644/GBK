@@ -91,6 +91,7 @@ def test_design_rectangular_with_crack_check():
     assert result.status == "pass"
     assert result.crack_formation is not None
     assert result.crack_formation.status == "crack"
+    assert result.crack_formation.requires_engineer_review is True
     assert result.protocol is not None
     assert "crack_formation" in result.protocol.checks
     assert any("crack width check is required" in warning for warning in result.warnings)
