@@ -1,52 +1,102 @@
-# Схема датасета v0.1
+# Dataset Schema v0.1
 
-## Назначение
+requires_engineer_review = true
 
-Датасет нужен для обучения surrogate-модели и проверки ее качества. Источник целевых значений для MVP — детерминированное расчетное ядро `sp63_core`.
+## Purpose
 
-## Поля
+The dataset is a deterministic draft-MVP output of `sp63_core`. It is prepared
+for future baseline ML experiments, but ML is not trained or used at this step.
+Every accepted row must pass the deterministic bending, shear, layout, and
+draft constructive checks.
 
-| Поле | Тип | Единицы | Описание |
+## MVP Applicability
+
+Only `element_type = beam` is supported in the dataset MVP. Slab constructive
+logic is not fully implemented yet, so `generate_dataset_cases()` raises
+`ValueError("only beam element_type is supported in dataset MVP")` when any
+non-beam element type is requested.
+
+## Fields
+
+| field | type | units | description |
 |---|---|---|---|
-| `case_id` | str | - | идентификатор расчета |
-| `element_type` | str | - | beam/slab |
-| `b` | float | мм | ширина |
-| `h` | float | мм | высота |
-| `h0` | float | мм | рабочая высота |
-| `concrete_class` | str | - | класс бетона |
-| `rebar_class` | str | - | класс продольной арматуры |
-| `stirrup_class` | str | - | класс поперечной арматуры |
-| `load_duration` | str | - | load duration for compression reinforcement resistance: short or long |
-| `M` | float | Н*мм | изгибающий момент |
-| `Q` | float | Н | поперечная сила |
-| `As_required` | float | мм² | требуемая/рациональная площадь продольной арматуры |
-| `As_provided` | float | мм² | фактически подобранная площадь |
-| `main_rebar_scheme` | str | - | например, 4D16 |
-| `stirrup_scheme` | str | - | например, D8/150, 2 ветви |
-| `Mult` | float | Н*мм | предельный момент |
-| `Qult` | float | Н | предельная поперечная сила |
-| `bending_utilization` | float | - | M/Mult |
-| `shear_utilization` | float | - | Q/Qult |
-| `status` | str | - | pass/fail |
-| `sp63_core_version` | str | - | версия расчетного ядра |
-| `dataset_version` | str | - | версия датасета |
+| `case_id` | str | - | Deterministic case id |
+| `element_type` | str | - | `beam` only in MVP |
+| `b` | float | mm | Section width |
+| `h` | float | mm | Section height |
+| `h0` | float | mm | Effective depth from selected longitudinal option section |
+| `concrete_class` | str | - | Concrete class |
+| `rebar_class` | str | - | Longitudinal reinforcement class |
+| `stirrup_class` | str | - | Transverse reinforcement class |
+| `load_duration` | str | - | `short` or `long` for compression reinforcement resistance |
+| `M` | float | N*mm | Bending moment |
+| `Q` | float | N | Shear force |
+| `As_required` | float | mm2 | Selected longitudinal steel area for the checked row |
+| `As_provided` | float | mm2 | Provided longitudinal steel area |
+| `main_bar_count` | int | - | Number of selected tensile bars |
+| `main_bar_diameter` | int | mm | Diameter of selected tensile bars |
+| `main_rebar_scheme` | str | - | Example: `4D16` |
+| `main_rebar_constructive_status` | str | - | Draft constructive check status |
+| `main_rebar_ratio_percent` | float | % | Longitudinal reinforcement ratio |
+| `main_rebar_layout_feasible` | bool | - | Single-layer layout feasibility |
+| `stirrup_scheme` | str | - | Example: `D8/150, 2 legs` |
+| `stirrup_diameter` | int | mm | Selected stirrup diameter |
+| `stirrup_legs` | int | - | Number of stirrup legs |
+| `stirrup_spacing` | int | mm | Selected stirrup spacing |
+| `stirrup_Asw` | float | mm2 | Total stirrup area per spacing |
+| `stirrup_steel_consumption` | float | mm2/mm | `Asw / spacing` |
+| `stirrup_constructive_status` | str | - | Draft transverse constructive status |
+| `stirrup_constructive_max_spacing` | float | mm | Constructive maximum spacing |
+| `stirrup_sw_max_by_shear_rule` | float | mm | Draft SP 63 8.1.33 spacing limit for counting Qsw |
+| `stirrup_qsw_rule_status` | str | - | `pass`, `warning`, or `not_applicable` |
+| `stirrup_transverse_reinforcement_countable` | bool | - | Whether Qsw may be counted by draft rule |
+| `Mult` | float | N*mm | Ultimate bending moment |
+| `Qult` | float | N | Ultimate shear force |
+| `bending_utilization` | float | - | `M / Mult` |
+| `shear_utilization` | float | - | `Q / Qult` |
+| `status` | str | - | `pass` for exported rows |
+| `sp63_core_version` | str | - | Calculation core version |
+| `dataset_version` | str | - | Dataset schema version |
 
-## K2 load duration note
+## K7 Dataset Split
 
-`load_duration` controls the selected `Rsc` value for compression reinforcement.
-Allowed values are `short` and `long`. For A500, the MVP catalog uses
-`Rsc_short = 400 MPa` and `Rsc_long = 435 MPa`.
+`split_dataset_cases()` creates reproducible train/validation/test partitions
+with default ratios:
 
-## Разделение выборки
+- train: 70%;
+- validation: 15%;
+- test: 15%.
 
-- train: 70 %;
-- validation: 15 %;
-- test: 15 %.
+The split uses `random.Random(seed)` and does not use ML libraries.
 
-## Метрики ML
+`export_dataset_split_csv()` writes:
 
-- MAE по `As_required`;
-- MAPE по `As_required`;
-- доля проходящих вариантов с первого кандидата;
-- средний перерасход арматуры;
-- `unsafe_accept_rate = 0`.
+- `dataset_v001_train.csv`;
+- `dataset_v001_validation.csv`;
+- `dataset_v001_test.csv`.
+
+## Dataset Report
+
+`build_dataset_report()` returns:
+
+- dataset version and total row count;
+- counts by element type, concrete class, rebar class, and stirrup class;
+- min/max ranges for geometry, loads, and utilization values;
+- split sizes when a split is passed;
+- `unsafe_rows_count`.
+
+`unsafe_rows_count` is the count of rows where any of these is true:
+
+- `status != "pass"`;
+- `bending_utilization > 1.0`;
+- `shear_utilization > 1.0`;
+- `main_rebar_constructive_status != "pass"`;
+- `stirrup_constructive_status not in ("pass", "warning")`;
+- `stirrup_transverse_reinforcement_countable is not True`.
+
+The expected value for generated MVP rows is `unsafe_rows_count = 0`.
+
+## ML Note
+
+This schema prepares data for a future baseline ML step. It does not authorize
+training, selecting, or using an ML model as a final calculation source.

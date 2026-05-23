@@ -89,3 +89,12 @@ Each calculation command also supports `--json`.
 - Reinforcement selection now filters candidates by calculation checks and draft constructive requirements.
 - Serviceability limit states are not implemented yet.
 - ML is not implemented yet.
+
+## K7 dataset split status
+
+- Dataset generation is now beam-only for the MVP.
+- Dataset rows include selected longitudinal and transverse reinforcement details, layout status, constructive statuses, and draft shear-rule fields.
+- `split_dataset_cases()` provides reproducible train/validation/test splitting.
+- `export_dataset_split_csv()` writes separate train, validation, and test CSV files.
+- `build_dataset_report()` and `export_dataset_report_json()` create a JSON report with ranges, class counts, split sizes, and `unsafe_rows_count`.
+- ML is still not started.

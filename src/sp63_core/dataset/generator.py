@@ -30,8 +30,23 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "Q",
     "As_required",
     "As_provided",
+    "main_bar_count",
+    "main_bar_diameter",
     "main_rebar_scheme",
+    "main_rebar_constructive_status",
+    "main_rebar_ratio_percent",
+    "main_rebar_layout_feasible",
     "stirrup_scheme",
+    "stirrup_diameter",
+    "stirrup_legs",
+    "stirrup_spacing",
+    "stirrup_Asw",
+    "stirrup_steel_consumption",
+    "stirrup_constructive_status",
+    "stirrup_constructive_max_spacing",
+    "stirrup_sw_max_by_shear_rule",
+    "stirrup_qsw_rule_status",
+    "stirrup_transverse_reinforcement_countable",
     "Mult",
     "Qult",
     "bending_utilization",
@@ -59,8 +74,23 @@ class DatasetCase:
     Q: float
     As_required: float
     As_provided: float
+    main_bar_count: int
+    main_bar_diameter: int
     main_rebar_scheme: str
+    main_rebar_constructive_status: str
+    main_rebar_ratio_percent: float
+    main_rebar_layout_feasible: bool
     stirrup_scheme: str
+    stirrup_diameter: int
+    stirrup_legs: int
+    stirrup_spacing: int
+    stirrup_Asw: float
+    stirrup_steel_consumption: float
+    stirrup_constructive_status: str
+    stirrup_constructive_max_spacing: float
+    stirrup_sw_max_by_shear_rule: float
+    stirrup_qsw_rule_status: str
+    stirrup_transverse_reinforcement_countable: bool
     Mult: float
     Qult: float
     bending_utilization: float
@@ -78,7 +108,7 @@ class DatasetCase:
 def generate_dataset_cases(
     *,
     limit: int = 1000,
-    element_types: Iterable[str] = ("beam", "slab"),
+    element_types: Iterable[str] = ("beam",),
     widths: Iterable[float] = (250, 300, 350, 400, 500),
     heights: Iterable[float] = (400, 450, 500, 550, 600),
     cover: float = 32.0,
@@ -99,9 +129,16 @@ def generate_dataset_cases(
     if limit <= 0:
         raise ValueError("limit must be positive")
 
+    normalized_element_types = tuple(element_types)
+    unsupported_element_types = [
+        element_type for element_type in normalized_element_types if element_type != "beam"
+    ]
+    if unsupported_element_types:
+        raise ValueError("only beam element_type is supported in dataset MVP")
+
     rows: list[DatasetCase] = []
 
-    for element_type in element_types:
+    for element_type in normalized_element_types:
         for b in widths:
             for h in heights:
                 section = RectangularSection(
@@ -141,6 +178,15 @@ def generate_dataset_cases(
                                     if not transverse_options:
                                         continue
                                     transverse_option = transverse_options[0]
+                                    main_constructive_values = (
+                                        option.constructive.intermediate_values
+                                    )
+                                    stirrup_constructive_values = (
+                                        transverse_option.constructive.intermediate_values
+                                    )
+                                    stirrup_shear_values = (
+                                        transverse_option.shear.intermediate_values
+                                    )
 
                                     case_id = f"case_{len(rows) + 1:06d}"
                                     rows.append(
@@ -158,8 +204,41 @@ def generate_dataset_cases(
                                             Q=Q,
                                             As_required=option.As,
                                             As_provided=option.As,
+                                            main_bar_count=option.bar_count,
+                                            main_bar_diameter=option.diameter,
                                             main_rebar_scheme=option.scheme,
+                                            main_rebar_constructive_status=(
+                                                option.constructive.status
+                                            ),
+                                            main_rebar_ratio_percent=main_constructive_values[
+                                                "reinforcement_ratio_percent"
+                                            ],
+                                            main_rebar_layout_feasible=option.layout.layout_feasible,
                                             stirrup_scheme=transverse_option.scheme,
+                                            stirrup_diameter=transverse_option.diameter,
+                                            stirrup_legs=transverse_option.legs,
+                                            stirrup_spacing=transverse_option.spacing,
+                                            stirrup_Asw=transverse_option.Asw,
+                                            stirrup_steel_consumption=(
+                                                transverse_option.steel_consumption
+                                            ),
+                                            stirrup_constructive_status=(
+                                                transverse_option.constructive.status
+                                            ),
+                                            stirrup_constructive_max_spacing=(
+                                                stirrup_constructive_values["max_spacing"]
+                                            ),
+                                            stirrup_sw_max_by_shear_rule=stirrup_shear_values[
+                                                "sw_max_by_shear_rule"
+                                            ],
+                                            stirrup_qsw_rule_status=stirrup_shear_values[
+                                                "qsw_rule_status"
+                                            ],
+                                            stirrup_transverse_reinforcement_countable=(
+                                                stirrup_shear_values[
+                                                    "transverse_reinforcement_countable"
+                                                ]
+                                            ),
                                             Mult=option.bending.Mult,
                                             Qult=transverse_option.shear.Qult,
                                             bending_utilization=option.bending.utilization,

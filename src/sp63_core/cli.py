@@ -6,7 +6,15 @@ from pathlib import Path
 from typing import Any
 
 from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
-from sp63_core.dataset import DATASET_VERSION, export_dataset_csv, generate_dataset_cases
+from sp63_core.dataset import (
+    DATASET_VERSION,
+    build_dataset_report,
+    export_dataset_csv,
+    export_dataset_report_json,
+    export_dataset_split_csv,
+    generate_dataset_cases,
+    split_dataset_cases,
+)
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
@@ -72,7 +80,11 @@ def build_parser() -> ArgumentParser:
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
-    dataset.add_argument("--output", required=True)
+    dataset.add_argument("--output")
+    dataset.add_argument("--split", action="store_true", help="export train/validation/test split")
+    dataset.add_argument("--output-dir", default="data/generated")
+    dataset.add_argument("--prefix", default="dataset_v001")
+    dataset.add_argument("--report")
     dataset.add_argument("--load-duration", choices=("short", "long"), default="short")
     dataset.add_argument("--json", action="store_true", help="print JSON output")
     dataset.set_defaults(handler=_handle_generate_dataset)
@@ -367,6 +379,47 @@ def _handle_design_rectangular(args: Namespace) -> int:
 
 def _handle_generate_dataset(args: Namespace) -> int:
     cases = generate_dataset_cases(limit=args.limit, load_duration=args.load_duration)
+    if args.split:
+        split = split_dataset_cases(cases)
+        output_paths = export_dataset_split_csv(
+            split,
+            Path(args.output_dir),
+            prefix=args.prefix,
+        )
+        report = build_dataset_report(cases, split)
+        default_report_path = Path(args.output_dir) / f"{args.prefix}_report.json"
+        report_path = export_dataset_report_json(
+            report,
+            Path(args.report) if args.report else default_report_path,
+        )
+        payload = {
+            "command": "generate-dataset",
+            "rows": len(cases),
+            "train_rows": len(split.train),
+            "validation_rows": len(split.validation),
+            "test_rows": len(split.test),
+            "output_files": {name: str(path) for name, path in output_paths.items()},
+            "report_path": str(report_path),
+            "dataset_version": DATASET_VERSION,
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("Dataset generation")
+        print(f"rows: {payload['rows']}")
+        print(f"train_rows: {payload['train_rows']}")
+        print(f"validation_rows: {payload['validation_rows']}")
+        print(f"test_rows: {payload['test_rows']}")
+        for split_name, path in output_paths.items():
+            print(f"{split_name}: {path}")
+        print(f"report: {report_path}")
+        print(f"dataset_version: {DATASET_VERSION}")
+        return 0
+
+    if args.output is None:
+        raise ValueError("--output is required unless --split is used")
+
     output_path = export_dataset_csv(cases, Path(args.output))
     if args.json:
         print(

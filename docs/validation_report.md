@@ -55,6 +55,24 @@ values, and explicit warnings where the MVP still has applicability limits.
 - Compare shear capacities and Qsw-counting warnings.
 - Compare end-to-end selected reinforcement schemes for typical beams.
 
+## Dataset Readiness
+
+K7 adds a beam-only dataset MVP with expanded reinforcement, constructive, and
+shear-rule fields. The generator rejects non-beam element types because slab
+constructive requirements are not fully implemented in this MVP.
+
+The dataset split and report utilities are ready for engineering review:
+
+- deterministic train/validation/test split;
+- CSV export for each split;
+- JSON dataset report with ranges, class counts, split sizes, and
+  `unsafe_rows_count`;
+- expected `unsafe_rows_count = 0` for generated MVP rows.
+
+The dataset remains draft data. It must be reviewed against engineering
+expectations and representative external calculations before any ML baseline is
+trained or interpreted as useful.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

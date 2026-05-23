@@ -11,10 +11,26 @@ def test_generate_dataset_cases_matches_schema_and_uses_safe_results():
     assert len(cases) == 5
     assert cases[0].case_id == "case_000001"
     assert tuple(cases[0].as_row()) == DATASET_COLUMNS
+    assert all(case.element_type == "beam" for case in cases)
     assert all(case.status == "pass" for case in cases)
     assert all(case.As_required == pytest.approx(case.As_provided) for case in cases)
     assert all(case.bending_utilization <= 1.0 for case in cases)
     assert all(case.shear_utilization <= 1.0 for case in cases)
+    assert all(case.main_bar_count > 0 for case in cases)
+    assert all(case.main_bar_diameter > 0 for case in cases)
+    assert all(case.main_rebar_constructive_status == "pass" for case in cases)
+    assert all(case.main_rebar_ratio_percent >= 0.1 for case in cases)
+    assert all(case.main_rebar_layout_feasible is True for case in cases)
+    assert all(case.stirrup_diameter > 0 for case in cases)
+    assert all(case.stirrup_legs > 0 for case in cases)
+    assert all(case.stirrup_spacing > 0 for case in cases)
+    assert all(case.stirrup_Asw > 0 for case in cases)
+    assert all(case.stirrup_steel_consumption > 0 for case in cases)
+    assert all(case.stirrup_constructive_status in ("pass", "warning") for case in cases)
+    assert all(case.stirrup_constructive_max_spacing > 0 for case in cases)
+    assert all(case.stirrup_sw_max_by_shear_rule > 0 for case in cases)
+    assert all(case.stirrup_qsw_rule_status == "pass" for case in cases)
+    assert all(case.stirrup_transverse_reinforcement_countable is True for case in cases)
 
 
 def test_generate_dataset_cases_respects_limit():
@@ -40,6 +56,11 @@ def test_generate_dataset_cases_writes_load_duration():
 def test_generate_dataset_cases_rejects_invalid_limit():
     with pytest.raises(ValueError, match="limit must be positive"):
         generate_dataset_cases(limit=0)
+
+
+def test_generate_dataset_cases_rejects_unsupported_element_type():
+    with pytest.raises(ValueError, match="only beam element_type is supported"):
+        generate_dataset_cases(limit=1, element_types=("slab",))
 
 
 def test_export_dataset_csv(tmp_path):

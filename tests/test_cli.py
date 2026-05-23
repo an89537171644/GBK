@@ -205,3 +205,30 @@ def test_cli_generate_dataset_command(tmp_path, capsys):
     assert exit_code == 0
     assert output_path.exists()
     assert "rows: 2" in captured.out
+
+
+def test_cli_generate_dataset_split_command(tmp_path, capsys):
+    report_path = tmp_path / "report.json"
+
+    exit_code = main(
+        [
+            "generate-dataset",
+            "--limit",
+            "10",
+            "--split",
+            "--output-dir",
+            str(tmp_path),
+            "--prefix",
+            "dataset_test",
+            "--report",
+            str(report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert (tmp_path / "dataset_test_train.csv").exists()
+    assert (tmp_path / "dataset_test_validation.csv").exists()
+    assert (tmp_path / "dataset_test_test.csv").exists()
+    assert report_path.exists()
+    assert "train_rows" in captured.out
