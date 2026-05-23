@@ -13,6 +13,7 @@ def test_generate_dataset_cases_matches_schema_and_uses_safe_results():
     assert tuple(cases[0].as_row()) == DATASET_COLUMNS
     assert all(case.group_key for case in cases)
     assert all(case.element_type == "beam" for case in cases)
+    assert all(case.cover == 32.0 for case in cases)
     assert all(case.geometry_stirrup_diameter == 8 for case in cases)
     assert all(case.status == "pass" for case in cases)
     assert all(case.As_required == pytest.approx(case.As_provided) for case in cases)
@@ -113,6 +114,7 @@ def test_export_dataset_csv(tmp_path):
     assert reader.fieldnames == list(DATASET_COLUMNS)
     assert len(rows) == 2
     assert rows[0]["case_id"] == "case_000001"
+    assert rows[0]["cover"] == "32.0"
     assert rows[0]["status"] == "pass"
 
 

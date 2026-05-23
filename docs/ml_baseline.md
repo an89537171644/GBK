@@ -15,12 +15,16 @@ The baseline feature extractor uses only input-like dataset fields:
 
 - `b`;
 - `h`;
-- `h0`;
+- `cover`;
 - `M`;
 - `Q`;
 - ordinal codes for `concrete_class`, `rebar_class`, and `stirrup_class`;
 - binary `load_duration`;
 - `geometry_stirrup_diameter`.
+
+K12.1 explicitly removes `h0` from ML input features because effective depth
+depends on the selected main bar diameter, which is an ML target. Keeping `h0`
+as a feature would leak target information into training.
 
 Selected reinforcement, status values, and utilization values are not used as
 input features when they are targets.
@@ -54,6 +58,16 @@ Reported metrics include:
 - classification accuracy for main bar diameter/count and stirrup
   diameter/spacing.
 
+K12.1 also reports deterministic safety metrics:
+
+- `total_predictions`;
+- `deterministic_accept_rate`;
+- `unsafe_prediction_rate`;
+- `bending_fail_rate`;
+- `shear_fail_rate`;
+- `layout_fail_rate`;
+- `constructive_fail_rate`.
+
 ## CLI
 
 Train a generated-data baseline:
@@ -84,13 +98,36 @@ Baseline ML is experimental and advisory only. Deterministic SP63 checks remain 
 
 ## Safety Wrapper
 
-`check_ml_prediction_safety()` is a draft K12 safety wrapper. It reconstructs a
-`RectangularDesignInput` from the original dataset row and runs
-`design_rectangular_element()`. For K12 it accepts an ML proposal only when the
-deterministic design status is `pass`.
+K12.1 reconstructs an explicit `MLReinforcementProposal` from baseline
+predictions:
 
-This is intentionally conservative and incomplete. It does not yet reconstruct
-or verify the exact predicted reinforcement scheme.
+- main bar count;
+- main bar diameter;
+- stirrup diameter;
+- stirrup legs;
+- stirrup spacing.
+
+Non-catalog values are snapped to the nearest supported MVP value with warnings.
+`check_ml_proposal_safety()` then checks the exact proposed scheme through the
+deterministic core:
+
+- single-layer layout;
+- longitudinal constructive check;
+- bending check;
+- shear check;
+- transverse constructive check.
+
+The proposal is accepted only when all deterministic checks pass and shear-rule
+warnings do not block counting transverse reinforcement.
+
+`check_ml_prediction_safety()` remains as a backward-compatible wrapper around
+proposal reconstruction and `check_ml_proposal_safety()`.
+
+The CLI prints:
+
+```text
+ML predictions are not accepted unless deterministic safety check passes.
+```
 
 ## Limits
 

@@ -22,6 +22,7 @@ from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.ml import (
     evaluate_baseline_models,
+    evaluate_ml_safety,
     save_baseline_model_bundle,
     train_baseline_models,
 )
@@ -683,12 +684,14 @@ def _handle_train_baseline(args: Namespace) -> int:
     test_cases = split.test or split.validation or train_cases
     bundle = train_baseline_models(train_cases, seed=args.seed)
     metrics = evaluate_baseline_models(bundle, test_cases)
+    safety_metrics = evaluate_ml_safety(bundle, test_cases)
     model_path = save_baseline_model_bundle(bundle, Path(args.model_output))
 
     metrics_path = Path(args.metrics_output)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_payload = {
         "metrics": metrics,
+        "safety_metrics": safety_metrics,
         "dataset_version": bundle.dataset_version,
         "sp63_core_version": bundle.sp63_core_version,
         "requires_deterministic_check": bundle.requires_deterministic_check,
@@ -710,14 +713,26 @@ def _handle_train_baseline(args: Namespace) -> int:
         "model_output": str(model_path),
         "metrics_output": str(metrics_path),
         "metrics": metrics,
+        "safety_metrics": safety_metrics,
         "dataset_version": bundle.dataset_version,
     }
+    warnings = [BASELINE_ML_WARNING]
+    safety_warning = (
+        "ML predictions are not accepted unless deterministic safety check passes."
+    )
+    warnings.append(safety_warning)
+    if safety_metrics["unsafe_prediction_rate"] > 0:
+        warnings.append(
+            "unsafe ML predictions were detected by deterministic safety checks"
+        )
+    payload["warnings"] = warnings
     if args.json:
         print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
         return 0
 
     print("Baseline ML training")
     print(BASELINE_ML_WARNING)
+    print(safety_warning)
     print(f"status: {payload['status']}")
     print(f"dataset_source: {dataset_source}")
     print(f"rows: {len(cases)}")
@@ -729,6 +744,10 @@ def _handle_train_baseline(args: Namespace) -> int:
     print(f"dataset_version: {bundle.dataset_version}")
     for metric_name, value in metrics.items():
         print(f"{metric_name}: {value:.6g}")
+    for metric_name, value in safety_metrics.items():
+        print(f"{metric_name}: {value:.6g}")
+    if safety_metrics["unsafe_prediction_rate"] > 0:
+        print("warning: unsafe ML predictions were detected by deterministic safety checks")
     return 0
 
 
@@ -822,6 +841,7 @@ def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
                 element_type=row["element_type"],
                 b=float(row["b"]),
                 h=float(row["h"]),
+                cover=float(row["cover"]),
                 h0=float(row["h0"]),
                 geometry_stirrup_diameter=int(row["geometry_stirrup_diameter"]),
                 concrete_class=row["concrete_class"],

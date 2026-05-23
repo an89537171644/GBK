@@ -24,6 +24,7 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "element_type",
     "b",
     "h",
+    "cover",
     "h0",
     "geometry_stirrup_diameter",
     "concrete_class",
@@ -70,6 +71,7 @@ class DatasetCase:
     element_type: str
     b: float
     h: float
+    cover: float
     h0: float
     geometry_stirrup_diameter: int
     concrete_class: str
@@ -313,6 +315,7 @@ def _build_full_grid_rows(
                                             element_type=element_type,
                                             b=b,
                                             h=h,
+                                            cover=cover,
                                             h0=option.section.effective_depth(),
                                             geometry_stirrup_diameter=(
                                                 geometry_stirrup_diameter

@@ -165,3 +165,16 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - The model bundle is experimental and advisory only.
 - Deterministic SP63 checks remain mandatory for every ML proposal.
 - Streamlit and production ML recommendations are not implemented.
+
+## K12.1 ML leakage and safety status
+
+- `h0` is removed from ML input features because it leaks the selected main bar
+  diameter target.
+- `cover` is now stored in dataset rows and used as a geometry input feature.
+- Baseline predictions are reconstructed into an explicit reinforcement
+  proposal.
+- The exact ML proposal is checked by deterministic layout, constructive,
+  bending, and shear checks.
+- `unsafe_prediction_rate` and `deterministic_accept_rate` are written to the
+  baseline metrics JSON.
+- ML remains advisory-only.

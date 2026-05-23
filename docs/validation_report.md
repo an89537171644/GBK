@@ -147,6 +147,17 @@ golden validation, dataset validation, or external SCAD/LIRA acceptance gates.
 The safety wrapper reruns the deterministic rectangular design workflow and
 accepts an ML proposal only when the deterministic result is `pass`.
 
+## K12.1 Leakage Removal And Proposal Safety
+
+K12.1 removes `h0` from ML input features because it depends on selected
+longitudinal bar diameter. `cover` is now stored in the dataset and used as an
+input feature instead.
+
+The ML safety path now reconstructs the predicted reinforcement scheme and runs
+deterministic checks for that exact proposal. Safety metrics include
+`deterministic_accept_rate` and `unsafe_prediction_rate`. ML remains
+advisory-only regardless of these metrics.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

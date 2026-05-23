@@ -24,7 +24,7 @@ LOAD_DURATION_CODES: dict[str, float] = {
 FEATURE_COLUMNS: tuple[str, ...] = (
     "b",
     "h",
-    "h0",
+    "cover",
     "M",
     "Q",
     "concrete_class_code",
@@ -60,7 +60,7 @@ def build_feature_matrix(
             {
                 "b": float(case.b),
                 "h": float(case.h),
-                "h0": float(case.h0),
+                "cover": float(case.cover),
                 "M": float(case.M),
                 "Q": float(case.Q),
                 "concrete_class_code": _class_code(

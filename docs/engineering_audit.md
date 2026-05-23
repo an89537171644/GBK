@@ -20,6 +20,8 @@ requires_engineer_review = true
 - K11 strict loading of filled SCAD/LIRA comparisons, delta export, and strict
   acceptance report.
 - K12 experimental baseline ML sandbox for beam-only strength dataset.
+- K12.1 leakage removal and deterministic safety checks for reconstructed ML
+  reinforcement proposals.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -82,6 +84,12 @@ K12 introduces a baseline ML sandbox only after the validation-gate structure is
 in place. The sandbox is experimental and advisory. It must not be used as a
 final calculation stage, and every prediction must be checked by deterministic
 SP 63 modules.
+
+K12.1 removes `h0` from ML input features because it leaks selected bar diameter
+information. It adds `cover` as the geometry input and checks the reconstructed
+ML reinforcement proposal itself through deterministic layout, constructive,
+bending, and shear checks. `unsafe_prediction_rate` must be monitored before
+any ML use beyond sandbox experiments.
 
 ## Next Stages
 

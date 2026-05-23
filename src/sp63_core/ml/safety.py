@@ -1,10 +1,20 @@
 """Draft deterministic safety wrapper for ML predictions."""
 
 from collections.abc import Mapping
+from dataclasses import asdict
 from typing import Any
 
+from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
 from sp63_core.dataset import DatasetCase
-from sp63_core.design import RectangularDesignInput, design_rectangular_element
+from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
+from sp63_core.ml.proposal import MLReinforcementProposal, proposal_from_prediction
+from sp63_core.rebar import (
+    check_longitudinal_constructive,
+    check_single_layer_layout,
+    check_transverse_constructive,
+)
+from sp63_core.rebar.transverse import QSW_MIN_RULE_WARNING, SHEAR_RULE_MAX_WARNING
+from sp63_core.sections import RectangularSection
 
 ADVISORY_WARNING = (
     "draft ML safety gate: baseline ML is advisory only; deterministic SP63 checks "
@@ -12,48 +22,104 @@ ADVISORY_WARNING = (
 )
 
 
+def check_ml_proposal_safety(
+    proposal: MLReinforcementProposal,
+    original_case: DatasetCase,
+) -> dict[str, Any]:
+    """Run deterministic checks for the exact ML reinforcement proposal."""
+    section = RectangularSection(
+        b=original_case.b,
+        h=original_case.h,
+        cover=original_case.cover,
+        stirrup_diameter=proposal.stirrup_diameter,
+        main_bar_diameter=proposal.main_bar_diameter,
+    )
+    concrete = get_concrete(original_case.concrete_class)
+    longitudinal_rebar = get_rebar(original_case.rebar_class)
+    stirrup_rebar = get_rebar(original_case.stirrup_class)
+    As = proposal.main_bar_count * area_by_diameter(proposal.main_bar_diameter)
+    Asw = proposal.stirrup_legs * area_by_diameter(proposal.stirrup_diameter)
+
+    layout = check_single_layer_layout(
+        section=section,
+        bar_count=proposal.main_bar_count,
+        diameter=proposal.main_bar_diameter,
+    )
+    longitudinal_constructive = check_longitudinal_constructive(
+        section=section,
+        bar_count=proposal.main_bar_count,
+        As=As,
+        element_type="beam",
+    )
+    bending = check_bending_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=longitudinal_rebar,
+        As=As,
+        M=original_case.M,
+        load_duration=original_case.load_duration,
+    )
+    shear = check_shear_rectangular(
+        section=section,
+        concrete=concrete,
+        stirrup_rebar=stirrup_rebar,
+        Q=original_case.Q,
+        Asw=Asw,
+        sw=proposal.stirrup_spacing,
+    )
+    transverse_constructive = check_transverse_constructive(
+        section=section,
+        concrete=concrete,
+        stirrup_rebar=stirrup_rebar,
+        Q=original_case.Q,
+        stirrup_diameter=proposal.stirrup_diameter,
+        Asw=Asw,
+        spacing=proposal.stirrup_spacing,
+        element_type="beam",
+    )
+
+    blocking_shear_warnings = _has_blocking_shear_warning(shear.warnings)
+    accepted_by_deterministic_core = (
+        layout.layout_feasible
+        and longitudinal_constructive.status == "pass"
+        and bending.status == "pass"
+        and shear.status == "pass"
+        and transverse_constructive.status in ("pass", "warning")
+        and not blocking_shear_warnings
+    )
+    warnings = (
+        ADVISORY_WARNING,
+        *layout.warnings,
+        *longitudinal_constructive.warnings,
+        *bending.warnings,
+        *shear.warnings,
+        *transverse_constructive.warnings,
+    )
+
+    return {
+        "ml_is_advisory": True,
+        "accepted_by_deterministic_core": accepted_by_deterministic_core,
+        "bending_status": bending.status,
+        "shear_status": shear.status,
+        "layout_feasible": layout.layout_feasible,
+        "longitudinal_constructive_status": longitudinal_constructive.status,
+        "transverse_constructive_status": transverse_constructive.status,
+        "warnings": warnings,
+        "proposal": asdict(proposal),
+    }
+
+
 def check_ml_prediction_safety(
     prediction: Mapping[str, Any],
     original_case: DatasetCase,
 ) -> dict[str, Any]:
-    """Check an ML proposal against the deterministic design workflow.
-
-    K12 intentionally does not reconstruct an exact ML reinforcement scheme. The
-    safety gate reruns the deterministic core for the original case and reports
-    whether that deterministic design passes.
-    """
-    design_input = RectangularDesignInput(
-        b=original_case.b,
-        h=original_case.h,
-        cover=_infer_cover(original_case),
-        stirrup_diameter_for_geometry=original_case.geometry_stirrup_diameter,
-        concrete_class=original_case.concrete_class,
-        longitudinal_rebar_class=original_case.rebar_class,
-        stirrup_rebar_class=original_case.stirrup_class,
-        M=original_case.M,
-        Q=original_case.Q,
-        load_duration=original_case.load_duration,
-    )
-    deterministic_result = design_rectangular_element(design_input)
-    return {
-        "deterministic_status": deterministic_result.status,
-        "ml_is_advisory": True,
-        "accepted_by_deterministic_core": deterministic_result.status == "pass",
-        "warnings": (
-            ADVISORY_WARNING,
-            *deterministic_result.warnings,
-        ),
-        "prediction_keys": tuple(sorted(prediction)),
-    }
+    """Backward-compatible wrapper around proposal reconstruction and safety."""
+    proposal, proposal_warnings = proposal_from_prediction(prediction)
+    result = check_ml_proposal_safety(proposal, original_case)
+    result["warnings"] = (*proposal_warnings, *result["warnings"])
+    result["prediction_keys"] = tuple(sorted(prediction))
+    return result
 
 
-def _infer_cover(case: DatasetCase) -> float:
-    cover = (
-        case.h
-        - case.h0
-        - case.geometry_stirrup_diameter
-        - case.main_bar_diameter / 2.0
-    )
-    if cover <= 0:
-        raise ValueError("cannot infer positive cover from dataset case")
-    return cover
+def _has_blocking_shear_warning(warnings: tuple[str, ...]) -> bool:
+    return SHEAR_RULE_MAX_WARNING in warnings or QSW_MIN_RULE_WARNING in warnings

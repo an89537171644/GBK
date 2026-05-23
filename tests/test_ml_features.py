@@ -12,6 +12,7 @@ def test_build_feature_matrix_returns_features_and_targets():
     assert len(features) == len(cases)
     assert len(targets) == len(cases)
     assert "b" in features[0]
+    assert "cover" in features[0]
     assert "As_provided" in targets[0]
 
 
@@ -22,6 +23,9 @@ def test_build_feature_matrix_does_not_leak_targets_to_features():
 
     assert "As_provided" not in features[0]
     assert "main_bar_diameter" not in features[0]
+    assert "main_bar_count" not in features[0]
+    assert "h0" not in features[0]
     assert "stirrup_spacing" not in features[0]
+    assert "stirrup_diameter" not in features[0]
     assert "bending_utilization" not in features[0]
     assert "shear_utilization" not in features[0]

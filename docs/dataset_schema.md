@@ -30,6 +30,7 @@ geometry stirrup diameters.
 | `element_type` | str | - | `beam` only in MVP |
 | `b` | float | mm | Section width |
 | `h` | float | mm | Section height |
+| `cover` | float | mm | Protective cover used for section geometry |
 | `h0` | float | mm | Effective depth from selected longitudinal option section |
 | `geometry_stirrup_diameter` | int | mm | Stirrup diameter used in section geometry and `h0` |
 | `concrete_class` | str | - | Concrete class |
@@ -118,5 +119,9 @@ The expected K8 value for generated MVP rows is
 
 ## ML Note
 
-This schema prepares data for a future baseline ML step. It does not authorize
-training, selecting, or using an ML model as a final calculation source.
+K12.1 adds `cover` as an explicit dataset field and removes `h0` from ML input
+features. `h0` depends on the selected main bar diameter, which is an ML target,
+so using it as an input feature would leak target information.
+
+This schema supports experimental baseline ML only. It does not authorize using
+an ML model as a final calculation source.
