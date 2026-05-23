@@ -208,3 +208,25 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - The current draft uses a gross elastic concrete section.
 - Crack width `acrc` is not implemented.
 - Deflection checks are not implemented.
+
+## Codex automation workflow
+
+Codex automation is intended to work through GitHub Issues and Pull Requests.
+
+Rules:
+
+- Codex must not push directly to main.
+- Codex must not merge PRs automatically.
+- Every task must be implemented in a separate branch.
+- Every task must end with a Pull Request.
+- Every calculation formula requires engineer review.
+- ML is advisory-only and must be checked by deterministic sp63_core.
+- Personal data and full normative text must not be committed.
+
+Recommended human setup:
+
+1. Protect the main branch in GitHub settings.
+2. Require Pull Request before merge.
+3. Require pytest and ruff checks.
+4. Use codex-ready issues as the task queue.
+5. Review every PR before merge.
