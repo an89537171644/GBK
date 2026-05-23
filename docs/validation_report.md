@@ -136,6 +136,17 @@ K11 closes the external validation loop:
 The acceptance report now includes completed external row counts, incomplete row
 counts, rejected row counts, and delta-exceeded row counts.
 
+## K12 Baseline ML Sandbox
+
+K12 adds an experimental baseline ML module for the beam-only strength dataset.
+It extracts input-like features, trains RandomForest baselines, reports metrics,
+and saves a model bundle for controlled experiments.
+
+The ML sandbox is advisory only. It does not replace deterministic SP 63 checks,
+golden validation, dataset validation, or external SCAD/LIRA acceptance gates.
+The safety wrapper reruns the deterministic rectangular design workflow and
+accepts an ML proposal only when the deterministic result is `pass`.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

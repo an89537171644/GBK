@@ -19,6 +19,7 @@ requires_engineer_review = true
   review.
 - K11 strict loading of filled SCAD/LIRA comparisons, delta export, and strict
   acceptance report.
+- K12 experimental baseline ML sandbox for beam-only strength dataset.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -49,7 +50,7 @@ requires_engineer_review = true
 - T-sections, columns, punching, torsion, prestress, anchorage, support zones,
   and bar curtailment.
 - HTML/PDF protocol rendering.
-- ML training and ML-backed recommendations.
+- Production ML-backed recommendations.
 - Streamlit or other UI.
 
 ## Why ML Is Not A Final Calculation Stage Yet
@@ -77,10 +78,16 @@ been filled yet; this blocks treating ML as engineering-ready.
 K11 requires completed external values and engineer acceptance flags for strict
 `pass`. Missing values, rejected rows, or excessive deltas fail acceptance.
 
+K12 introduces a baseline ML sandbox only after the validation-gate structure is
+in place. The sandbox is experimental and advisory. It must not be used as a
+final calculation stage, and every prediction must be checked by deterministic
+SP 63 modules.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
 - Engineer review of constructive checks.
 - Dataset split and validation policy.
 - Golden-case expansion.
-- ML preparation only after deterministic checks are accepted.
+- Baseline ML review only after deterministic checks and external validation
+  gates are accepted.

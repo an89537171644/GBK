@@ -369,6 +369,31 @@ def test_cli_validate_external_input_incomplete_fails(tmp_path, capsys):
     assert data["acceptance"]["external_incomplete_count"] == 1
 
 
+def test_cli_train_baseline_command(tmp_path, capsys):
+    model_path = tmp_path / "baseline_model.pkl"
+    metrics_path = tmp_path / "baseline_metrics.json"
+
+    exit_code = main(
+        [
+            "train-baseline",
+            "--generate-dataset-limit",
+            "50",
+            "--model-output",
+            str(model_path),
+            "--metrics-output",
+            str(metrics_path),
+            "--seed",
+            "42",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert model_path.exists()
+    assert metrics_path.exists()
+    assert "experimental and advisory only" in captured.out
+
+
 def _filled_external_row(scad_As: float | None = 101.0) -> ExternalComparisonRow:
     return ExternalComparisonRow(
         case_id="case_000001",

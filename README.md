@@ -151,3 +151,17 @@ python -m sp63_core validate --external-input reports/interim/scad_lira_filled.c
 - Acceptance fails when engineer acceptance is missing or false.
 - Acceptance fails when filled deltas exceed the configured threshold.
 - ML is still not started.
+
+## K12 baseline ML sandbox status
+
+Experimental baseline ML is available for the beam-only strength dataset:
+
+```bash
+python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output models/baseline_model.pkl --metrics-output reports/interim/baseline_metrics.json --seed 42
+```
+
+- The baseline trains RandomForest models for reinforcement and utilization
+  targets.
+- The model bundle is experimental and advisory only.
+- Deterministic SP63 checks remain mandatory for every ML proposal.
+- Streamlit and production ML recommendations are not implemented.

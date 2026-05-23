@@ -20,6 +20,11 @@ from sp63_core.dataset import (
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import get_concrete, get_rebar
+from sp63_core.ml import (
+    evaluate_baseline_models,
+    save_baseline_model_bundle,
+    train_baseline_models,
+)
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
@@ -126,6 +131,21 @@ def build_parser() -> ArgumentParser:
     validate.add_argument("--no-require-engineer-accepted", action="store_true")
     validate.add_argument("--json", action="store_true", help="print JSON output")
     validate.set_defaults(handler=_handle_validate)
+
+    baseline = subparsers.add_parser(
+        "train-baseline",
+        help="train experimental advisory baseline ML models",
+    )
+    baseline.add_argument("--dataset", help="existing dataset CSV")
+    baseline.add_argument("--generate-dataset-limit", type=int, default=500)
+    baseline.add_argument("--model-output", default="models/baseline_model.pkl")
+    baseline.add_argument(
+        "--metrics-output",
+        default="reports/interim/baseline_metrics.json",
+    )
+    baseline.add_argument("--seed", type=int, default=42)
+    baseline.add_argument("--json", action="store_true", help="print JSON output")
+    baseline.set_defaults(handler=_handle_train_baseline)
 
     return parser
 
@@ -638,6 +658,77 @@ def _handle_validate(args: Namespace) -> int:
         print(f"acceptance_report: {acceptance_report_path}")
     if args.output_report is not None:
         print(f"output_report: {payload['output_report']}")
+    return 0
+
+
+BASELINE_ML_WARNING = (
+    "Baseline ML is experimental and advisory only. "
+    "Deterministic SP63 checks remain mandatory."
+)
+
+
+def _handle_train_baseline(args: Namespace) -> int:
+    if args.dataset is not None:
+        cases = _load_dataset_csv(Path(args.dataset))
+        dataset_source = str(Path(args.dataset))
+    else:
+        cases = generate_dataset_cases(
+            limit=args.generate_dataset_limit,
+            seed=args.seed,
+        )
+        dataset_source = "generated"
+
+    split = split_dataset_cases(cases, seed=args.seed, group_by="group_key")
+    train_cases = split.train if split.train else cases
+    test_cases = split.test or split.validation or train_cases
+    bundle = train_baseline_models(train_cases, seed=args.seed)
+    metrics = evaluate_baseline_models(bundle, test_cases)
+    model_path = save_baseline_model_bundle(bundle, Path(args.model_output))
+
+    metrics_path = Path(args.metrics_output)
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics_payload = {
+        "metrics": metrics,
+        "dataset_version": bundle.dataset_version,
+        "sp63_core_version": bundle.sp63_core_version,
+        "requires_deterministic_check": bundle.requires_deterministic_check,
+    }
+    metrics_path.write_text(
+        jsonlib.dumps(metrics_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    payload = {
+        "command": "train-baseline",
+        "status": "pass",
+        "warning": BASELINE_ML_WARNING,
+        "dataset_source": dataset_source,
+        "rows": len(cases),
+        "train_rows": len(split.train),
+        "validation_rows": len(split.validation),
+        "test_rows": len(split.test),
+        "model_output": str(model_path),
+        "metrics_output": str(metrics_path),
+        "metrics": metrics,
+        "dataset_version": bundle.dataset_version,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Baseline ML training")
+    print(BASELINE_ML_WARNING)
+    print(f"status: {payload['status']}")
+    print(f"dataset_source: {dataset_source}")
+    print(f"rows: {len(cases)}")
+    print(f"train_rows: {len(split.train)}")
+    print(f"validation_rows: {len(split.validation)}")
+    print(f"test_rows: {len(split.test)}")
+    print(f"model_output: {model_path}")
+    print(f"metrics_output: {metrics_path}")
+    print(f"dataset_version: {bundle.dataset_version}")
+    for metric_name, value in metrics.items():
+        print(f"{metric_name}: {value:.6g}")
     return 0
 
 
