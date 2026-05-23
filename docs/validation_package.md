@@ -85,6 +85,23 @@ If external rows are not filled yet, the gate returns `warning`. If external
 rows are filled, all accepted flags must be `true` and all filled deltas must be
 within the allowed threshold.
 
+K11 closes the strict external loop:
+
+```bash
+python -m sp63_core validate \
+  --external-input reports/interim/scad_lira_filled.csv \
+  --external-with-deltas reports/interim/scad_lira_with_deltas.csv \
+  --golden \
+  --generate-dataset-limit 100 \
+  --acceptance-report reports/interim/acceptance_report.json \
+  --json
+```
+
+The CLI loads filled CSV rows, parses empty numeric values as `None`, calculates
+delta fields, exports a CSV with deltas, and evaluates strict acceptance gates.
+Each row must have completed SCAD/LIRA values according to
+`--required-external-source`.
+
 ## Meaning Of Pass/Fail
 
 `pass` means the automated draft checks found no mismatch against the current

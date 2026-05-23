@@ -17,6 +17,8 @@ requires_engineer_review = true
   comparison template.
 - K10 external validation structures and acceptance gates for manual SCAD/LIRA
   review.
+- K11 strict loading of filled SCAD/LIRA comparisons, delta export, and strict
+  acceptance report.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -38,6 +40,8 @@ requires_engineer_review = true
 - K9 validation reports before any baseline ML training.
 - External SCAD/LIRA comparison rows and acceptance gates before ML is treated
   as more than experimental.
+- Filled external CSV with strict pass status before baseline ML proceeds beyond
+  an experimental sandbox.
 
 ## Not Implemented
 
@@ -69,6 +73,9 @@ outputs still require manual engineering review and external comparison.
 
 K10 adds acceptance gates. A `warning` result means external comparison has not
 been filled yet; this blocks treating ML as engineering-ready.
+
+K11 requires completed external values and engineer acceptance flags for strict
+`pass`. Missing values, rejected rows, or excessive deltas fail acceptance.
 
 ## Next Stages
 

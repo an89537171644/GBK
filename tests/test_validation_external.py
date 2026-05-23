@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 
 import pytest
 
@@ -8,6 +9,10 @@ from sp63_core.validation import (
     build_external_comparison_rows,
     compute_external_deltas,
     evaluate_acceptance_gates,
+    export_external_comparison_csv,
+    export_external_comparison_with_deltas_csv,
+    external_row_has_completed_source,
+    load_external_comparison_csv,
 )
 from sp63_core.validation.dataset_checks import DatasetValidationResult
 from sp63_core.validation.golden import GoldenCaseResult
@@ -46,6 +51,53 @@ def test_compute_external_deltas_calculates_percent_deltas():
     assert result.delta_Qult_percent_lira == pytest.approx(4.0)
 
 
+def test_load_external_comparison_csv_roundtrip(tmp_path):
+    rows = build_external_comparison_rows(generate_dataset_cases(limit=2))
+    path = export_external_comparison_csv(rows, tmp_path / "external.csv")
+
+    loaded = load_external_comparison_csv(path)
+
+    assert len(loaded) == 2
+    assert loaded[0].case_id == rows[0].case_id
+    assert loaded[0].program_As == rows[0].program_As
+    assert loaded[0].accepted is None
+
+
+def test_load_external_comparison_csv_parses_filled_values(tmp_path):
+    row = _accepted_external_row(
+        scad_As=101.0,
+        scad_Mult=102.0,
+        scad_Qult=103.0,
+    )
+    path = export_external_comparison_csv((row,), tmp_path / "filled.csv")
+
+    loaded = load_external_comparison_csv(path)
+
+    assert loaded[0].scad_As == 101.0
+    assert loaded[0].scad_Mult == 102.0
+    assert loaded[0].scad_Qult == 103.0
+    assert loaded[0].accepted is True
+
+
+def test_external_row_has_completed_source():
+    scad_row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
+    lira_row = _accepted_external_row(lira_As=101.0, lira_Mult=102.0, lira_Qult=103.0)
+    both_row = _accepted_external_row(
+        scad_As=101.0,
+        scad_Mult=102.0,
+        scad_Qult=103.0,
+        lira_As=101.0,
+        lira_Mult=102.0,
+        lira_Qult=103.0,
+    )
+
+    assert external_row_has_completed_source(scad_row, source="scad") is True
+    assert external_row_has_completed_source(scad_row, source="any") is True
+    assert external_row_has_completed_source(scad_row, source="lira") is False
+    assert external_row_has_completed_source(lira_row, source="lira") is True
+    assert external_row_has_completed_source(both_row, source="both") is True
+
+
 def test_evaluate_acceptance_gates_warns_when_external_rows_empty():
     report = evaluate_acceptance_gates(
         golden_results=_passing_golden_results(),
@@ -54,6 +106,7 @@ def test_evaluate_acceptance_gates_warns_when_external_rows_empty():
 
     assert report["status"] == "warning"
     assert report["external_completed"] is False
+    assert report["total_external_rows"] == 0
     assert "external SCAD/LIRA comparison is not filled yet" in report["warnings"]
 
 
@@ -61,13 +114,17 @@ def test_evaluate_acceptance_gates_passes_with_accepted_external_rows():
     report = evaluate_acceptance_gates(
         golden_results=_passing_golden_results(),
         dataset_validation=_passing_dataset_validation(),
-        external_rows=(_accepted_external_row(scad_As=101.0, lira_As=102.0),),
+        external_rows=(
+            _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0),
+        ),
         max_delta_percent=5.0,
     )
 
     assert report["status"] == "pass"
     assert report["external_completed"] is True
     assert report["external_accepted"] is True
+    assert report["completed_external_rows"] == 1
+    assert report["external_incomplete_count"] == 0
     assert report["warnings"] == ()
 
 
@@ -75,13 +132,68 @@ def test_evaluate_acceptance_gates_fails_when_external_delta_exceeds_limit():
     report = evaluate_acceptance_gates(
         golden_results=_passing_golden_results(),
         dataset_validation=_passing_dataset_validation(),
-        external_rows=(_accepted_external_row(scad_As=110.0),),
+        external_rows=(
+            _accepted_external_row(scad_As=110.0, scad_Mult=100.0, scad_Qult=100.0),
+        ),
         max_delta_percent=5.0,
     )
 
     assert report["status"] == "fail"
     assert report["external_accepted"] is False
+    assert report["external_delta_exceeded_count"] == 1
     assert "external comparison delta exceeds acceptance limit" in report["warnings"]
+
+
+def test_evaluate_acceptance_gates_fails_when_external_rows_incomplete():
+    report = evaluate_acceptance_gates(
+        golden_results=_passing_golden_results(),
+        dataset_validation=_passing_dataset_validation(),
+        external_rows=(_accepted_external_row(),),
+    )
+
+    assert report["status"] == "fail"
+    assert report["external_incomplete_count"] == 1
+    assert "external comparison rows are incomplete" in report["warnings"]
+
+
+def test_evaluate_acceptance_gates_fails_when_accepted_is_missing():
+    row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
+    row_without_acceptance = ExternalComparisonRow(
+        **{**asdict(row), "accepted": None}
+    )
+
+    report = evaluate_acceptance_gates(
+        golden_results=_passing_golden_results(),
+        dataset_validation=_passing_dataset_validation(),
+        external_rows=(row_without_acceptance,),
+    )
+
+    assert report["status"] == "fail"
+    assert report["external_rejected_count"] == 1
+
+
+def test_evaluate_acceptance_gates_passes_when_scad_complete_and_accepted():
+    report = evaluate_acceptance_gates(
+        golden_results=_passing_golden_results(),
+        dataset_validation=_passing_dataset_validation(),
+        external_rows=(
+            _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0),
+        ),
+        required_external_source="scad",
+    )
+
+    assert report["status"] == "pass"
+
+
+def test_export_external_comparison_with_deltas_csv(tmp_path):
+    row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
+
+    path = export_external_comparison_with_deltas_csv((row,), tmp_path / "with_deltas.csv")
+    loaded = load_external_comparison_csv(path)
+
+    assert loaded[0].delta_As_percent_scad == pytest.approx(1.0)
+    assert loaded[0].delta_Mult_percent_scad == pytest.approx(2.0)
+    assert loaded[0].delta_Qult_percent_scad == pytest.approx(3.0)
 
 
 def test_export_acceptance_report_json_roundtrip(tmp_path):

@@ -19,7 +19,7 @@
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |
 | `validation/scad_lira_template.py` | implemented manual comparison template | yes | yes | fill with SCAD/LIRA engineer results |
-| `validation/external.py` | implemented external validation templates and acceptance gates | yes | yes | fill SCAD/LIRA values manually |
+| `validation/external.py` | implemented external validation templates, filled CSV loading, delta export, and strict acceptance gates | yes | yes | fill SCAD/LIRA values manually |
 | `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |

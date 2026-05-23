@@ -122,6 +122,20 @@ K10 adds external validation structures:
 Acceptance is `warning` until external comparison rows are manually filled and
 accepted by an engineer. The draft recommended maximum delta is 5%.
 
+## K11 Strict External Acceptance
+
+K11 closes the external validation loop:
+
+- load a filled SCAD/LIRA comparison CSV;
+- parse external numeric values and engineer acceptance flags;
+- compute SCAD/LIRA deltas;
+- export a CSV with delta fields;
+- fail strict acceptance when external values are incomplete, rejected, or above
+  the allowed delta.
+
+The acceptance report now includes completed external row counts, incomplete row
+counts, rejected row counts, and delta-exceeded row counts.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

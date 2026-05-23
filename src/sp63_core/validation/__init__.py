@@ -11,6 +11,9 @@ from sp63_core.validation.external import (
     evaluate_acceptance_gates,
     export_acceptance_report_json,
     export_external_comparison_csv,
+    export_external_comparison_with_deltas_csv,
+    external_row_has_completed_source,
+    load_external_comparison_csv,
 )
 from sp63_core.validation.golden import (
     GoldenCaseResult,
@@ -28,8 +31,11 @@ __all__ = [
     "build_scad_lira_comparison_template",
     "compute_external_deltas",
     "evaluate_acceptance_gates",
+    "external_row_has_completed_source",
     "export_acceptance_report_json",
     "export_external_comparison_csv",
+    "export_external_comparison_with_deltas_csv",
+    "load_external_comparison_csv",
     "run_bending_golden_cases",
     "run_design_golden_cases",
     "run_shear_golden_cases",

@@ -24,9 +24,12 @@ from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
     build_external_comparison_rows,
+    compute_external_deltas,
     evaluate_acceptance_gates,
     export_acceptance_report_json,
     export_external_comparison_csv,
+    export_external_comparison_with_deltas_csv,
+    load_external_comparison_csv,
     run_bending_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
@@ -111,8 +114,16 @@ def build_parser() -> ArgumentParser:
     validate.add_argument("--generate-dataset-limit", type=int)
     validate.add_argument("--output-report")
     validate.add_argument("--external-template")
+    validate.add_argument("--external-input")
+    validate.add_argument("--external-with-deltas")
     validate.add_argument("--acceptance-report")
     validate.add_argument("--max-delta-percent", type=float, default=5.0)
+    validate.add_argument(
+        "--required-external-source",
+        choices=("any", "scad", "lira", "both"),
+        default="any",
+    )
+    validate.add_argument("--no-require-engineer-accepted", action="store_true")
     validate.add_argument("--json", action="store_true", help="print JSON output")
     validate.set_defaults(handler=_handle_validate)
 
@@ -506,12 +517,28 @@ def _handle_validate(args: Namespace) -> int:
         cases = _load_dataset_csv(Path(args.dataset))
         dataset_result = validate_dataset_cases(cases)
 
+    external_input_path = None
+    external_rows = ()
+    if args.external_input is not None:
+        external_input_path = Path(args.external_input)
+        external_rows = load_external_comparison_csv(external_input_path)
+        external_rows = tuple(compute_external_deltas(row) for row in external_rows)
+
+    external_with_deltas_path = None
+    if args.external_with_deltas is not None:
+        if args.external_input is None:
+            raise ValueError("--external-with-deltas requires --external-input")
+        external_with_deltas_path = export_external_comparison_with_deltas_csv(
+            external_rows,
+            Path(args.external_with_deltas),
+        )
+
     external_template_path = None
     if args.external_template is not None:
         external_cases = generate_dataset_cases(limit=10)
-        external_rows = build_external_comparison_rows(external_cases, limit=10)
+        template_rows = build_external_comparison_rows(external_cases, limit=10)
         external_template_path = export_external_comparison_csv(
-            external_rows,
+            template_rows,
             Path(args.external_template),
         )
 
@@ -534,8 +561,10 @@ def _handle_validate(args: Namespace) -> int:
         acceptance_report = evaluate_acceptance_gates(
             golden_results=acceptance_golden_results,
             dataset_validation=acceptance_dataset_result,
-            external_rows=(),
+            external_rows=external_rows,
             max_delta_percent=args.max_delta_percent,
+            required_external_source=args.required_external_source,
+            require_engineer_accepted=not args.no_require_engineer_accepted,
         )
         acceptance_report_path = export_acceptance_report_json(
             acceptance_report,
@@ -555,6 +584,10 @@ def _handle_validate(args: Namespace) -> int:
         "dataset": None if dataset_result is None else asdict(dataset_result),
         "external_template": (
             None if external_template_path is None else str(external_template_path)
+        ),
+        "external_input": None if external_input_path is None else str(external_input_path),
+        "external_with_deltas": (
+            None if external_with_deltas_path is None else str(external_with_deltas_path)
         ),
         "acceptance": acceptance_report,
         "acceptance_report": (
@@ -589,8 +622,19 @@ def _handle_validate(args: Namespace) -> int:
         print(f"group_leakage_count: {dataset_result.group_leakage_count}")
     if external_template_path is not None:
         print(f"external_template: {external_template_path}")
+    if external_input_path is not None:
+        print(f"external_input: {external_input_path}")
+    if external_with_deltas_path is not None:
+        print(f"external_with_deltas: {external_with_deltas_path}")
     if acceptance_report is not None:
         print(f"acceptance: {acceptance_report['status']}")
+        print(f"completed_external_rows: {acceptance_report['completed_external_rows']}")
+        print(f"external_incomplete_count: {acceptance_report['external_incomplete_count']}")
+        print(f"external_rejected_count: {acceptance_report['external_rejected_count']}")
+        print(
+            "external_delta_exceeded_count: "
+            f"{acceptance_report['external_delta_exceeded_count']}"
+        )
         print(f"acceptance_report: {acceptance_report_path}")
     if args.output_report is not None:
         print(f"output_report: {payload['output_report']}")

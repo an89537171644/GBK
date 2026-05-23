@@ -136,3 +136,18 @@ python -m sp63_core validate --golden --generate-dataset-limit 100 --acceptance-
 - Default recommended delta threshold is `5.0%`.
 - Without filled external comparison, acceptance status is `warning`.
 - ML is still not started.
+
+## K11 strict external acceptance status
+
+Filled SCAD/LIRA comparison CSV files can now be loaded and checked strictly:
+
+```bash
+python -m sp63_core validate --external-input reports/interim/scad_lira_filled.csv --external-with-deltas reports/interim/scad_lira_with_deltas.csv --golden --generate-dataset-limit 100 --acceptance-report reports/interim/acceptance_report.json --json
+```
+
+- Empty external numeric fields are parsed as missing values.
+- `accepted` supports `true/false`, `1/0`, `yes/no`, and `да/нет`.
+- Acceptance fails when required SCAD/LIRA values are incomplete.
+- Acceptance fails when engineer acceptance is missing or false.
+- Acceptance fails when filled deltas exceed the configured threshold.
+- ML is still not started.

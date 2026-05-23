@@ -43,6 +43,18 @@ python -m sp63_core validate \
   --json
 ```
 
+After SCAD/LIRA values are filled by an engineer, run strict acceptance:
+
+```bash
+python -m sp63_core validate \
+  --external-input reports/interim/scad_lira_filled.csv \
+  --external-with-deltas reports/interim/scad_lira_with_deltas.csv \
+  --golden \
+  --generate-dataset-limit 100 \
+  --acceptance-report reports/interim/acceptance_report.json \
+  --json
+```
+
 The automated gates check:
 
 - all golden cases pass;
@@ -50,12 +62,24 @@ The automated gates check:
 - if no external rows are filled, status is `warning`;
 - when external rows are supplied, every row must have `accepted = true`;
 - all filled external deltas must be less than or equal to `max_delta_percent`.
+- every row must have a completed external source according to
+  `--required-external-source`.
 
 The recommended draft threshold is:
 
 ```text
 max_delta_percent = 5.0
 ```
+
+`--required-external-source` accepts:
+
+- `any`: complete SCAD or complete LIRA values;
+- `scad`: complete SCAD values;
+- `lira`: complete LIRA values;
+- `both`: complete SCAD and LIRA values.
+
+Use `--no-require-engineer-accepted` only for diagnostics; normal acceptance
+requires `accepted = true` for every external row.
 
 ## Why ML Is Still Experimental
 
