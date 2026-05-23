@@ -18,7 +18,6 @@ REGRESSION_TARGETS: tuple[str, ...] = (
 CLASSIFICATION_TARGETS: tuple[str, ...] = (
     "main_bar_diameter",
     "main_bar_count",
-    "stirrup_diameter",
     "stirrup_legs",
     "stirrup_spacing",
 )
@@ -77,6 +76,9 @@ def train_baseline_models(
             "model_family": "RandomForest",
             "train_rows": len(train_cases),
             "seed": seed,
+            "stirrup_diameter_mode": "input_geometry_parameter",
+            "target_leakage_checked": True,
+            "h0_removed_from_features": True,
             "ml_is_advisory_only": True,
         },
     )

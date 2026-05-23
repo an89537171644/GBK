@@ -22,6 +22,8 @@ requires_engineer_review = true
 - K12 experimental baseline ML sandbox for beam-only strength dataset.
 - K12.1 leakage removal and deterministic safety checks for reconstructed ML
   reinforcement proposals.
+- K12.2 target hygiene removing `stirrup_diameter` prediction and adding an ML
+  sandbox quality gate.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -90,6 +92,12 @@ information. It adds `cover` as the geometry input and checks the reconstructed
 ML reinforcement proposal itself through deterministic layout, constructive,
 bending, and shear checks. `unsafe_prediction_rate` must be monitored before
 any ML use beyond sandbox experiments.
+
+K12.2 treats `geometry_stirrup_diameter` as an input geometry parameter and
+removes `stirrup_diameter` from ML targets because they are equal in the current
+dataset MVP. The ML quality gate monitors `As_MAPE`,
+`deterministic_accept_rate`, and `unsafe_prediction_rate`, but even a passing
+gate leaves ML advisory-only.
 
 ## Next Stages
 

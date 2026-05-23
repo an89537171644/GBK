@@ -104,6 +104,7 @@ def check_ml_proposal_safety(
         "layout_feasible": layout.layout_feasible,
         "longitudinal_constructive_status": longitudinal_constructive.status,
         "transverse_constructive_status": transverse_constructive.status,
+        "stirrup_diameter_mode": "geometry_input_parameter",
         "warnings": warnings,
         "proposal": asdict(proposal),
     }
@@ -114,7 +115,10 @@ def check_ml_prediction_safety(
     original_case: DatasetCase,
 ) -> dict[str, Any]:
     """Backward-compatible wrapper around proposal reconstruction and safety."""
-    proposal, proposal_warnings = proposal_from_prediction(prediction)
+    proposal, proposal_warnings = proposal_from_prediction(
+        prediction,
+        geometry_stirrup_diameter=original_case.geometry_stirrup_diameter,
+    )
     result = check_ml_proposal_safety(proposal, original_case)
     result["warnings"] = (*proposal_warnings, *result["warnings"])
     result["prediction_keys"] = tuple(sorted(prediction))

@@ -27,7 +27,12 @@ def test_train_evaluate_save_and_load_baseline_models(tmp_path):
     assert "shear_utilization_MAE" in metrics
     assert "main_bar_diameter_accuracy" in metrics
     assert "main_bar_count_accuracy" in metrics
-    assert "stirrup_diameter_accuracy" in metrics
+    assert "stirrup_diameter_accuracy" not in metrics
+    assert "stirrup_legs_accuracy" in metrics
     assert "stirrup_spacing_accuracy" in metrics
+    assert "target_count" in metrics
+    assert "feature_count" in metrics
     assert "unsafe_prediction_rate" in safety_metrics
     assert "deterministic_accept_rate" in safety_metrics
+    assert bundle.metadata["stirrup_diameter_mode"] == "input_geometry_parameter"
+    assert bundle.metadata["target_leakage_checked"] is True

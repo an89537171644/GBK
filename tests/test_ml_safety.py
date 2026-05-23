@@ -22,6 +22,7 @@ def test_check_ml_proposal_safety_accepts_case_reinforcement():
     assert safety["accepted_by_deterministic_core"] is True
     assert safety["bending_status"] == "pass"
     assert safety["shear_status"] == "pass"
+    assert safety["stirrup_diameter_mode"] == "geometry_input_parameter"
     assert safety["warnings"]
 
 
@@ -46,7 +47,6 @@ def test_check_ml_prediction_safety_wraps_reconstructed_proposal():
     prediction = {
         "main_bar_count": case.main_bar_count,
         "main_bar_diameter": case.main_bar_diameter,
-        "stirrup_diameter": case.stirrup_diameter,
         "stirrup_legs": case.stirrup_legs,
         "stirrup_spacing": case.stirrup_spacing,
     }
@@ -54,4 +54,5 @@ def test_check_ml_prediction_safety_wraps_reconstructed_proposal():
     safety = check_ml_prediction_safety(prediction, case)
 
     assert safety["accepted_by_deterministic_core"] is True
+    assert safety["proposal"]["stirrup_diameter"] == case.geometry_stirrup_diameter
     assert safety["proposal"]["requires_deterministic_check"] is True

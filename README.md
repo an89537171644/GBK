@@ -178,3 +178,16 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - `unsafe_prediction_rate` and `deterministic_accept_rate` are written to the
   baseline metrics JSON.
 - ML remains advisory-only.
+
+## K12.2 ML target hygiene and quality gate status
+
+- `stirrup_diameter` is no longer predicted by baseline ML.
+- `geometry_stirrup_diameter` is treated as an input geometry parameter.
+- `h0` remains excluded from ML input features.
+- `cover` remains an ML input feature.
+- ML proposals are still reconstructed and checked deterministically.
+- Baseline metrics include `stirrup_legs_accuracy`, `feature_count`, and
+  `target_count`; `stirrup_diameter_accuracy` is removed.
+- `evaluate_ml_quality_gate()` reports sandbox quality status using
+  `unsafe_prediction_rate`, `deterministic_accept_rate`, and `As_MAPE`.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.

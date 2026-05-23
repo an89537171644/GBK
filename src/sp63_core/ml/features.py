@@ -37,7 +37,6 @@ TARGET_COLUMNS: tuple[str, ...] = (
     "As_provided",
     "main_bar_count",
     "main_bar_diameter",
-    "stirrup_diameter",
     "stirrup_legs",
     "stirrup_spacing",
     "bending_utilization",
@@ -51,7 +50,8 @@ def build_feature_matrix(
     """Build numeric ML features and target dictionaries from dataset cases.
 
     Utilization and selected reinforcement values are targets only. They are not
-    included in the input feature dictionaries.
+    included in the input feature dictionaries. stirrup_diameter is treated as a
+    geometry input parameter in the current MVP and is not predicted.
     """
     features: list[dict[str, float]] = []
     targets: list[dict[str, float | int | str]] = []
@@ -91,7 +91,6 @@ def build_feature_matrix(
                 "As_provided": float(case.As_provided),
                 "main_bar_count": int(case.main_bar_count),
                 "main_bar_diameter": int(case.main_bar_diameter),
-                "stirrup_diameter": int(case.stirrup_diameter),
                 "stirrup_legs": int(case.stirrup_legs),
                 "stirrup_spacing": int(case.stirrup_spacing),
                 "bending_utilization": float(case.bending_utilization),

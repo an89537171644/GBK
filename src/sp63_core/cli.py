@@ -22,6 +22,7 @@ from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.ml import (
     evaluate_baseline_models,
+    evaluate_ml_quality_gate,
     evaluate_ml_safety,
     save_baseline_model_bundle,
     train_baseline_models,
@@ -685,6 +686,10 @@ def _handle_train_baseline(args: Namespace) -> int:
     bundle = train_baseline_models(train_cases, seed=args.seed)
     metrics = evaluate_baseline_models(bundle, test_cases)
     safety_metrics = evaluate_ml_safety(bundle, test_cases)
+    quality_gate = evaluate_ml_quality_gate(
+        metrics=metrics,
+        safety_metrics=safety_metrics,
+    )
     model_path = save_baseline_model_bundle(bundle, Path(args.model_output))
 
     metrics_path = Path(args.metrics_output)
@@ -692,6 +697,7 @@ def _handle_train_baseline(args: Namespace) -> int:
     metrics_payload = {
         "metrics": metrics,
         "safety_metrics": safety_metrics,
+        "quality_gate": asdict(quality_gate),
         "dataset_version": bundle.dataset_version,
         "sp63_core_version": bundle.sp63_core_version,
         "requires_deterministic_check": bundle.requires_deterministic_check,
@@ -714,6 +720,9 @@ def _handle_train_baseline(args: Namespace) -> int:
         "metrics_output": str(metrics_path),
         "metrics": metrics,
         "safety_metrics": safety_metrics,
+        "quality_gate": asdict(quality_gate),
+        "ml_quality_status": quality_gate.status,
+        "ml_quality_warnings": quality_gate.warnings,
         "dataset_version": bundle.dataset_version,
     }
     warnings = [BASELINE_ML_WARNING]
@@ -724,6 +733,13 @@ def _handle_train_baseline(args: Namespace) -> int:
     if safety_metrics["unsafe_prediction_rate"] > 0:
         warnings.append(
             "unsafe ML predictions were detected by deterministic safety checks"
+        )
+    warnings.extend(quality_gate.warnings)
+    if quality_gate.status != "pass":
+        warnings.append("ML quality gate is not pass; model remains sandbox-only.")
+    if quality_gate.status == "fail":
+        warnings.append(
+            "ML quality gate failed; model must not be used even as advisory output."
         )
     payload["warnings"] = warnings
     if args.json:
@@ -746,8 +762,17 @@ def _handle_train_baseline(args: Namespace) -> int:
         print(f"{metric_name}: {value:.6g}")
     for metric_name, value in safety_metrics.items():
         print(f"{metric_name}: {value:.6g}")
+    print(f"ml_quality_status: {quality_gate.status}")
+    if quality_gate.warnings:
+        print("ml_quality_warnings:")
+        for warning in quality_gate.warnings:
+            print(f"- {warning}")
     if safety_metrics["unsafe_prediction_rate"] > 0:
         print("warning: unsafe ML predictions were detected by deterministic safety checks")
+    if quality_gate.status != "pass":
+        print("ML quality gate is not pass; model remains sandbox-only.")
+    if quality_gate.status == "fail":
+        print("ML quality gate failed; model must not be used even as advisory output.")
     return 0
 
 

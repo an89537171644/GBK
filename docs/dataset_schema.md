@@ -123,5 +123,10 @@ K12.1 adds `cover` as an explicit dataset field and removes `h0` from ML input
 features. `h0` depends on the selected main bar diameter, which is an ML target,
 so using it as an input feature would leak target information.
 
+K12.2 keeps `geometry_stirrup_diameter` as an input geometry parameter and
+removes `stirrup_diameter` from ML targets. In the current beam-only dataset
+MVP these two values are intentionally equal, so predicting `stirrup_diameter`
+would leak the target through the input geometry.
+
 This schema supports experimental baseline ML only. It does not authorize using
 an ML model as a final calculation source.

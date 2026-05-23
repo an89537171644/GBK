@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from sp63_core.materials import LONGITUDINAL_DIAMETERS, STIRRUP_DIAMETERS
+from sp63_core.rebar import DEFAULT_BAR_COUNTS
 from sp63_core.rebar.transverse import DEFAULT_STIRRUP_LEGS, DEFAULT_STIRRUP_SPACINGS
 
 
@@ -23,18 +24,39 @@ class MLReinforcementProposal:
 
 def proposal_from_prediction(
     prediction: Mapping[str, Any],
+    *,
+    geometry_stirrup_diameter: int | None = None,
 ) -> tuple[MLReinforcementProposal, tuple[str, ...]]:
     """Snap raw ML outputs to supported MVP reinforcement catalogs."""
     warnings: list[str] = []
-    main_bar_count = _positive_int(prediction, "main_bar_count")
+    main_bar_count = _snap_catalog_value(
+        _positive_int(prediction, "main_bar_count"),
+        DEFAULT_BAR_COUNTS,
+        "main_bar_count",
+        warnings,
+    )
     main_bar_diameter = _snap_catalog_value(
         _positive_int(prediction, "main_bar_diameter"),
         LONGITUDINAL_DIAMETERS,
         "main_bar_diameter",
         warnings,
     )
+    if "stirrup_diameter" in prediction:
+        warnings.append(
+            "stirrup_diameter from prediction is deprecated; "
+            "geometry_stirrup_diameter is preferred"
+        )
+        raw_stirrup_diameter = _positive_int(prediction, "stirrup_diameter")
+    elif geometry_stirrup_diameter is not None:
+        raw_stirrup_diameter = int(geometry_stirrup_diameter)
+        if raw_stirrup_diameter <= 0:
+            raise ValueError("geometry_stirrup_diameter must be positive")
+    else:
+        raise ValueError(
+            "geometry_stirrup_diameter is required when stirrup_diameter is not predicted"
+        )
     stirrup_diameter = _snap_catalog_value(
-        _positive_int(prediction, "stirrup_diameter"),
+        raw_stirrup_diameter,
         STIRRUP_DIAMETERS,
         "stirrup_diameter",
         warnings,

@@ -7,11 +7,16 @@ from sp63_core.rebar.constructive import (
     check_transverse_spacing_constructive,
 )
 from sp63_core.rebar.layout import RebarLayout, check_single_layer_layout
-from sp63_core.rebar.longitudinal import LongitudinalRebarOption, select_longitudinal_rebar
+from sp63_core.rebar.longitudinal import (
+    DEFAULT_BAR_COUNTS,
+    LongitudinalRebarOption,
+    select_longitudinal_rebar,
+)
 from sp63_core.rebar.transverse import TransverseRebarOption, select_transverse_rebar
 
 __all__ = [
     "ConstructiveCheckResult",
+    "DEFAULT_BAR_COUNTS",
     "LongitudinalRebarOption",
     "RebarLayout",
     "TransverseRebarOption",

@@ -42,14 +42,16 @@ def evaluate_baseline_models(
             [case.main_bar_count for case in test_cases],
             [prediction["main_bar_count"] for prediction in predictions],
         ),
-        "stirrup_diameter_accuracy": _accuracy(
-            [case.stirrup_diameter for case in test_cases],
-            [prediction["stirrup_diameter"] for prediction in predictions],
+        "stirrup_legs_accuracy": _accuracy(
+            [case.stirrup_legs for case in test_cases],
+            [prediction["stirrup_legs"] for prediction in predictions],
         ),
         "stirrup_spacing_accuracy": _accuracy(
             [case.stirrup_spacing for case in test_cases],
             [prediction["stirrup_spacing"] for prediction in predictions],
         ),
+        "feature_count": float(len(model_bundle.feature_columns)),
+        "target_count": float(len(model_bundle.models)),
     }
 
 
@@ -70,7 +72,10 @@ def evaluate_ml_safety(
     constructive_fail = 0
     for prediction, case in zip(predictions, cases, strict=True):
         try:
-            proposal, _ = proposal_from_prediction(prediction)
+            proposal, _ = proposal_from_prediction(
+                prediction,
+                geometry_stirrup_diameter=case.geometry_stirrup_diameter,
+            )
             safety = check_ml_proposal_safety(proposal, case)
         except ValueError:
             bending_fail += 1

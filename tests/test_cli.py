@@ -397,10 +397,14 @@ def test_cli_train_baseline_command(tmp_path, capsys):
         "ML predictions are not accepted unless deterministic safety check passes"
         in captured.out
     )
+    assert "ml_quality_status" in captured.out
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert "safety_metrics" in metrics
+    assert "quality_gate" in metrics
     assert "unsafe_prediction_rate" in metrics["safety_metrics"]
+    if metrics["quality_gate"]["status"] != "pass":
+        assert "model remains sandbox-only" in captured.out
 
 
 def _filled_external_row(scad_As: float | None = 101.0) -> ExternalComparisonRow:

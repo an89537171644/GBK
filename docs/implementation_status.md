@@ -20,11 +20,12 @@
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |
 | `validation/scad_lira_template.py` | implemented manual comparison template | yes | yes | fill with SCAD/LIRA engineer results |
 | `validation/external.py` | implemented external validation templates, filled CSV loading, delta export, and strict acceptance gates | yes | yes | fill SCAD/LIRA values manually |
-| `ml/features.py` | implemented baseline feature extraction | yes | yes | engineer review before ML use |
-| `ml/baseline.py` | implemented experimental baseline ML | yes | yes | keep advisory only |
+| `ml/features.py` | implemented leakage-controlled feature extraction | yes | yes | engineer review before ML use |
+| `ml/baseline.py` | implemented target-hygiene baseline ML | yes | yes | retrain models after K12.2 |
 | `ml/proposal.py` | implemented ML prediction snapping to reinforcement proposal | yes | yes | engineer review snapping policy |
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
+| `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
 | `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |

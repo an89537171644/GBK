@@ -158,6 +158,19 @@ deterministic checks for that exact proposal. Safety metrics include
 `deterministic_accept_rate` and `unsafe_prediction_rate`. ML remains
 advisory-only regardless of these metrics.
 
+## K12.2 Target Hygiene And Quality Gate
+
+K12.2 removes `stirrup_diameter` from ML targets because
+`geometry_stirrup_diameter` is an input geometry parameter and is equal to the
+selected stirrup diameter in the current dataset MVP. This avoids target leakage
+through the geometry input.
+
+The baseline metrics now include target and feature counts, no longer include
+`stirrup_diameter_accuracy`, and add `stirrup_legs_accuracy`. The ML quality
+gate checks `As_MAPE`, `deterministic_accept_rate`, and
+`unsafe_prediction_rate`. A pass is only a sandbox-quality result, not a design
+approval.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
