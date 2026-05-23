@@ -23,6 +23,10 @@ from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
+    build_external_comparison_rows,
+    evaluate_acceptance_gates,
+    export_acceptance_report_json,
+    export_external_comparison_csv,
     run_bending_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
@@ -106,6 +110,9 @@ def build_parser() -> ArgumentParser:
     validate.add_argument("--dataset", help="validate an existing dataset CSV")
     validate.add_argument("--generate-dataset-limit", type=int)
     validate.add_argument("--output-report")
+    validate.add_argument("--external-template")
+    validate.add_argument("--acceptance-report")
+    validate.add_argument("--max-delta-percent", type=float, default=5.0)
     validate.add_argument("--json", action="store_true", help="print JSON output")
     validate.set_defaults(handler=_handle_validate)
 
@@ -499,14 +506,60 @@ def _handle_validate(args: Namespace) -> int:
         cases = _load_dataset_csv(Path(args.dataset))
         dataset_result = validate_dataset_cases(cases)
 
+    external_template_path = None
+    if args.external_template is not None:
+        external_cases = generate_dataset_cases(limit=10)
+        external_rows = build_external_comparison_rows(external_cases, limit=10)
+        external_template_path = export_external_comparison_csv(
+            external_rows,
+            Path(args.external_template),
+        )
+
+    acceptance_report = None
+    acceptance_report_path = None
+    if args.acceptance_report is not None:
+        acceptance_golden_results = [
+            *run_bending_golden_cases(),
+            *run_shear_golden_cases(),
+            *run_design_golden_cases(),
+        ]
+        acceptance_cases = generate_dataset_cases(
+            limit=args.generate_dataset_limit or 100,
+        )
+        acceptance_split = split_dataset_cases(acceptance_cases, group_by="group_key")
+        acceptance_dataset_result = validate_dataset_cases(
+            acceptance_cases,
+            acceptance_split,
+        )
+        acceptance_report = evaluate_acceptance_gates(
+            golden_results=acceptance_golden_results,
+            dataset_validation=acceptance_dataset_result,
+            external_rows=(),
+            max_delta_percent=args.max_delta_percent,
+        )
+        acceptance_report_path = export_acceptance_report_json(
+            acceptance_report,
+            Path(args.acceptance_report),
+        )
+
     golden_passed = all(result.passed for result in golden_results)
     dataset_passed = dataset_result is None or dataset_result.status == "pass"
-    status = "pass" if golden_passed and dataset_passed else "fail"
+    acceptance_passed = (
+        acceptance_report is None or acceptance_report["status"] in ("pass", "warning")
+    )
+    status = "pass" if golden_passed and dataset_passed and acceptance_passed else "fail"
     payload: dict[str, Any] = {
         "command": "validate",
         "status": status,
         "golden": [asdict(result) for result in golden_results],
         "dataset": None if dataset_result is None else asdict(dataset_result),
+        "external_template": (
+            None if external_template_path is None else str(external_template_path)
+        ),
+        "acceptance": acceptance_report,
+        "acceptance_report": (
+            None if acceptance_report_path is None else str(acceptance_report_path)
+        ),
     }
 
     if args.output_report is not None:
@@ -534,6 +587,11 @@ def _handle_validate(args: Namespace) -> int:
         print(f"total_rows: {dataset_result.total_rows}")
         print(f"unsafe_rows_count: {dataset_result.unsafe_rows_count}")
         print(f"group_leakage_count: {dataset_result.group_leakage_count}")
+    if external_template_path is not None:
+        print(f"external_template: {external_template_path}")
+    if acceptance_report is not None:
+        print(f"acceptance: {acceptance_report['status']}")
+        print(f"acceptance_report: {acceptance_report_path}")
     if args.output_report is not None:
         print(f"output_report: {payload['output_report']}")
     return 0

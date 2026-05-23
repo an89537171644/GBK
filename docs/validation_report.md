@@ -110,6 +110,18 @@ This package checks draft golden cases, validates generated datasets, and
 prepares a manual SCAD/LIRA comparison table. It is a readiness step before ML,
 not final certification.
 
+## K10 External Engineering Validation
+
+K10 adds external validation structures:
+
+- `ExternalComparisonRow`;
+- SCAD/LIRA CSV export from dataset program outputs;
+- acceptance gate evaluation;
+- JSON acceptance report export.
+
+Acceptance is `warning` until external comparison rows are manually filled and
+accepted by an engineer. The draft recommended maximum delta is 5%.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

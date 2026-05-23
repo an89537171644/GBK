@@ -68,6 +68,23 @@ entry of SCAD/LIRA values:
 - `lira_Mult`;
 - engineer comments and acceptance.
 
+K10 also provides `build_external_comparison_rows()` and
+`export_external_comparison_csv()` to create a CSV from real dataset program
+outputs.
+
+## Acceptance Gates
+
+`evaluate_acceptance_gates()` combines:
+
+- golden validation status;
+- dataset validation status;
+- optional external SCAD/LIRA rows;
+- `max_delta_percent`, defaulting to `5.0`.
+
+If external rows are not filled yet, the gate returns `warning`. If external
+rows are filled, all accepted flags must be `true` and all filled deltas must be
+within the allowed threshold.
+
 ## Meaning Of Pass/Fail
 
 `pass` means the automated draft checks found no mismatch against the current

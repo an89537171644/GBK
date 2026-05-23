@@ -15,6 +15,8 @@ requires_engineer_review = true
   shuffled limits, group split, and extended dataset reports.
 - K9 validation package for draft golden cases, dataset checks, and SCAD/LIRA
   comparison template.
+- K10 external validation structures and acceptance gates for manual SCAD/LIRA
+  review.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -34,6 +36,8 @@ requires_engineer_review = true
 - Dataset ranges before bulk generation.
 - Dataset reports, group split behavior, and golden cases before ML work.
 - K9 validation reports before any baseline ML training.
+- External SCAD/LIRA comparison rows and acceptance gates before ML is treated
+  as more than experimental.
 
 ## Not Implemented
 
@@ -62,6 +66,9 @@ outputs and manually checking the draft golden cases.
 
 K9 adds automated validation summaries, but this is not certification. The
 outputs still require manual engineering review and external comparison.
+
+K10 adds acceptance gates. A `warning` result means external comparison has not
+been filled yet; this blocks treating ML as engineering-ready.
 
 ## Next Stages
 

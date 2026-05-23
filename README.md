@@ -121,3 +121,18 @@ python -m sp63_core validate --generate-dataset-limit 100 --json
 - Dataset validation checks unsafe rows, stirrup geometry mismatches, duplicate case ids, and group split leakage.
 - `build_scad_lira_comparison_template()` provides a manual comparison template.
 - ML is still not started.
+
+## K10 external validation status
+
+External engineering validation gates are available:
+
+```bash
+python -m sp63_core validate --external-template reports/interim/scad_lira_template.csv
+python -m sp63_core validate --golden --generate-dataset-limit 100 --acceptance-report reports/interim/acceptance_report.json --json
+```
+
+- SCAD/LIRA comparison rows can be exported for manual filling.
+- Acceptance gates check golden validation, dataset validation, external acceptance flags, and filled external deltas.
+- Default recommended delta threshold is `5.0%`.
+- Without filled external comparison, acceptance status is `warning`.
+- ML is still not started.

@@ -285,3 +285,30 @@ def test_cli_validate_generated_dataset_json(capsys):
     assert data["status"] == "pass"
     assert data["dataset"]["total_rows"] == 10
     assert data["dataset"]["group_leakage_count"] == 0
+
+
+def test_cli_validate_external_template_and_acceptance_report(tmp_path, capsys):
+    external_template = tmp_path / "scad_lira_template.csv"
+    acceptance_report = tmp_path / "acceptance_report.json"
+
+    exit_code = main(
+        [
+            "validate",
+            "--golden",
+            "--generate-dataset-limit",
+            "10",
+            "--external-template",
+            str(external_template),
+            "--acceptance-report",
+            str(acceptance_report),
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert external_template.exists()
+    assert acceptance_report.exists()
+    assert data["acceptance"]["status"] == "warning"
+    assert data["acceptance_report"] == str(acceptance_report)
