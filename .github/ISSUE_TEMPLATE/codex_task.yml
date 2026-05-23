@@ -1,0 +1,78 @@
+name: Codex task
+description: Task prepared for Codex automation
+title: "[CODEX] "
+labels: ["codex-ready"]
+body:
+  - type: input
+    id: task_code
+    attributes:
+      label: Task code
+      placeholder: "K14"
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should Codex implement?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included in this task?
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files to create or change
+      description: List expected files.
+    validations:
+      required: true
+
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden changes
+      description: What must not be changed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: formula_source
+    attributes:
+      label: Engineering formula source
+      description: Formula clause/card/source. Do not paste full normative text.
+    validations:
+      required: false
+
+  - type: textarea
+    id: required_tests
+    attributes:
+      label: Required tests
+      description: List pytest, ruff, CLI smoke tests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this task is complete?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engineer_review
+    attributes:
+      label: Requires engineer review
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true

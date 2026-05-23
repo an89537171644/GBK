@@ -28,6 +28,7 @@
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
 | `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
+| `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | experimental baseline sandbox implemented | yes | yes | advisory only; deterministic checks mandatory |
