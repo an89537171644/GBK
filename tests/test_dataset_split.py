@@ -54,3 +54,33 @@ def test_split_dataset_cases_rejects_invalid_ratio_sum():
 
     with pytest.raises(ValueError, match="must sum to 1.0"):
         split_dataset_cases(cases, train_ratio=0.5, validation_ratio=0.2, test_ratio=0.2)
+
+
+def test_group_split_has_no_group_leakage():
+    cases = generate_dataset_cases(limit=60)
+
+    split = split_dataset_cases(cases, seed=42, group_by="group_key")
+
+    train_groups = {case.group_key for case in split.train}
+    validation_groups = {case.group_key for case in split.validation}
+    test_groups = {case.group_key for case in split.test}
+    assert train_groups.isdisjoint(validation_groups)
+    assert train_groups.isdisjoint(test_groups)
+    assert validation_groups.isdisjoint(test_groups)
+
+
+def test_group_split_reproducible():
+    cases = generate_dataset_cases(limit=60)
+
+    split_a = split_dataset_cases(cases, seed=42, group_by="group_key")
+    split_b = split_dataset_cases(cases, seed=42, group_by="group_key")
+
+    assert {case.group_key for case in split_a.train} == {
+        case.group_key for case in split_b.train
+    }
+    assert {case.group_key for case in split_a.validation} == {
+        case.group_key for case in split_b.validation
+    }
+    assert {case.group_key for case in split_a.test} == {
+        case.group_key for case in split_b.test
+    }

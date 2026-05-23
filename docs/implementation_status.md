@@ -13,9 +13,9 @@
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
 | `design/rectangular.py` | implemented draft end-to-end rectangular design | yes | yes | engineer review and CLI integration |
 | `report/protocol.py` | draft | yes | yes | keep protocol structure stable |
-| `dataset/generator.py` | implemented draft with beam-only MVP and expanded columns | yes | yes | engineer review dataset ranges |
-| `dataset/split.py` | implemented | yes | no | keep deterministic split stable |
-| `dataset/report.py` | implemented | yes | no | compare report ranges during dataset review |
+| `dataset/generator.py` | implemented draft with beam-only MVP, expanded columns, stirrup geometry consistency, and shuffled full-grid limit | yes | yes | engineer review dataset ranges |
+| `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
+| `dataset/report.py` | implemented with extended K8 report counters | yes | no | compare report ranges during dataset review |
 | `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |

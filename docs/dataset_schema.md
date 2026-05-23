@@ -16,15 +16,22 @@ logic is not fully implemented yet, so `generate_dataset_cases()` raises
 `ValueError("only beam element_type is supported in dataset MVP")` when any
 non-beam element type is requested.
 
+K8 also requires the geometry stirrup diameter used for `h0` to match the
+selected transverse reinforcement diameter. Dataset generation therefore limits
+transverse selection to `section_stirrup_diameter` and rejects unsupported
+geometry stirrup diameters.
+
 ## Fields
 
 | field | type | units | description |
 |---|---|---|---|
 | `case_id` | str | - | Deterministic case id |
+| `group_key` | str | - | Group identifier for leakage-safe splitting |
 | `element_type` | str | - | `beam` only in MVP |
 | `b` | float | mm | Section width |
 | `h` | float | mm | Section height |
 | `h0` | float | mm | Effective depth from selected longitudinal option section |
+| `geometry_stirrup_diameter` | int | mm | Stirrup diameter used in section geometry and `h0` |
 | `concrete_class` | str | - | Concrete class |
 | `rebar_class` | str | - | Longitudinal reinforcement class |
 | `stirrup_class` | str | - | Transverse reinforcement class |
@@ -58,7 +65,7 @@ non-beam element type is requested.
 | `sp63_core_version` | str | - | Calculation core version |
 | `dataset_version` | str | - | Dataset schema version |
 
-## K7 Dataset Split
+## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions
 with default ratios:
@@ -68,6 +75,11 @@ with default ratios:
 - test: 15%.
 
 The split uses `random.Random(seed)` and does not use ML libraries.
+
+For honest future ML validation, `split_dataset_cases(..., group_by="group_key")`
+splits by unique `group_key` values instead of individual rows. This prevents
+the same geometry/material/load-duration group from appearing in both train and
+validation/test.
 
 `export_dataset_split_csv()` writes:
 
@@ -81,7 +93,12 @@ The split uses `random.Random(seed)` and does not use ML libraries.
 
 - dataset version and total row count;
 - counts by element type, concrete class, rebar class, and stirrup class;
+- counts by selected longitudinal and transverse reinforcement schemes;
 - min/max ranges for geometry, loads, and utilization values;
+- min/max ranges for longitudinal reinforcement ratio and stirrup steel consumption;
+- unique group count;
+- geometry stirrup mismatch count;
+- duplicate case id count;
 - split sizes when a split is passed;
 - `unsafe_rows_count`.
 
@@ -95,6 +112,9 @@ The split uses `random.Random(seed)` and does not use ML libraries.
 - `stirrup_transverse_reinforcement_countable is not True`.
 
 The expected value for generated MVP rows is `unsafe_rows_count = 0`.
+
+The expected K8 value for generated MVP rows is
+`geometry_stirrup_mismatch_count = 0`.
 
 ## ML Note
 

@@ -98,3 +98,12 @@ Each calculation command also supports `--json`.
 - `export_dataset_split_csv()` writes separate train, validation, and test CSV files.
 - `build_dataset_report()` and `export_dataset_report_json()` create a JSON report with ranges, class counts, split sizes, and `unsafe_rows_count`.
 - ML is still not started.
+
+## K8 dataset generation hardening status
+
+- Dataset geometry now keeps `geometry_stirrup_diameter` consistent with the selected `stirrup_diameter`.
+- `limit` is applied after full-grid generation and deterministic shuffle.
+- `--seed` and `--no-shuffle` control dataset ordering.
+- `--group-split` performs train/validation/test split by `group_key` to reduce ML leakage.
+- Dataset reports include group counts, stirrup geometry mismatch counts, duplicate case id counts, and reinforcement scheme counts.
+- ML is still not started.

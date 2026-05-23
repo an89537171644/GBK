@@ -11,6 +11,8 @@ requires_engineer_review = true
 - Longitudinal reinforcement selection with layout and constructive filters.
 - Transverse reinforcement selection with shear and constructive filters.
 - K7 draft warnings for conditions of counting transverse reinforcement in shear.
+- K8 hardened dataset generation with consistent stirrup geometry, deterministic
+  shuffled limits, group split, and extended dataset reports.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -28,6 +30,7 @@ requires_engineer_review = true
 - Constructive limits and edge cases.
 - Reinforcement layout assumptions.
 - Dataset ranges before bulk generation.
+- Dataset reports, group split behavior, and golden cases before ML work.
 
 ## Not Implemented
 
@@ -48,6 +51,11 @@ must be checked by deterministic SP 63 calculation modules.
 K7 strengthens the shear check by reporting draft Qsw-counting conditions. This
 does not make ML acceptable as a final stage; deterministic checks and manual
 engineering review are still required.
+
+K8 makes the dataset pipeline more stable, but it still does not cover cracks,
+deflections, T-sections, columns, slabs, punching, torsion, anchorage, support
+zones, or bar curtailment. ML may begin only after reviewing `dataset_report`
+outputs and manually checking the draft golden cases.
 
 ## Next Stages
 

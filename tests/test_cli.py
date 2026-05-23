@@ -232,3 +232,34 @@ def test_cli_generate_dataset_split_command(tmp_path, capsys):
     assert (tmp_path / "dataset_test_test.csv").exists()
     assert report_path.exists()
     assert "train_rows" in captured.out
+
+
+def test_cli_generate_dataset_split_group_command(tmp_path, capsys):
+    report_path = tmp_path / "report.json"
+
+    exit_code = main(
+        [
+            "generate-dataset",
+            "--limit",
+            "20",
+            "--split",
+            "--group-split",
+            "--seed",
+            "42",
+            "--output-dir",
+            str(tmp_path),
+            "--prefix",
+            "dataset_group",
+            "--report",
+            str(report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert (tmp_path / "dataset_group_train.csv").exists()
+    assert (tmp_path / "dataset_group_validation.csv").exists()
+    assert (tmp_path / "dataset_group_test.csv").exists()
+    assert report_path.exists()
+    assert "unique_group_count" in captured.out
+    assert "unsafe_rows_count" in captured.out

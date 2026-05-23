@@ -22,6 +22,11 @@ def build_dataset_report(
         "counts_by_concrete_class": _counts(cases, "concrete_class"),
         "counts_by_rebar_class": _counts(cases, "rebar_class"),
         "counts_by_stirrup_class": _counts(cases, "stirrup_class"),
+        "unique_group_count": len({case.group_key for case in cases}),
+        "counts_by_main_rebar_scheme": _counts(cases, "main_rebar_scheme"),
+        "counts_by_stirrup_scheme": _counts(cases, "stirrup_scheme"),
+        "geometry_stirrup_mismatch_count": _geometry_stirrup_mismatch_count(cases),
+        "duplicate_case_id_count": _duplicate_case_id_count(cases),
         "unsafe_rows_count": _unsafe_rows_count(cases),
     }
     for field in (
@@ -32,6 +37,8 @@ def build_dataset_report(
         "Q",
         "bending_utilization",
         "shear_utilization",
+        "main_rebar_ratio_percent",
+        "stirrup_steel_consumption",
     ):
         field_range = _min_max(cases, field)
         report[f"min_{field}"] = field_range["min"]
@@ -71,6 +78,19 @@ def _min_max(cases: Sequence[DatasetCase], field: str) -> dict[str, float | None
 
 def _unsafe_rows_count(cases: Sequence[DatasetCase]) -> int:
     return sum(1 for case in cases if _is_unsafe(case))
+
+
+def _geometry_stirrup_mismatch_count(cases: Sequence[DatasetCase]) -> int:
+    return sum(
+        1
+        for case in cases
+        if case.geometry_stirrup_diameter != case.stirrup_diameter
+    )
+
+
+def _duplicate_case_id_count(cases: Sequence[DatasetCase]) -> int:
+    case_id_counts = Counter(case.case_id for case in cases)
+    return sum(count - 1 for count in case_id_counts.values() if count > 1)
 
 
 def _is_unsafe(case: DatasetCase) -> bool:

@@ -73,6 +73,22 @@ The dataset remains draft data. It must be reviewed against engineering
 expectations and representative external calculations before any ML baseline is
 trained or interpreted as useful.
 
+## K8 Dataset Generation Hardening
+
+K8 strengthens dataset generation before any ML work:
+
+- the stirrup diameter used in geometry and `h0` is forced to match the selected
+  transverse reinforcement diameter;
+- unsupported geometry stirrup diameters are rejected;
+- dataset rows are generated from the full valid grid before applying `limit`;
+- `limit` is applied after deterministic shuffle, controlled by `seed`;
+- `group_key` is stored for leakage-safe train/validation/test splitting;
+- dataset reports include group counts, duplicate case id counts, stirrup
+  geometry mismatch counts, and selected reinforcement scheme counts.
+
+No ML baseline should be started before reviewing the dataset report and the
+draft golden cases manually.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

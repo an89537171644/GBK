@@ -5,23 +5,27 @@ No ML model is used here.
 """
 
 import csv
+import random
 from collections.abc import Iterable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
 from sp63_core import __version__
-from sp63_core.materials import LoadDuration, get_concrete, get_rebar
+from sp63_core.materials import STIRRUP_DIAMETERS, LoadDuration, get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 
 DATASET_VERSION = "0.1"
+_FULL_GRID_CACHE: dict[tuple[Any, ...], tuple["DatasetCase", ...]] = {}
 DATASET_COLUMNS: tuple[str, ...] = (
     "case_id",
+    "group_key",
     "element_type",
     "b",
     "h",
     "h0",
+    "geometry_stirrup_diameter",
     "concrete_class",
     "rebar_class",
     "stirrup_class",
@@ -62,10 +66,12 @@ class DatasetCase:
     """One row of the MVP dataset schema."""
 
     case_id: str
+    group_key: str
     element_type: str
     b: float
     h: float
     h0: float
+    geometry_stirrup_diameter: int
     concrete_class: str
     rebar_class: str
     stirrup_class: str
@@ -120,6 +126,8 @@ def generate_dataset_cases(
     load_duration: LoadDuration = "short",
     moments: Iterable[float] = (80_000_000, 120_000_000, 150_000_000, 200_000_000),
     shears: Iterable[float] = (50_000, 80_000, 120_000, 160_000),
+    shuffle: bool = True,
+    seed: int = 42,
 ) -> tuple[DatasetCase, ...]:
     """Generate checked dataset rows following docs/dataset_schema.md.
 
@@ -130,22 +138,93 @@ def generate_dataset_cases(
         raise ValueError("limit must be positive")
 
     normalized_element_types = tuple(element_types)
+    normalized_widths = tuple(widths)
+    normalized_heights = tuple(heights)
+    normalized_concrete_classes = tuple(concrete_classes)
+    normalized_rebar_classes = tuple(rebar_classes)
+    normalized_stirrup_classes = tuple(stirrup_classes)
+    normalized_moments = tuple(moments)
+    normalized_shears = tuple(shears)
     unsupported_element_types = [
         element_type for element_type in normalized_element_types if element_type != "beam"
     ]
     if unsupported_element_types:
         raise ValueError("only beam element_type is supported in dataset MVP")
 
-    rows: list[DatasetCase] = []
+    geometry_stirrup_diameter = _normalize_geometry_stirrup_diameter(
+        section_stirrup_diameter
+    )
 
-    for element_type in normalized_element_types:
+    cache_key = (
+        normalized_element_types,
+        normalized_widths,
+        normalized_heights,
+        cover,
+        geometry_stirrup_diameter,
+        section_main_bar_diameter,
+        normalized_concrete_classes,
+        normalized_rebar_classes,
+        normalized_stirrup_classes,
+        load_duration,
+        normalized_moments,
+        normalized_shears,
+    )
+    cached_rows = _FULL_GRID_CACHE.get(cache_key)
+    if cached_rows is None:
+        all_rows = _build_full_grid_rows(
+            element_types=normalized_element_types,
+            widths=normalized_widths,
+            heights=normalized_heights,
+            cover=cover,
+            geometry_stirrup_diameter=geometry_stirrup_diameter,
+            section_main_bar_diameter=section_main_bar_diameter,
+            concrete_classes=normalized_concrete_classes,
+            rebar_classes=normalized_rebar_classes,
+            stirrup_classes=normalized_stirrup_classes,
+            load_duration=load_duration,
+            moments=normalized_moments,
+            shears=normalized_shears,
+        )
+        _FULL_GRID_CACHE[cache_key] = tuple(all_rows)
+    else:
+        all_rows = list(cached_rows)
+
+    if shuffle:
+        random.Random(seed).shuffle(all_rows)
+
+    selected_rows = all_rows[:limit]
+    return tuple(
+        replace(row, case_id=f"case_{index:06d}")
+        for index, row in enumerate(selected_rows, start=1)
+    )
+
+
+def _build_full_grid_rows(
+    *,
+    element_types: tuple[str, ...],
+    widths: tuple[float, ...],
+    heights: tuple[float, ...],
+    cover: float,
+    geometry_stirrup_diameter: int,
+    section_main_bar_diameter: float,
+    concrete_classes: tuple[str, ...],
+    rebar_classes: tuple[str, ...],
+    stirrup_classes: tuple[str, ...],
+    load_duration: LoadDuration,
+    moments: tuple[float, ...],
+    shears: tuple[float, ...],
+) -> list[DatasetCase]:
+    all_rows: list[DatasetCase] = []
+    longitudinal_cache: dict[tuple[Any, ...], Any] = {}
+    transverse_cache: dict[tuple[Any, ...], Any] = {}
+    for element_type in element_types:
         for b in widths:
             for h in heights:
                 section = RectangularSection(
                     b=b,
                     h=h,
                     cover=cover,
-                    stirrup_diameter=section_stirrup_diameter,
+                    stirrup_diameter=geometry_stirrup_diameter,
                     main_bar_diameter=section_main_bar_diameter,
                 )
                 for concrete_class in concrete_classes:
@@ -155,26 +234,56 @@ def generate_dataset_cases(
                         for stirrup_class in stirrup_classes:
                             stirrup_rebar = get_rebar(stirrup_class)
                             for M in moments:
-                                options = select_longitudinal_rebar(
-                                    section=section,
-                                    concrete=concrete,
-                                    rebar=rebar,
-                                    M=M,
-                                    max_results=1,
-                                    load_duration=load_duration,
+                                longitudinal_key = (
+                                    b,
+                                    h,
+                                    cover,
+                                    geometry_stirrup_diameter,
+                                    section_main_bar_diameter,
+                                    concrete_class,
+                                    rebar_class,
+                                    load_duration,
+                                    M,
                                 )
+                                options = longitudinal_cache.get(longitudinal_key)
+                                if options is None:
+                                    options = select_longitudinal_rebar(
+                                        section=section,
+                                        concrete=concrete,
+                                        rebar=rebar,
+                                        M=M,
+                                        max_results=1,
+                                        load_duration=load_duration,
+                                    )
+                                    longitudinal_cache[longitudinal_key] = options
                                 if not options:
                                     continue
 
                                 option = options[0]
                                 for Q in shears:
-                                    transverse_options = select_transverse_rebar(
-                                        section=option.section,
-                                        concrete=concrete,
-                                        stirrup_rebar=stirrup_rebar,
-                                        Q=Q,
-                                        max_results=1,
+                                    transverse_key = (
+                                        option.section.b,
+                                        option.section.h,
+                                        option.section.cover,
+                                        option.section.stirrup_diameter,
+                                        option.section.main_bar_diameter,
+                                        option.section.compression_bar_diameter,
+                                        concrete_class,
+                                        stirrup_class,
+                                        Q,
+                                        geometry_stirrup_diameter,
                                     )
+                                    transverse_options = transverse_cache.get(transverse_key)
+                                    if transverse_options is None:
+                                        transverse_options = select_transverse_rebar(
+                                            section=option.section,
+                                            concrete=concrete,
+                                            stirrup_rebar=stirrup_rebar,
+                                            Q=Q,
+                                            diameters=(geometry_stirrup_diameter,),
+                                            max_results=1,
+                                        )
+                                        transverse_cache[transverse_key] = transverse_options
                                     if not transverse_options:
                                         continue
                                     transverse_option = transverse_options[0]
@@ -188,14 +297,26 @@ def generate_dataset_cases(
                                         transverse_option.shear.intermediate_values
                                     )
 
-                                    case_id = f"case_{len(rows) + 1:06d}"
-                                    rows.append(
+                                    group_key = _build_group_key(
+                                        element_type=element_type,
+                                        b=b,
+                                        h=h,
+                                        concrete_class=concrete_class,
+                                        rebar_class=rebar_class,
+                                        stirrup_class=stirrup_class,
+                                        load_duration=load_duration,
+                                    )
+                                    all_rows.append(
                                         DatasetCase(
-                                            case_id=case_id,
+                                            case_id="pending",
+                                            group_key=group_key,
                                             element_type=element_type,
                                             b=b,
                                             h=h,
                                             h0=option.section.effective_depth(),
+                                            geometry_stirrup_diameter=(
+                                                geometry_stirrup_diameter
+                                            ),
                                             concrete_class=concrete_class,
                                             rebar_class=rebar_class,
                                             stirrup_class=stirrup_class,
@@ -248,10 +369,7 @@ def generate_dataset_cases(
                                             dataset_version=DATASET_VERSION,
                                         )
                                     )
-                                    if len(rows) >= limit:
-                                        return tuple(rows)
-
-    return tuple(rows)
+    return all_rows
 
 
 def export_dataset_csv(
@@ -270,3 +388,32 @@ def export_dataset_csv(
             writer.writerow({column: row[column] for column in DATASET_COLUMNS})
 
     return output_path
+
+
+def _normalize_geometry_stirrup_diameter(section_stirrup_diameter: float) -> int:
+    diameter = int(section_stirrup_diameter)
+    if (
+        float(section_stirrup_diameter) != float(diameter)
+        or diameter not in STIRRUP_DIAMETERS
+    ):
+        raise ValueError(
+            "section_stirrup_diameter must be one of supported stirrup diameters "
+            "for dataset MVP"
+        )
+    return diameter
+
+
+def _build_group_key(
+    *,
+    element_type: str,
+    b: float,
+    h: float,
+    concrete_class: str,
+    rebar_class: str,
+    stirrup_class: str,
+    load_duration: str,
+) -> str:
+    return (
+        f"{element_type}|b={b}|h={h}|concrete={concrete_class}|rebar={rebar_class}|"
+        f"stirrup={stirrup_class}|duration={load_duration}"
+    )

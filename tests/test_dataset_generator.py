@@ -11,7 +11,9 @@ def test_generate_dataset_cases_matches_schema_and_uses_safe_results():
     assert len(cases) == 5
     assert cases[0].case_id == "case_000001"
     assert tuple(cases[0].as_row()) == DATASET_COLUMNS
+    assert all(case.group_key for case in cases)
     assert all(case.element_type == "beam" for case in cases)
+    assert all(case.geometry_stirrup_diameter == 8 for case in cases)
     assert all(case.status == "pass" for case in cases)
     assert all(case.As_required == pytest.approx(case.As_provided) for case in cases)
     assert all(case.bending_utilization <= 1.0 for case in cases)
@@ -63,6 +65,43 @@ def test_generate_dataset_cases_rejects_unsupported_element_type():
         generate_dataset_cases(limit=1, element_types=("slab",))
 
 
+def test_generate_dataset_cases_geometry_stirrup_matches_selected_stirrup():
+    cases = generate_dataset_cases(limit=10)
+
+    assert all(case.geometry_stirrup_diameter == case.stirrup_diameter for case in cases)
+
+
+def test_generate_dataset_cases_rejects_unsupported_geometry_stirrup_diameter():
+    with pytest.raises(ValueError, match="section_stirrup_diameter must be one of supported"):
+        generate_dataset_cases(limit=1, section_stirrup_diameter=7)
+
+
+def test_generate_dataset_cases_shuffle_reproducible():
+    cases_a = generate_dataset_cases(limit=20, seed=42)
+    cases_b = generate_dataset_cases(limit=20, seed=42)
+
+    assert [_case_signature(case) for case in cases_a] == [
+        _case_signature(case) for case in cases_b
+    ]
+
+
+def test_generate_dataset_cases_shuffle_changes_order_for_different_seed():
+    cases_a = generate_dataset_cases(limit=20, seed=42)
+    cases_b = generate_dataset_cases(limit=20, seed=43)
+
+    assert [_case_signature(case) for case in cases_a] != [
+        _case_signature(case) for case in cases_b
+    ]
+
+
+def test_generate_dataset_cases_assigns_case_ids_after_selection():
+    cases = generate_dataset_cases(limit=7)
+
+    assert [case.case_id for case in cases] == [
+        f"case_{index:06d}" for index in range(1, 8)
+    ]
+
+
 def test_export_dataset_csv(tmp_path):
     cases = generate_dataset_cases(limit=2)
     output_path = export_dataset_csv(cases, tmp_path / "generated" / "dataset.csv")
@@ -75,3 +114,13 @@ def test_export_dataset_csv(tmp_path):
     assert len(rows) == 2
     assert rows[0]["case_id"] == "case_000001"
     assert rows[0]["status"] == "pass"
+
+
+def _case_signature(case) -> tuple[object, ...]:
+    return (
+        case.group_key,
+        case.M,
+        case.Q,
+        case.main_rebar_scheme,
+        case.stirrup_scheme,
+    )

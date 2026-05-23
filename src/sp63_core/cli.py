@@ -85,6 +85,9 @@ def build_parser() -> ArgumentParser:
     dataset.add_argument("--output-dir", default="data/generated")
     dataset.add_argument("--prefix", default="dataset_v001")
     dataset.add_argument("--report")
+    dataset.add_argument("--seed", type=int, default=42)
+    dataset.add_argument("--no-shuffle", action="store_true", help="preserve full-grid order")
+    dataset.add_argument("--group-split", action="store_true", help="split by dataset group_key")
     dataset.add_argument("--load-duration", choices=("short", "long"), default="short")
     dataset.add_argument("--json", action="store_true", help="print JSON output")
     dataset.set_defaults(handler=_handle_generate_dataset)
@@ -378,9 +381,18 @@ def _handle_design_rectangular(args: Namespace) -> int:
 
 
 def _handle_generate_dataset(args: Namespace) -> int:
-    cases = generate_dataset_cases(limit=args.limit, load_duration=args.load_duration)
+    cases = generate_dataset_cases(
+        limit=args.limit,
+        load_duration=args.load_duration,
+        shuffle=not args.no_shuffle,
+        seed=args.seed,
+    )
     if args.split:
-        split = split_dataset_cases(cases)
+        split = split_dataset_cases(
+            cases,
+            seed=args.seed,
+            group_by="group_key" if args.group_split else None,
+        )
         output_paths = export_dataset_split_csv(
             split,
             Path(args.output_dir),
@@ -401,6 +413,9 @@ def _handle_generate_dataset(args: Namespace) -> int:
             "output_files": {name: str(path) for name, path in output_paths.items()},
             "report_path": str(report_path),
             "dataset_version": DATASET_VERSION,
+            "unique_group_count": report["unique_group_count"],
+            "geometry_stirrup_mismatch_count": report["geometry_stirrup_mismatch_count"],
+            "unsafe_rows_count": report["unsafe_rows_count"],
         }
         if args.json:
             print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
@@ -414,6 +429,12 @@ def _handle_generate_dataset(args: Namespace) -> int:
         for split_name, path in output_paths.items():
             print(f"{split_name}: {path}")
         print(f"report: {report_path}")
+        print(f"unique_group_count: {payload['unique_group_count']}")
+        print(
+            "geometry_stirrup_mismatch_count: "
+            f"{payload['geometry_stirrup_mismatch_count']}"
+        )
+        print(f"unsafe_rows_count: {payload['unsafe_rows_count']}")
         print(f"dataset_version: {DATASET_VERSION}")
         return 0
 

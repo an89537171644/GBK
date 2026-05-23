@@ -14,6 +14,11 @@ def test_build_dataset_report_contains_core_counts():
 
     assert report["total_rows"] == 10
     assert report["unsafe_rows_count"] == 0
+    assert report["unique_group_count"] > 0
+    assert report["geometry_stirrup_mismatch_count"] == 0
+    assert report["duplicate_case_id_count"] == 0
+    assert report["counts_by_main_rebar_scheme"]
+    assert report["counts_by_stirrup_scheme"]
     assert "counts_by_concrete_class" in report
     assert report["counts_by_element_type"] == {"beam": 10}
     assert report["min_b"] <= report["max_b"]
