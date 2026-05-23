@@ -26,6 +26,7 @@ def test_normal_crack_formation_no_crack():
     assert result.Mcrc == pytest.approx(19_375_000)
     assert result.status == "no_crack"
     assert result.utilization < 1
+    assert result.requires_engineer_review is True
 
 
 def test_normal_crack_formation_crack():
@@ -37,6 +38,7 @@ def test_normal_crack_formation_crack():
 
     assert result.status == "crack"
     assert result.utilization > 1
+    assert result.intermediate_values["transformed_section_used"] is False
     assert any("crack width check is required" in warning for warning in result.warnings)
 
 

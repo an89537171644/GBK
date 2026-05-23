@@ -206,6 +206,7 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - CLI command `crack-formation` is available.
 - The check uses concrete service tensile resistance `Rbtser`.
 - The current draft uses a gross elastic concrete section.
+- `requires_engineer_review = true` is kept for the draft serviceability result.
 - Crack width `acrc` is not implemented.
 - Deflection checks are not implemented.
 

@@ -1,6 +1,8 @@
-# SP63 normal crack formation for rectangular section
+# SP63 8.2 normal crack formation for rectangular section
 
 requires_engineer_review = true
+
+Clause reference: SP 63 section 8.2, normal crack formation.
 
 ## Purpose
 
@@ -13,7 +15,7 @@ Draft-MVP check for normal crack formation in a rectangular reinforced concrete 
 - no axial force;
 - no prestress;
 - heavy concrete B15-B40;
-- service limit-state material properties Rbtser and Eb;
+- service limit-state concrete tensile resistance Rbtser;
 - normal cracks only.
 
 ## Units
