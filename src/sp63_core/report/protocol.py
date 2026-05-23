@@ -82,6 +82,7 @@ def _overall_status(checks: Mapping[str, Mapping[str, Any]]) -> ProtocolStatus:
     statuses = [check.get("status") for check in checks.values()]
     if "review_or_fail" in statuses:
         return "review_or_fail"
-    if all(status == "pass" for status in statuses):
+    pass_like_statuses = {"pass", "no_crack", "crack"}
+    if all(status in pass_like_statuses for status in statuses):
         return "pass"
     return "fail"

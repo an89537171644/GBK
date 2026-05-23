@@ -8,6 +8,7 @@
 | `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
 | `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
 | `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |
+| `checks/cracking.py` | implemented draft normal crack formation check | yes | yes | crack width check acrc |
 | `rebar/constructive.py` | implemented draft constructive checks | yes | yes | engineer review |
 | `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |

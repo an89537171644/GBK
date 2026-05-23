@@ -2,6 +2,10 @@
 
 from dataclasses import dataclass
 
+from sp63_core.checks import (
+    CrackFormationResult,
+    check_normal_crack_formation_rectangular,
+)
 from sp63_core.materials import (
     LONGITUDINAL_DIAMETERS,
     STIRRUP_DIAMETERS,
@@ -45,6 +49,8 @@ class RectangularDesignInput:
     max_longitudinal_options: int = 5
     max_transverse_options: int = 5
     min_clear_spacing: float = 25.0
+    Mser: float | None = None
+    check_cracks: bool = False
 
 
 @dataclass(frozen=True)
@@ -60,6 +66,7 @@ class RectangularDesignResult:
     selected_longitudinal: LongitudinalRebarOption | None
     transverse_options: tuple[TransverseRebarOption, ...]
     selected_transverse: TransverseRebarOption | None
+    crack_formation: CrackFormationResult | None
     protocol: CalculationProtocol | None
     status: str
     warnings: tuple[str, ...]
@@ -101,6 +108,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             selected_longitudinal=None,
             transverse_options=(),
             selected_transverse=None,
+            crack_formation=None,
             protocol=None,
             status="fail",
             warnings=("no passing longitudinal reinforcement options",),
@@ -128,6 +136,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             selected_longitudinal=selected_longitudinal,
             transverse_options=(),
             selected_transverse=None,
+            crack_formation=None,
             protocol=None,
             status="fail",
             warnings=(
@@ -137,13 +146,31 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         )
 
     selected_transverse = transverse_options[0]
+    service_moment = input_data.M if input_data.Mser is None else input_data.Mser
+    crack_formation = None
+    if input_data.check_cracks:
+        crack_formation = check_normal_crack_formation_rectangular(
+            section=selected_longitudinal.section,
+            concrete=concrete,
+            Mser=service_moment,
+        )
+
     longitudinal_constructive_values = selected_longitudinal.constructive.intermediate_values
     constructive_values = selected_transverse.constructive.intermediate_values
     shear_values = selected_transverse.shear.intermediate_values
+    checks = {
+        "bending": selected_longitudinal.bending,
+        "shear": selected_transverse.shear,
+    }
+    if crack_formation is not None:
+        checks["crack_formation"] = crack_formation
+
     protocol = build_calculation_protocol(
         input_data={
             "M": input_data.M,
             "Q": input_data.Q,
+            "Mser": service_moment if input_data.check_cracks else input_data.Mser,
+            "check_cracks": input_data.check_cracks,
             "load_duration": input_data.load_duration,
         },
         materials={
@@ -178,17 +205,20 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
                 "transverse_reinforcement_countable"
             ],
         },
-        checks={
-            "bending": selected_longitudinal.bending,
-            "shear": selected_transverse.shear,
-        },
+        checks=checks,
     )
-    status = "pass" if protocol.status == "pass" else protocol.status
-    warnings = (
+    strength_passed = (
+        selected_longitudinal.bending.status == "pass"
+        and selected_transverse.shear.status == "pass"
+    )
+    status = "pass" if strength_passed else protocol.status
+    warnings = [
         *selected_longitudinal.warnings,
         *selected_transverse.warnings,
         *protocol.warnings,
-    )
+    ]
+    if crack_formation is not None and crack_formation.status == "crack":
+        warnings.append("normal cracks are expected; crack width check is required")
 
     return RectangularDesignResult(
         input_data=input_data,
@@ -200,7 +230,8 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         selected_longitudinal=selected_longitudinal,
         transverse_options=transverse_options,
         selected_transverse=selected_transverse,
+        crack_formation=crack_formation,
         protocol=protocol,
         status=status,
-        warnings=warnings,
+        warnings=tuple(warnings),
     )

@@ -1,6 +1,7 @@
 from sp63_core.validation import (
     GoldenCaseResult,
     run_bending_golden_cases,
+    run_crack_formation_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
 )
@@ -23,6 +24,13 @@ def test_shear_golden_case_passes():
 
 def test_design_golden_case_passes():
     results = run_design_golden_cases()
+
+    assert results
+    assert all(result.passed for result in results)
+
+
+def test_crack_formation_golden_case_passes():
+    results = run_crack_formation_golden_cases()
 
     assert results
     assert all(result.passed for result in results)

@@ -3,7 +3,11 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
+from sp63_core.checks import (
+    check_bending_rectangular,
+    check_normal_crack_formation_rectangular,
+    check_shear_rectangular,
+)
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
 from sp63_core.sections import RectangularSection
@@ -180,6 +184,38 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
             },
             tolerances={},
             warnings=design.warnings,
+        ),
+    )
+
+
+def run_crack_formation_golden_cases() -> tuple[GoldenCaseResult, ...]:
+    """Run draft normal crack formation golden cases."""
+    crack = check_normal_crack_formation_rectangular(
+        section=_golden_section(),
+        concrete=get_concrete("B25"),
+        Mser=30_000_000,
+    )
+    return (
+        _build_result(
+            case_id="crack_formation_rectangular_case_01",
+            expected={
+                "W": 12_500_000.0,
+                "Mcrc": 19_375_000.0,
+                "utilization": 30_000_000 / 19_375_000,
+                "calculation_status": "crack",
+            },
+            actual={
+                "W": crack.intermediate_values["W"],
+                "Mcrc": crack.Mcrc,
+                "utilization": crack.utilization,
+                "calculation_status": crack.status,
+            },
+            tolerances={
+                "W": 1.0,
+                "Mcrc": 1.0,
+                "utilization": 0.001,
+            },
+            warnings=crack.warnings,
         ),
     )
 

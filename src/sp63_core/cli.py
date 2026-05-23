@@ -6,7 +6,11 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
+from sp63_core.checks import (
+    check_bending_rectangular,
+    check_normal_crack_formation_rectangular,
+    check_shear_rectangular,
+)
 from sp63_core.dataset import (
     DATASET_COLUMNS,
     DATASET_VERSION,
@@ -38,6 +42,7 @@ from sp63_core.validation import (
     export_external_comparison_with_deltas_csv,
     load_external_comparison_csv,
     run_bending_golden_cases,
+    run_crack_formation_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
     validate_dataset_cases,
@@ -72,6 +77,21 @@ def build_parser() -> ArgumentParser:
     shear.add_argument("--sw", type=float, required=True, help="stirrup spacing, mm")
     shear.add_argument("--json", action="store_true", help="print JSON output")
     shear.set_defaults(handler=_handle_shear)
+
+    cracking = subparsers.add_parser(
+        "crack-formation",
+        help="check normal crack formation for a rectangular section",
+    )
+    _add_section_arguments(cracking)
+    _add_material_arguments(cracking)
+    cracking.add_argument(
+        "--moment-ser",
+        type=float,
+        required=True,
+        help="service bending moment, N*mm",
+    )
+    cracking.add_argument("--json", action="store_true", help="print JSON output")
+    cracking.set_defaults(handler=_handle_crack_formation)
 
     longitudinal = subparsers.add_parser(
         "select-longitudinal", help="select longitudinal reinforcement"
@@ -208,6 +228,8 @@ def _add_design_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--stirrup-rebar", required=True, help="stirrup reinforcement class")
     parser.add_argument("--moment", type=float, required=True, help="bending moment, N*mm")
     parser.add_argument("--shear", type=float, required=True, help="shear force, N")
+    parser.add_argument("--moment-ser", type=float, default=None, help="service moment, N*mm")
+    parser.add_argument("--check-cracks", action="store_true", help="run Mcrc crack check")
     parser.add_argument("--load-duration", choices=("short", "long"), default="short")
 
 
@@ -305,6 +327,36 @@ def _handle_shear(args: Namespace) -> int:
     return 0
 
 
+def _handle_crack_formation(args: Namespace) -> int:
+    section = _section_from_args(args)
+    concrete = get_concrete(args.concrete)
+    crack = check_normal_crack_formation_rectangular(
+        section=section,
+        concrete=concrete,
+        Mser=args.moment_ser,
+    )
+    result = {
+        "Mser": crack.Mser,
+        "Mcrc": crack.Mcrc,
+        "utilization": crack.utilization,
+        "W": crack.intermediate_values["W"],
+        "Rbtser": crack.intermediate_values["Rbtser"],
+    }
+    if args.json:
+        _print_json("crack-formation", crack.status, result, crack.warnings)
+        return 0
+
+    print("Crack formation")
+    print(f"status: {crack.status}")
+    print(f"Mser: {crack.Mser:.2f} N*mm")
+    print(f"Mcrc: {crack.Mcrc:.2f} N*mm")
+    print(f"utilization: {crack.utilization:.3f}")
+    print(f"W: {crack.intermediate_values['W']:.2f} mm3")
+    print(f"Rbtser: {crack.intermediate_values['Rbtser']:.3f} MPa")
+    _print_warnings(crack.warnings)
+    return 0
+
+
 def _handle_select_longitudinal(args: Namespace) -> int:
     section = _section_from_args(args)
     concrete = get_concrete(args.concrete)
@@ -392,6 +444,8 @@ def _handle_design_rectangular(args: Namespace) -> int:
         M=args.moment,
         Q=args.shear,
         load_duration=args.load_duration,
+        Mser=args.moment_ser,
+        check_cracks=args.check_cracks,
     )
     design = design_rectangular_element(design_input)
     result = _design_result_to_dict(design)
@@ -433,6 +487,11 @@ def _handle_design_rectangular(args: Namespace) -> int:
             "stirrup transverse_reinforcement_countable: "
             f"{transverse.shear.intermediate_values['transverse_reinforcement_countable']}"
         )
+    if design.crack_formation is not None:
+        crack = design.crack_formation
+        print(f"crack_formation_status: {crack.status}")
+        print(f"Mcrc: {crack.Mcrc:.2f} N*mm")
+        print(f"crack_utilization: {crack.utilization:.3f}")
     _print_warnings(design.warnings)
     return 0
 
@@ -527,6 +586,7 @@ def _handle_validate(args: Namespace) -> int:
         golden_results = [
             *run_bending_golden_cases(),
             *run_shear_golden_cases(),
+            *run_crack_formation_golden_cases(),
             *run_design_golden_cases(),
         ]
 
@@ -570,6 +630,7 @@ def _handle_validate(args: Namespace) -> int:
         acceptance_golden_results = [
             *run_bending_golden_cases(),
             *run_shear_golden_cases(),
+            *run_crack_formation_golden_cases(),
             *run_design_golden_cases(),
         ]
         acceptance_cases = generate_dataset_cases(
@@ -845,7 +906,24 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
             if design.selected_transverse is None
             else _transverse_option_to_dict(design.selected_transverse)
         ),
+        "crack_formation": (
+            None
+            if design.crack_formation is None
+            else _crack_formation_to_dict(design.crack_formation)
+        ),
         "protocol_status": None if design.protocol is None else design.protocol.status,
+    }
+
+
+def _crack_formation_to_dict(crack: Any) -> dict[str, Any]:
+    return {
+        "Mser": crack.Mser,
+        "Mcrc": crack.Mcrc,
+        "utilization": crack.utilization,
+        "status": crack.status,
+        "W": crack.intermediate_values["W"],
+        "Rbtser": crack.intermediate_values["Rbtser"],
+        "warnings": list(crack.warnings),
     }
 
 

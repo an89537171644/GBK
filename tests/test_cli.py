@@ -67,6 +67,45 @@ def test_cli_shear_command_text_output(capsys):
     assert "status: pass" in captured.out
 
 
+def test_cli_crack_formation_text_output(capsys):
+    exit_code = main(
+        [
+            "crack-formation",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--moment-ser",
+            "30000000",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Crack formation" in captured.out
+    assert "Mcrc" in captured.out
+
+
+def test_cli_crack_formation_json_output(capsys):
+    exit_code = main(
+        [
+            "crack-formation",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--moment-ser",
+            "30000000",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "crack-formation"
+    assert data["status"] == "crack"
+    assert "Mcrc" in data["result"]
+
+
 def test_cli_select_longitudinal_command_text_output(capsys):
     exit_code = main(
         [
@@ -147,6 +186,40 @@ def test_cli_design_rectangular_command_text_output(capsys):
     assert "constructive" in captured.out
     assert "max_spacing" in captured.out
     assert "reinforcement ratio" in captured.out
+
+
+def test_cli_design_rectangular_with_cracks(capsys):
+    exit_code = main(
+        [
+            "design-rectangular",
+            "--b",
+            "300",
+            "--h",
+            "500",
+            "--cover",
+            "32",
+            "--stirrup-diameter",
+            "8",
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--stirrup-rebar",
+            "A240",
+            "--moment",
+            "150000000",
+            "--shear",
+            "80000",
+            "--check-cracks",
+            "--moment-ser",
+            "30000000",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Rectangular design" in captured.out
+    assert "crack_formation" in captured.out
 
 
 def test_cli_design_rectangular_json_output(capsys):

@@ -177,8 +177,19 @@ K13 adds concrete service properties `Rbser` and `Rbtser` for heavy concrete
 B15-B40. These values must be reviewed against SP 63 tables before future Mcrc
 golden cases are created.
 
-The current automated validation still covers the strength MVP only. Crack
-formation, crack width, and deflection checks are not implemented yet.
+The K13 automated validation still covers the strength MVP only. Crack
+formation, crack width, and deflection checks are not implemented in K13.
+
+## K14 Normal Crack Formation Validation
+
+K14 adds a draft golden case for normal crack formation in a rectangular beam:
+B25 concrete, b = 300 mm, h = 500 mm, Mser = 30,000,000 N*mm. The expected
+gross-section values are W = 12,500,000 mm3 and Mcrc = 19,375,000 N*mm.
+
+This validation covers normal crack formation only. Crack width `acrc`,
+deflection, transformed section behavior, long-term effects, prestress, axial
+force, slabs, T-sections, and nonlinear deformation checks are still outside
+the implemented scope.
 
 ## Conclusion
 

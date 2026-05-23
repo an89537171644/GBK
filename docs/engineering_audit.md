@@ -52,7 +52,8 @@ requires_engineer_review = true
 
 ## Not Implemented
 
-- Serviceability limit states, including cracks and deflections.
+- Crack width, deflections, and other serviceability checks beyond draft normal
+  crack formation.
 - T-sections, columns, punching, torsion, prestress, anchorage, support zones,
   and bar curtailment.
 - HTML/PDF protocol rendering.
@@ -108,8 +109,20 @@ properties prepare the core for future second limit-state checks such as normal
 crack formation and deflection calculations.
 
 Crack checks and deflection checks are not implemented in K13. ML is not trained
-on serviceability data, and the current validation still covers the strength MVP
+on serviceability data, and the K13 validation still covers the strength MVP
 only.
+
+## K14 Normal Crack Formation
+
+K14 adds the first draft serviceability check: normal crack formation `Mcrc` for
+rectangular reinforced concrete beams. The implementation uses `Rbtser` and a
+gross elastic concrete section.
+
+This is not a crack width or deflection check. It does not include transformed
+section behavior, long-term effects, axial force, prestress, slabs, T-sections,
+or nonlinear deformation modeling. The result is a draft-MVP signal that crack
+width `acrc` must be checked in a later deterministic step when normal cracks
+are expected.
 
 ## Next Stages
 

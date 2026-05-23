@@ -195,6 +195,16 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 ## K13 service material properties status
 
 - Concrete catalog now includes `Rbser` and `Rbtser`.
-- Serviceability checks are not implemented yet.
-- Crack formation and deflection calculations are not implemented yet.
-- Next planned serviceability step is normal crack formation `Mcrc`.
+- Serviceability material properties are available for future checks.
+- K14 adds the first draft normal crack formation check.
+- Crack width and deflection calculations are not implemented yet.
+
+## K14 normal crack formation status
+
+- `check_normal_crack_formation_rectangular()` is available for draft normal
+  crack formation checks in rectangular beams.
+- CLI command `crack-formation` is available.
+- The check uses concrete service tensile resistance `Rbtser`.
+- The current draft uses a gross elastic concrete section.
+- Crack width `acrc` is not implemented.
+- Deflection checks are not implemented.

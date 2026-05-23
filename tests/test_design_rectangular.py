@@ -81,3 +81,16 @@ def test_design_rectangular_forwards_load_duration():
 
     assert result.selected_longitudinal is not None
     assert result.selected_longitudinal.bending.intermediate_values["load_duration"] == "long"
+
+
+def test_design_rectangular_with_crack_check():
+    result = design_rectangular_element(
+        mvp_input(check_cracks=True, Mser=30_000_000)
+    )
+
+    assert result.status == "pass"
+    assert result.crack_formation is not None
+    assert result.crack_formation.status == "crack"
+    assert result.protocol is not None
+    assert "crack_formation" in result.protocol.checks
+    assert any("crack width check is required" in warning for warning in result.warnings)
