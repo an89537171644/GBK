@@ -182,6 +182,21 @@ K19 does not change calculation formulas, ML modules, dataset generation, or
 external validation gates. ML remains advisory-only and deterministic SP 63
 checks remain mandatory.
 
+## K20 Manual SP63 Verification Cases
+
+K20 adds six manual verification cases as a repeatable check against the
+deterministic draft calculation core. The cases cover a passing beam, bending
+failure, crack-formation review without crack width, crack-width failure,
+deflection failure, and shear failure.
+
+The verification package compares program values with manual expected values
+using documented tolerances and checks separated `strength_status`,
+`serviceability_status`, and `overall_status` values.
+
+K20 does not change calculation formulas, material values, ML modules, dataset
+generation, or external validation. The cases are draft verification material
+and still require engineer review.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

@@ -257,6 +257,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   normative values as final design data.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K20 manual SP63 verification cases status
+
+- CLI command `manual-cases` is available for running six manual verification
+  cases against the deterministic calculation core.
+- The cases cover passing strength/serviceability, bending failure,
+  crack-formation review, crack-width failure, deflection failure, and shear
+  failure.
+- The command compares program values with manual expected values using
+  documented tolerances and checks `strength_status`, `serviceability_status`,
+  and `overall_status`.
+- These cases are draft verification checks and require engineer review.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
