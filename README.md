@@ -207,8 +207,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - The check uses concrete service tensile resistance `Rbtser`.
 - The current draft uses a gross elastic concrete section.
 - `requires_engineer_review = true` is kept for the draft serviceability result.
-- Crack width `acrc` is not implemented.
+- K15 adds the first draft crack width `acrc` check.
 - Deflection checks are not implemented.
+
+## K15 normal crack width status
+
+- `check_normal_crack_width_rectangular()` is available for draft normal crack
+  width checks in rectangular beams.
+- CLI command `crack-width` is available.
+- `design-rectangular` supports `--check-crack-width` and `--acrc-limit`.
+- The result is draft and keeps `requires_engineer_review = true`.
+- Refined crack spacing, tension stiffening, transformed section behavior, and
+  long-term effects are not implemented.
+- Deflection is not implemented.
 
 ## Codex automation workflow
 

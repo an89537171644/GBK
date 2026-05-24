@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from sp63_core.checks import (
     check_bending_rectangular,
     check_normal_crack_formation_rectangular,
+    check_normal_crack_width_rectangular,
     check_shear_rectangular,
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
@@ -216,6 +217,64 @@ def run_crack_formation_golden_cases() -> tuple[GoldenCaseResult, ...]:
                 "utilization": 0.001,
             },
             warnings=crack.warnings,
+        ),
+    )
+
+
+def run_crack_width_golden_cases() -> tuple[GoldenCaseResult, ...]:
+    """Run draft normal crack width golden cases."""
+    section = _golden_section()
+    concrete = get_concrete("B25")
+    rebar = get_rebar("A500")
+    Mser = 30_000_000.0
+    As = 942.48
+    acrc_limit = 0.3
+    crack_width = check_normal_crack_width_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        Mser=Mser,
+        As=As,
+        main_bar_diameter=20,
+        acrc_limit=acrc_limit,
+    )
+    h0 = section.effective_depth()
+    z = 0.9 * h0
+    sigma_s = Mser / (As * z)
+    epsilon_s = sigma_s / rebar.Es
+    rho_eff = As / (section.b * h0)
+    crack_spacing = min(max(0.5 * 20 / rho_eff, 100.0), 400.0)
+    acrc = epsilon_s * crack_spacing
+    return (
+        _build_result(
+            case_id="crack_width_rectangular_case_01",
+            expected={
+                "z": z,
+                "sigma_s": sigma_s,
+                "epsilon_s": epsilon_s,
+                "rho_eff": rho_eff,
+                "crack_spacing": crack_spacing,
+                "acrc": acrc,
+                "calculation_status": "pass" if acrc <= acrc_limit else "fail",
+            },
+            actual={
+                "z": crack_width.intermediate_values["z"],
+                "sigma_s": crack_width.sigma_s,
+                "epsilon_s": crack_width.epsilon_s,
+                "rho_eff": crack_width.intermediate_values["rho_eff"],
+                "crack_spacing": crack_width.crack_spacing,
+                "acrc": crack_width.acrc,
+                "calculation_status": crack_width.status,
+            },
+            tolerances={
+                "z": 0.001,
+                "sigma_s": 0.001,
+                "epsilon_s": 1e-9,
+                "rho_eff": 1e-9,
+                "crack_spacing": 0.001,
+                "acrc": 1e-9,
+            },
+            warnings=crack_width.warnings,
         ),
     )
 

@@ -106,6 +106,57 @@ def test_cli_crack_formation_json_output(capsys):
     assert "Mcrc" in data["result"]
 
 
+def test_cli_crack_width_text_output(capsys):
+    exit_code = main(
+        [
+            "crack-width",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--moment-ser",
+            "30000000",
+            "--as-area",
+            "942.48",
+            "--acrc-limit",
+            "0.3",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Crack width" in captured.out
+    assert "acrc" in captured.out
+
+
+def test_cli_crack_width_json_output(capsys):
+    exit_code = main(
+        [
+            "crack-width",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--moment-ser",
+            "30000000",
+            "--as-area",
+            "942.48",
+            "--acrc-limit",
+            "0.3",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "crack-width"
+    assert "acrc" in data["result"]
+    assert "status" in data["result"]
+
+
 def test_cli_select_longitudinal_command_text_output(capsys):
     exit_code = main(
         [
@@ -220,6 +271,42 @@ def test_cli_design_rectangular_with_cracks(capsys):
     assert exit_code == 0
     assert "Rectangular design" in captured.out
     assert "crack_formation" in captured.out
+
+
+def test_cli_design_rectangular_with_crack_width(capsys):
+    exit_code = main(
+        [
+            "design-rectangular",
+            "--b",
+            "300",
+            "--h",
+            "500",
+            "--cover",
+            "32",
+            "--stirrup-diameter",
+            "8",
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--stirrup-rebar",
+            "A240",
+            "--moment",
+            "150000000",
+            "--shear",
+            "80000",
+            "--check-crack-width",
+            "--moment-ser",
+            "30000000",
+            "--acrc-limit",
+            "0.3",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Rectangular design" in captured.out
+    assert "crack_width" in captured.out
 
 
 def test_cli_design_rectangular_json_output(capsys):

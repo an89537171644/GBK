@@ -4,11 +4,12 @@
 |---|---|---|---|---|
 | `units.py` | done | yes | no | keep stable |
 | `materials/concrete.py` | implemented draft with strength and service properties Rb/Rbt/Rbser/Rbtser | yes | yes | engineer review of SP63 table values before crack calculations |
-| `materials/rebar.py` | implemented draft with `Rsc_short`/`Rsc_long` | yes | yes | engineer review of material values |
+| `materials/rebar.py` | implemented draft with `Rsc_short`/`Rsc_long` and service `Rsser` | yes | yes | engineer review of material values |
 | `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
 | `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
 | `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |
-| `checks/cracking.py` | implemented draft normal crack formation check | yes | yes | crack width check acrc |
+| `checks/cracking.py` | implemented draft normal crack formation check | yes | yes | keep as Mcrc input to crack width |
+| `checks/crack_width.py` | implemented draft normal crack width check | yes | yes | curvature and deflection draft MVP |
 | `rebar/constructive.py` | implemented draft constructive checks | yes | yes | engineer review |
 | `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
@@ -27,7 +28,7 @@
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
-| `cli.py` | implemented with subcommands | yes | no | dataset split and ML preparation |
+| `cli.py` | implemented with subcommands including crack formation and crack width | yes | no | dataset split and ML preparation |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
