@@ -306,6 +306,23 @@ The enriched dataset is still produced by deterministic draft-MVP checks and is
 not a final design dataset. Engineer review remains required before ML readiness
 or any broader dataset generation.
 
+## K22 ML Readiness Gate
+
+K22 adds a dataset readiness report for later ML work:
+
+```bash
+python -m sp63_core ml-readiness --generate-dataset-limit 100 --json
+```
+
+The report checks required K21 columns, deterministic status distributions,
+unsafe rows, group leakage count, constant target/status columns, and warnings.
+It does not train a model.
+
+For the current safe accepted dataset, `overall_status` can be constant `pass`.
+This is intentionally reported as `review_required`: classification ML is not
+ready until a separate diagnostic dataset includes fail and review cases. ML
+remains advisory-only.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

@@ -119,6 +119,27 @@ The generated row includes `strength_status`, `serviceability_status`, and
 The dataset remains a deterministic draft artifact. It does not replace
 engineering review, and ML remains advisory-only.
 
+## K22 ML Readiness Gate
+
+`python -m sp63_core ml-readiness --generate-dataset-limit 100 --json` builds a
+readiness report over enriched deterministic rows. The report checks:
+
+- required K21 input, output, status, and service metadata columns;
+- status distributions for bending, shear, crack formation, crack width,
+  deflection, strength, serviceability, and overall status;
+- unsafe row count;
+- group leakage count;
+- constant target/status columns.
+
+The current safe accepted dataset may contain only passing `overall_status`
+rows. That is good for safe regression-style experiments, but it is not enough
+for classification over `pass/fail/review_or_fail`. In that case the readiness
+status is `review_required`, and a separate diagnostic/candidate dataset is
+needed before classification ML.
+
+K22 does not train ML and does not add a neural network. ML remains
+advisory-only.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

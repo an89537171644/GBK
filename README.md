@@ -284,6 +284,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   rows used by validation and ML experiments.
 - ML remains advisory-only and the dataset does not replace engineering review.
 
+## K22 ML readiness gate
+
+- CLI command `ml-readiness` is available for checking deterministic dataset
+  readiness before later ML stages.
+- K22 does not train an ML model and does not add a neural network.
+- The readiness report checks required enriched dataset columns, deterministic
+  status distributions, unsafe rows, group leakage count, and constant
+  target/status columns.
+- The current safe accepted dataset can contain only `overall_status = pass`;
+  in that case readiness is `review_required` because classification ML needs
+  fail/review diagnostic cases.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
