@@ -246,6 +246,17 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   changed.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K19 material catalog audit status
+
+- CLI command `materials-audit` is available for printing current material
+  catalog audit rows.
+- Concrete and reinforcement catalog values remain draft and require engineer
+  verification against SP 63 tables before final use.
+- The full text of SP 63 is not stored in this repository.
+- K19 adds audit structure and documentation only; it does not approve
+  normative values as final design data.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

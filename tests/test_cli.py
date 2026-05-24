@@ -629,6 +629,35 @@ def test_cli_validate_external_input_incomplete_fails(tmp_path, capsys):
     assert data["acceptance"]["external_incomplete_count"] == 1
 
 
+def test_cli_materials_audit_text_output(capsys):
+    exit_code = main(["materials-audit"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Materials audit" in captured.out
+    assert "review_required" in captured.out
+    assert "B25" in captured.out
+    assert "A500" in captured.out
+    assert "requires_engineer_review=True" in captured.out
+
+
+def test_cli_materials_audit_json_output(capsys):
+    exit_code = main(["materials-audit", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "materials-audit"
+    assert data["status"] == "review_required"
+    assert data["rows"]
+    assert any(row["class_name"] == "B25" for row in data["rows"])
+    assert any(row["class_name"] == "A500" for row in data["rows"])
+    assert any(
+        "require engineer review" in warning
+        for warning in data["warnings"]
+    )
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

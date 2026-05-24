@@ -25,7 +25,7 @@ from sp63_core.dataset import (
     split_dataset_cases,
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
-from sp63_core.materials import get_concrete, get_rebar
+from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
 from sp63_core.ml import (
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
@@ -208,6 +208,13 @@ def build_parser() -> ArgumentParser:
     validate.add_argument("--no-require-engineer-accepted", action="store_true")
     validate.add_argument("--json", action="store_true", help="print JSON output")
     validate.set_defaults(handler=_handle_validate)
+
+    materials_audit = subparsers.add_parser(
+        "materials-audit",
+        help="print draft material catalog audit rows",
+    )
+    materials_audit.add_argument("--json", action="store_true", help="print JSON output")
+    materials_audit.set_defaults(handler=_handle_materials_audit)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -885,6 +892,34 @@ def _handle_validate(args: Namespace) -> int:
         print(f"acceptance_report: {acceptance_report_path}")
     if args.output_report is not None:
         print(f"output_report: {payload['output_report']}")
+    return 0
+
+
+def _handle_materials_audit(args: Namespace) -> int:
+    rows = build_material_audit_rows()
+    warnings = (
+        "material catalog values are draft and require engineer review against SP 63 tables",
+    )
+    payload = {
+        "command": "materials-audit",
+        "status": "review_required",
+        "rows": [asdict(row) for row in rows],
+        "warnings": list(warnings),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Materials audit")
+    print("status: review_required")
+    for row in rows:
+        print(
+            f"{row.material_type} {row.class_name} {row.property_name}: "
+            f"{row.value:g} {row.unit}; usage={row.usage}; "
+            f"audit_status={row.audit_status}; "
+            f"requires_engineer_review={row.requires_engineer_review}"
+        )
+    _print_warnings(warnings)
     return 0
 
 
