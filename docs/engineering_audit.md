@@ -258,6 +258,20 @@ design dataset and does not approve any failing or review-required rows as
 solutions. Every diagnostic row still requires engineer review. ML remains
 advisory-only and deterministic SP63 checks remain mandatory.
 
+## K26 Baseline ML Evaluation on Expanded Diagnostic Dataset
+
+K26 extends the non-neural baseline report to evaluate `overall_status`
+classification on the expanded K25 diagnostic dataset with a fixed train/test
+split. The report includes accuracy, macro F1, per-class precision and recall,
+confusion matrix, and class distribution.
+
+The report separates `input_only_features` from
+`deterministic_derived_features`. The derived feature mode is review-only
+because deterministic outputs such as capacities, crack width, and deflection
+can leak calculation outcomes into a classifier. No neural network is added,
+and the metrics do not authorize project use of ML. Deterministic SP63 checks
+remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

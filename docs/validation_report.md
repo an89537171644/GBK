@@ -385,6 +385,29 @@ not a design solution set and does not authorize ML output. It exists to make
 future classification readiness checks more representative before any later ML
 stage.
 
+## K26 Expanded Diagnostic Baseline ML Evaluation
+
+K26 extends the non-neural baseline report:
+
+```bash
+python -m sp63_core ml-baseline --diagnostic-limit 100 --json
+```
+
+The JSON report now includes `expanded_diagnostic_classification` for
+`overall_status` on the K25 diagnostic dataset. It reports train/test rows,
+class distribution, accuracy, macro F1, per-class precision/recall, and a
+confusion matrix for simple baseline classifiers.
+
+The report includes two feature modes:
+
+- `input_only_features`;
+- `deterministic_derived_features`.
+
+The deterministic-derived mode is explicitly flagged as review-only because it
+can leak deterministic calculation results into ML classification. K26 does not
+add a neural network and does not make ML a design checker. Deterministic SP63
+checks remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
