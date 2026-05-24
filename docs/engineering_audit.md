@@ -27,6 +27,7 @@ requires_engineer_review = true
 - K13 service concrete properties `Rbser` and `Rbtser` for future second
   limit-state preparation.
 - K15 draft normal crack width `acrc` check for rectangular beams.
+- K16 draft short-term curvature and deflection check for rectangular beams.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -53,8 +54,9 @@ requires_engineer_review = true
 
 ## Not Implemented
 
-- Deflections and other serviceability checks beyond draft normal crack
-  formation and draft normal crack width.
+- Long-term deflections and other refined serviceability checks beyond draft
+  normal crack formation, draft normal crack width, and draft short-term
+  deflection.
 - T-sections, columns, punching, torsion, prestress, anchorage, support zones,
   and bar curtailment.
 - HTML/PDF protocol rendering.
@@ -136,6 +138,19 @@ This is not a refined SP 63 crack width model. It does not include refined crack
 spacing, tension stiffening, long-term effects, transformed-section behavior,
 or nonlinear deformation modeling. Deflection is still not implemented. ML
 modules were not changed and ML remains advisory-only.
+
+## K16 Curvature And Deflection
+
+K16 adds a draft short-term curvature and deflection check for rectangular
+reinforced concrete beams. The implementation uses K14 crack formation to
+select gross uncracked stiffness or a simplified cracked transformed stiffness
+without tensile concrete.
+
+This is not a refined SP 63 deformation model. It does not include long-term
+deflection, creep, shrinkage, refined tension stiffening, nonlinear deformation,
+slabs, columns, T-sections, punching, torsion, anchorage, support zones, bar
+curtailment, or Streamlit. ML modules were not changed and ML remains
+advisory-only.
 
 ## Next Stages
 

@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from sp63_core.checks import (
     CrackFormationResult,
     CrackWidthResult,
+    DeflectionResult,
+    check_curvature_deflection_rectangular,
     check_normal_crack_formation_rectangular,
     check_normal_crack_width_rectangular,
 )
@@ -55,6 +57,11 @@ class RectangularDesignInput:
     check_cracks: bool = False
     check_crack_width: bool = False
     acrc_limit: float = 0.3
+    check_deflection: bool = False
+    span: float | None = None
+    deflection_limit: float | None = None
+    deflection_limit_ratio: float = 250.0
+    deflection_loading_scheme: str = "simply_supported_uniform"
 
 
 @dataclass(frozen=True)
@@ -72,6 +79,7 @@ class RectangularDesignResult:
     selected_transverse: TransverseRebarOption | None
     crack_formation: CrackFormationResult | None
     crack_width: CrackWidthResult | None
+    deflection: DeflectionResult | None
     protocol: CalculationProtocol | None
     status: str
     warnings: tuple[str, ...]
@@ -115,6 +123,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             selected_transverse=None,
             crack_formation=None,
             crack_width=None,
+            deflection=None,
             protocol=None,
             status="fail",
             warnings=("no passing longitudinal reinforcement options",),
@@ -144,6 +153,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             selected_transverse=None,
             crack_formation=None,
             crack_width=None,
+            deflection=None,
             protocol=None,
             status="fail",
             warnings=(
@@ -155,7 +165,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
     selected_transverse = transverse_options[0]
     service_moment = input_data.M if input_data.Mser is None else input_data.Mser
     crack_formation = None
-    if input_data.check_cracks or input_data.check_crack_width:
+    if input_data.check_cracks or input_data.check_crack_width or input_data.check_deflection:
         crack_formation = check_normal_crack_formation_rectangular(
             section=selected_longitudinal.section,
             concrete=concrete,
@@ -173,6 +183,24 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             acrc_limit=input_data.acrc_limit,
             crack_formation=crack_formation,
         )
+    deflection = None
+    if input_data.check_deflection:
+        if input_data.span is None:
+            raise ValueError("span must be provided when check_deflection is True")
+        if input_data.span <= 0:
+            raise ValueError("span must be positive")
+        deflection = check_curvature_deflection_rectangular(
+            section=selected_longitudinal.section,
+            concrete=concrete,
+            rebar=longitudinal_rebar,
+            Mser=service_moment,
+            As=selected_longitudinal.As,
+            span=input_data.span,
+            deflection_limit=input_data.deflection_limit,
+            deflection_limit_ratio=input_data.deflection_limit_ratio,
+            loading_scheme=input_data.deflection_loading_scheme,
+            crack_formation=crack_formation,
+        )
 
     longitudinal_constructive_values = selected_longitudinal.constructive.intermediate_values
     constructive_values = selected_transverse.constructive.intermediate_values
@@ -185,6 +213,8 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         checks["crack_formation"] = crack_formation
     if crack_width is not None:
         checks["crack_width"] = crack_width
+    if deflection is not None:
+        checks["deflection"] = deflection
 
     protocol = build_calculation_protocol(
         input_data={
@@ -192,12 +222,19 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             "Q": input_data.Q,
             "Mser": (
                 service_moment
-                if input_data.check_cracks or input_data.check_crack_width
+                if input_data.check_cracks
+                or input_data.check_crack_width
+                or input_data.check_deflection
                 else input_data.Mser
             ),
             "check_cracks": input_data.check_cracks,
             "check_crack_width": input_data.check_crack_width,
             "acrc_limit": input_data.acrc_limit,
+            "check_deflection": input_data.check_deflection,
+            "span": input_data.span,
+            "deflection_limit": input_data.deflection_limit,
+            "deflection_limit_ratio": input_data.deflection_limit_ratio,
+            "deflection_loading_scheme": input_data.deflection_loading_scheme,
             "load_duration": input_data.load_duration,
         },
         materials={
@@ -252,6 +289,8 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         warnings.append("normal cracks are expected; crack width check is required")
     if crack_width is not None and crack_width.status == "fail":
         warnings.append("crack width exceeds draft limit; serviceability review is required")
+    if deflection is not None and deflection.status == "fail":
+        warnings.append("deflection exceeds draft limit; serviceability review is required")
 
     return RectangularDesignResult(
         input_data=input_data,
@@ -265,6 +304,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         selected_transverse=selected_transverse,
         crack_formation=crack_formation,
         crack_width=crack_width,
+        deflection=deflection,
         protocol=protocol,
         status=status,
         warnings=tuple(warnings),

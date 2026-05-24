@@ -42,17 +42,32 @@ not implemented.
 
 ## K16 Curvature And Deflection
 
-Planned later step:
+K16 adds a draft short-term curvature and deflection check for rectangular
+reinforced concrete beams. The check uses K14 crack formation to select gross
+or simplified cracked transformed stiffness.
 
 - curvature calculation;
-- short-term and long-term deflection;
-- comparison with engineer-reviewed references.
+- short-term draft deflection;
+- `simply_supported_uniform` loading scheme only;
+- golden case included for engineer review.
 
-This is not implemented in K15.
+Implemented scope:
+
+- rectangular beam section;
+- bending only;
+- no axial force;
+- no prestress;
+- heavy concrete B15-B40;
+- short-term draft curvature and deflection only.
+
+This remains a draft-MVP check. Long-term effects, creep, shrinkage, refined
+tension stiffening, nonlinear deformation, and refined SP 63 curvature are not
+implemented.
 
 ## Limitations
 
-- no deflection;
+- no long-term deflection;
+- no creep or shrinkage;
 - no prestress;
 - no axial force;
 - no T-sections;

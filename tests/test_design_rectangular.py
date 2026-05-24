@@ -108,3 +108,32 @@ def test_design_rectangular_with_crack_width_check():
     assert result.crack_width.acrc >= 0
     assert result.protocol is not None
     assert "crack_width" in result.protocol.checks
+
+
+def test_design_rectangular_with_deflection_check():
+    result = design_rectangular_element(
+        mvp_input(check_deflection=True, Mser=30_000_000, span=6000)
+    )
+
+    assert result.status == "pass"
+    assert result.crack_formation is not None
+    assert result.deflection is not None
+    assert result.deflection.requires_engineer_review is True
+    assert result.protocol is not None
+    assert "deflection" in result.protocol.checks
+
+
+def test_design_rectangular_with_deflection_fail_warning():
+    result = design_rectangular_element(
+        mvp_input(
+            check_deflection=True,
+            Mser=150_000_000,
+            span=12_000,
+            deflection_limit=1.0,
+        )
+    )
+
+    assert result.status == "pass"
+    assert result.deflection is not None
+    assert result.deflection.status == "fail"
+    assert any("deflection exceeds draft limit" in warning for warning in result.warnings)

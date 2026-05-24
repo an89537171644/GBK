@@ -9,14 +9,20 @@ from sp63_core.checks.cracking import (
     CrackFormationResult,
     check_normal_crack_formation_rectangular,
 )
+from sp63_core.checks.deflection import (
+    DeflectionResult,
+    check_curvature_deflection_rectangular,
+)
 from sp63_core.checks.shear import ShearResult, check_shear_rectangular
 
 __all__ = [
     "BendingResult",
     "CrackFormationResult",
     "CrackWidthResult",
+    "DeflectionResult",
     "ShearResult",
     "check_bending_rectangular",
+    "check_curvature_deflection_rectangular",
     "check_normal_crack_formation_rectangular",
     "check_normal_crack_width_rectangular",
     "check_shear_rectangular",

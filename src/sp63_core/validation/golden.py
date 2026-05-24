@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from sp63_core.checks import (
     check_bending_rectangular,
+    check_curvature_deflection_rectangular,
     check_normal_crack_formation_rectangular,
     check_normal_crack_width_rectangular,
     check_shear_rectangular,
@@ -279,6 +280,79 @@ def run_crack_width_golden_cases() -> tuple[GoldenCaseResult, ...]:
     )
 
 
+def run_deflection_golden_cases() -> tuple[GoldenCaseResult, ...]:
+    """Run draft curvature and deflection golden cases."""
+    section = _golden_section()
+    concrete = get_concrete("B25")
+    rebar = get_rebar("A500")
+    Mser = 30_000_000.0
+    As = 942.48
+    span = 6000.0
+    deflection_limit_ratio = 250.0
+    deflection = check_curvature_deflection_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        Mser=Mser,
+        As=As,
+        span=span,
+        deflection_limit_ratio=deflection_limit_ratio,
+        loading_scheme="simply_supported_uniform",
+    )
+    h0 = section.effective_depth()
+    I_gross = section.b * section.h**3 / 12.0
+    n = rebar.Es / concrete.Eb
+    neutral_axis_x = _cracked_neutral_axis_depth(
+        b=section.b,
+        h0=h0,
+        As=As,
+        n=n,
+    )
+    I_cracked = section.b * neutral_axis_x**3 / 3.0 + n * As * (h0 - neutral_axis_x) ** 2
+    I_eff = I_cracked
+    curvature = Mser / (concrete.Eb * I_eff)
+    deflection_value = 5.0 / 48.0 * curvature * span**2
+    deflection_limit = span / deflection_limit_ratio
+    return (
+        _build_result(
+            case_id="deflection_rectangular_case_01",
+            expected={
+                "I_gross": I_gross,
+                "n": n,
+                "neutral_axis_x": neutral_axis_x,
+                "I_cracked": I_cracked,
+                "I_eff": I_eff,
+                "curvature": curvature,
+                "deflection": deflection_value,
+                "deflection_limit": deflection_limit,
+                "calculation_status": "pass" if deflection_value <= deflection_limit else "fail",
+            },
+            actual={
+                "I_gross": deflection.I_gross,
+                "n": deflection.intermediate_values["n"],
+                "neutral_axis_x": deflection.intermediate_values["neutral_axis_x"],
+                "I_cracked": deflection.I_cracked,
+                "I_eff": deflection.I_eff,
+                "curvature": deflection.curvature,
+                "deflection": deflection.deflection,
+                "deflection_limit": deflection.deflection_limit,
+                "calculation_status": deflection.status,
+            },
+            tolerances={
+                "I_gross": 1.0,
+                "n": 1e-9,
+                "neutral_axis_x": 1e-6,
+                "I_cracked": 1.0,
+                "I_eff": 1.0,
+                "curvature": 1e-12,
+                "deflection": 1e-9,
+                "deflection_limit": 1e-9,
+            },
+            warnings=deflection.warnings,
+        ),
+    )
+
+
 def _golden_section() -> RectangularSection:
     return RectangularSection(
         b=300,
@@ -287,6 +361,14 @@ def _golden_section() -> RectangularSection:
         stirrup_diameter=8,
         main_bar_diameter=20,
     )
+
+
+def _cracked_neutral_axis_depth(*, b: float, h0: float, As: float, n: float) -> float:
+    a = 0.5 * b
+    coefficient_b = n * As
+    coefficient_c = -n * As * h0
+    discriminant = coefficient_b**2 - 4.0 * a * coefficient_c
+    return (-coefficient_b + discriminant**0.5) / (2.0 * a)
 
 
 def _build_result(
