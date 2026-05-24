@@ -297,6 +297,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   fail/review diagnostic cases.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K23 diagnostic dataset status
+
+- CLI command `diagnostic-dataset` is available for deterministic diagnostic
+  rows with `pass`, `fail`, and `review_or_fail` statuses.
+- The diagnostic dataset is separate from the safe accepted dataset;
+  `generate_dataset_cases()` keeps producing safe accepted rows.
+- Diagnostic rows are computed through the deterministic SP63 draft core and
+  use `dataset_source = diagnostic_deterministic_sp63_core`.
+- `ml-readiness --diagnostic --json` can be used to verify that
+  `overall_status` is no longer a constant classification target.
+- The diagnostic dataset is for future ML classification readiness only. It is
+  not a project-design solution dataset, and every row requires engineer review.
+- ML remains advisory-only and no model is trained in K23.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

@@ -1,5 +1,12 @@
 """Dataset generation helpers for the SP 63 MVP."""
 
+from sp63_core.dataset.diagnostic import (
+    DIAGNOSTIC_DATASET_SOURCE,
+    DiagnosticDatasetCase,
+    diagnostic_dataset_warnings,
+    diagnostic_status_counts,
+    generate_diagnostic_dataset_cases,
+)
 from sp63_core.dataset.generator import (
     DATASET_COLUMNS,
     DATASET_VERSION,
@@ -17,12 +24,17 @@ from sp63_core.dataset.split import (
 __all__ = [
     "DATASET_COLUMNS",
     "DATASET_VERSION",
+    "DIAGNOSTIC_DATASET_SOURCE",
     "DatasetCase",
     "DatasetSplit",
+    "DiagnosticDatasetCase",
     "build_dataset_report",
+    "diagnostic_dataset_warnings",
+    "diagnostic_status_counts",
     "export_dataset_csv",
     "export_dataset_report_json",
     "export_dataset_split_csv",
+    "generate_diagnostic_dataset_cases",
     "generate_dataset_cases",
     "split_dataset_cases",
 ]

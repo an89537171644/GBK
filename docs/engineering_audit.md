@@ -222,6 +222,18 @@ statuses. Fail and review diagnostic cases must be added deliberately in a
 future dataset step before classification ML. ML remains advisory-only and
 deterministic SP63 checks remain mandatory.
 
+## K23 Diagnostic Dataset
+
+K23 adds that separate diagnostic/candidate dataset. It intentionally contains
+passing, failing, and review-required rows generated through deterministic
+checks. The safe accepted dataset remains unchanged and should still be used for
+accepted-row regression experiments.
+
+The diagnostic dataset is not a project-design dataset. It exists to make
+future classification ML development possible after engineer review. Rows with
+failure and review statuses must not be interpreted as approved reinforcement
+solutions. ML remains advisory-only.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
