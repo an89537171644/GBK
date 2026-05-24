@@ -683,6 +683,25 @@ def test_cli_manual_cases_json_output(capsys):
     assert data["requires_engineer_review"] is True
 
 
+def test_cli_ml_readiness_json_output(capsys):
+    exit_code = main(["ml-readiness", "--generate-dataset-limit", "20", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "ml-readiness"
+    assert data["status"] == "review_required"
+    assert data["total_rows"] == 20
+    assert data["missing_required_columns"] == []
+    assert data["unsafe_rows_count"] == 0
+    assert data["status_counts"]["overall_status"] == {"pass": 20}
+    assert "overall_status" in data["constant_target_columns"]
+    assert any(
+        "dataset contains only passing overall_status rows" in warning
+        for warning in data["warnings"]
+    )
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

@@ -31,6 +31,7 @@
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
+| `ml/readiness.py` | implemented deterministic dataset ML readiness gate | yes | yes | add diagnostic fail/review dataset before classification ML |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, and separated design statuses | yes | no | dataset split and ML preparation |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

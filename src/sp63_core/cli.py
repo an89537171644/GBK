@@ -27,6 +27,7 @@ from sp63_core.dataset import (
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
 from sp63_core.ml import (
+    build_ml_readiness_report,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
@@ -223,6 +224,14 @@ def build_parser() -> ArgumentParser:
     )
     manual_cases.add_argument("--json", action="store_true", help="print JSON output")
     manual_cases.set_defaults(handler=_handle_manual_cases)
+
+    ml_readiness = subparsers.add_parser(
+        "ml-readiness",
+        help="check deterministic dataset readiness for later advisory ML",
+    )
+    ml_readiness.add_argument("--generate-dataset-limit", type=int, default=100)
+    ml_readiness.add_argument("--json", action="store_true", help="print JSON output")
+    ml_readiness.set_defaults(handler=_handle_ml_readiness)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -960,6 +969,36 @@ def _handle_manual_cases(args: Namespace) -> int:
         print(f"  serviceability_status: {result.actual_statuses.get('serviceability_status')}")
         print(f"  overall_status: {result.actual_statuses.get('overall_status')}")
     _print_warnings(tuple(payload["warnings"]))
+    return 0
+
+
+def _handle_ml_readiness(args: Namespace) -> int:
+    cases = generate_dataset_cases(limit=args.generate_dataset_limit)
+    report = build_ml_readiness_report(case.as_row() for case in cases)
+    payload = {
+        "command": "ml-readiness",
+        **asdict(report),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("ML readiness")
+    print(f"status: {report.status}")
+    print(f"total_rows: {report.total_rows}")
+    print(f"feature_columns_count: {report.feature_columns_count}")
+    print(f"target_columns_count: {report.target_columns_count}")
+    print(f"unsafe_rows_count: {report.unsafe_rows_count}")
+    print(f"group_leakage_count: {report.group_leakage_count}")
+    print(
+        "missing_required_columns: "
+        f"{', '.join(report.missing_required_columns) if report.missing_required_columns else '-'}"
+    )
+    print(
+        "constant_target_columns: "
+        f"{', '.join(report.constant_target_columns) if report.constant_target_columns else '-'}"
+    )
+    _print_warnings(report.warnings)
     return 0
 
 

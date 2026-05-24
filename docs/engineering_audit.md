@@ -210,6 +210,18 @@ final design use. The generated values still depend on draft serviceability
 checks and material catalogs that require engineer review. ML remains
 advisory-only and every ML proposal must continue to pass deterministic checks.
 
+## K22 ML Readiness Gate
+
+K22 adds an ML readiness report for enriched deterministic datasets. The report
+checks required columns, unsafe row counts, status distributions, group leakage,
+and constant target/status columns before any later ML work.
+
+This is a gate, not training. A safe accepted dataset with only passing rows is
+useful, but it is not sufficient for classification over pass/fail/review
+statuses. Fail and review diagnostic cases must be added deliberately in a
+future dataset step before classification ML. ML remains advisory-only and
+deterministic SP63 checks remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
