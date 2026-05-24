@@ -16,6 +16,16 @@ def mvp_section() -> RectangularSection:
     )
 
 
+def base_protocol(**checks):
+    return build_calculation_protocol(
+        input_data={"M": 150_000_000, "Q": 80_000},
+        materials={"concrete": "B25", "rebar": "A500", "stirrup_rebar": "A240"},
+        geometry={"b": 300, "h": 500, "h0": 450},
+        reinforcement={"main": "3D20", "stirrups": "2D8/200"},
+        checks=checks,
+    )
+
+
 def test_build_calculation_protocol_for_passing_scheme():
     section = mvp_section()
     concrete = get_concrete("B25")
@@ -39,11 +49,19 @@ def test_build_calculation_protocol_for_passing_scheme():
         checks={"bending": bending, "shear": shear},
     )
 
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "not_checked"
+    assert protocol.overall_status == "pass"
     assert protocol.status == "pass"
     assert protocol.warnings == ()
     assert protocol.checks["bending"]["status"] == "pass"
     assert protocol.checks["shear"]["status"] == "pass"
-    assert protocol.as_dict()["reinforcement"]["main"] == "3D20"
+    protocol_dict = protocol.as_dict()
+    assert protocol_dict["reinforcement"]["main"] == "3D20"
+    assert protocol_dict["strength_status"] == "pass"
+    assert protocol_dict["serviceability_status"] == "not_checked"
+    assert protocol_dict["overall_status"] == "pass"
+    assert protocol_dict["status"] == "pass"
     assert protocol.requires_engineer_review is True
 
 
@@ -70,31 +88,91 @@ def test_build_calculation_protocol_collects_fail_warnings():
         checks={"bending": bending, "shear": shear},
     )
 
+    assert protocol.strength_status == "fail"
+    assert protocol.serviceability_status == "not_checked"
+    assert protocol.overall_status == "fail"
     assert protocol.status == "fail"
     assert "shear: shear force exceeds concrete strip capacity" in protocol.warnings
     assert "shear: shear force exceeds inclined section capacity" in protocol.warnings
 
 
-def test_build_calculation_protocol_review_has_priority_over_fail():
-    protocol = build_calculation_protocol(
-        input_data={"M": 100_000_000},
-        materials={"concrete": "B25", "rebar": "A500"},
-        geometry={"b": 300, "h": 500, "h0": 450},
-        reinforcement={"main": "8D25"},
-        checks={
-            "bending": {
-                "status": "review_or_fail",
-                "warnings": ("manual engineering review required",),
-            },
-            "shear": {"status": "fail", "warnings": ("not enough stirrups",)},
-        },
+def test_protocol_strength_only_pass_has_serviceability_not_checked():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
     )
 
-    assert protocol.status == "review_or_fail"
-    assert protocol.warnings == (
-        "bending: manual engineering review required",
-        "shear: not enough stirrups",
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "not_checked"
+    assert protocol.overall_status == "pass"
+    assert protocol.status == "pass"
+
+
+def test_protocol_strength_fail_sets_overall_fail():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "fail", "warnings": ("not enough stirrups",)},
     )
+
+    assert protocol.strength_status == "fail"
+    assert protocol.overall_status == "fail"
+    assert protocol.status == "fail"
+    assert protocol.warnings == ("shear: not enough stirrups",)
+
+
+def test_protocol_crack_formation_without_crack_width_needs_review():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
+        crack_formation={"status": "crack", "warnings": ()},
+    )
+
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "review_or_fail"
+    assert protocol.overall_status == "review_or_fail"
+    assert protocol.status == "review_or_fail"
+
+
+def test_protocol_crack_width_fail_sets_serviceability_fail():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
+        crack_formation={"status": "crack", "warnings": ()},
+        crack_width={"status": "fail", "warnings": ("acrc exceeds limit",)},
+    )
+
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "fail"
+    assert protocol.overall_status == "fail"
+    assert protocol.status == "fail"
+
+
+def test_protocol_deflection_fail_sets_serviceability_fail():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
+        deflection={"status": "fail", "warnings": ("deflection exceeds limit",)},
+    )
+
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "fail"
+    assert protocol.overall_status == "fail"
+    assert protocol.status == "fail"
+
+
+def test_protocol_all_check_groups_pass():
+    protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
+        crack_formation={"status": "crack", "warnings": ()},
+        crack_width={"status": "pass", "warnings": ()},
+        deflection={"status": "pass", "warnings": ()},
+    )
+
+    assert protocol.strength_status == "pass"
+    assert protocol.serviceability_status == "pass"
+    assert protocol.overall_status == "pass"
+    assert protocol.status == "pass"
 
 
 def test_build_calculation_protocol_rejects_empty_checks():

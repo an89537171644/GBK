@@ -28,6 +28,7 @@ requires_engineer_review = true
   limit-state preparation.
 - K15 draft normal crack width `acrc` check for rectangular beams.
 - K16 draft short-term curvature and deflection check for rectangular beams.
+- K17 separated strength, serviceability, and overall protocol statuses.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -151,6 +152,19 @@ deflection, creep, shrinkage, refined tension stiffening, nonlinear deformation,
 slabs, columns, T-sections, punching, torsion, anchorage, support zones, bar
 curtailment, or Streamlit. ML modules were not changed and ML remains
 advisory-only.
+
+## K17 Status Separation
+
+K17 separates calculation protocol statuses into `strength_status`,
+`serviceability_status`, and `overall_status`. Strength status is based only on
+bending and shear. Serviceability status is based on crack formation, crack
+width, and deflection. The legacy `status` field remains as an alias for
+`overall_status`.
+
+This change does not alter bending, shear, crack formation, crack width, or
+deflection formulas. It makes serviceability failures visible in the final
+design status instead of allowing a passed strength result to mask them. ML
+modules were not changed and ML remains advisory-only.
 
 ## Next Stages
 

@@ -599,6 +599,9 @@ def _handle_design_rectangular(args: Namespace) -> int:
 
     print("Rectangular design")
     print(f"status: {design.status}")
+    print(f"strength_status: {design.strength_status}")
+    print(f"serviceability_status: {design.serviceability_status}")
+    print(f"overall_status: {design.overall_status}")
     if design.selected_longitudinal is not None:
         longitudinal = design.selected_longitudinal
         print(f"selected longitudinal scheme: {longitudinal.scheme}")
@@ -1057,6 +1060,10 @@ def _transverse_option_to_dict(option: Any) -> dict[str, Any]:
 
 def _design_result_to_dict(design: Any) -> dict[str, Any]:
     return {
+        "status": design.status,
+        "strength_status": design.strength_status,
+        "serviceability_status": design.serviceability_status,
+        "overall_status": design.overall_status,
         "selected_longitudinal": (
             None
             if design.selected_longitudinal is None
@@ -1079,6 +1086,15 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
             None if design.deflection is None else _deflection_to_dict(design.deflection)
         ),
         "protocol_status": None if design.protocol is None else design.protocol.status,
+        "protocol_strength_status": (
+            None if design.protocol is None else design.protocol.strength_status
+        ),
+        "protocol_serviceability_status": (
+            None if design.protocol is None else design.protocol.serviceability_status
+        ),
+        "protocol_overall_status": (
+            None if design.protocol is None else design.protocol.overall_status
+        ),
     }
 
 

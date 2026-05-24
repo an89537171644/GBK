@@ -81,6 +81,9 @@ class RectangularDesignResult:
     crack_width: CrackWidthResult | None
     deflection: DeflectionResult | None
     protocol: CalculationProtocol | None
+    strength_status: str
+    serviceability_status: str
+    overall_status: str
     status: str
     warnings: tuple[str, ...]
     requires_engineer_review: bool = True
@@ -125,6 +128,9 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             crack_width=None,
             deflection=None,
             protocol=None,
+            strength_status="fail",
+            serviceability_status="not_checked",
+            overall_status="fail",
             status="fail",
             warnings=("no passing longitudinal reinforcement options",),
         )
@@ -155,6 +161,9 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             crack_width=None,
             deflection=None,
             protocol=None,
+            strength_status="fail",
+            serviceability_status="not_checked",
+            overall_status="fail",
             status="fail",
             warnings=(
                 *selected_longitudinal.warnings,
@@ -271,11 +280,10 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         },
         checks=checks,
     )
-    strength_passed = (
-        selected_longitudinal.bending.status == "pass"
-        and selected_transverse.shear.status == "pass"
-    )
-    status = "pass" if strength_passed else protocol.status
+    strength_status = protocol.strength_status
+    serviceability_status = protocol.serviceability_status
+    overall_status = protocol.overall_status
+    status = overall_status
     warnings = [
         *selected_longitudinal.warnings,
         *selected_transverse.warnings,
@@ -306,6 +314,9 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         crack_width=crack_width,
         deflection=deflection,
         protocol=protocol,
+        strength_status=strength_status,
+        serviceability_status=serviceability_status,
+        overall_status=overall_status,
         status=status,
         warnings=tuple(warnings),
     )

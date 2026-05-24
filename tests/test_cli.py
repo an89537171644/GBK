@@ -288,6 +288,9 @@ def test_cli_design_rectangular_command_text_output(capsys):
     assert exit_code == 0
     assert "Rectangular design" in captured.out
     assert "status: pass" in captured.out
+    assert "strength_status: pass" in captured.out
+    assert "serviceability_status: not_checked" in captured.out
+    assert "overall_status: pass" in captured.out
     assert "constructive" in captured.out
     assert "max_spacing" in captured.out
     assert "reinforcement ratio" in captured.out
@@ -432,6 +435,13 @@ def test_cli_design_rectangular_json_output(capsys):
     assert exit_code == 0
     assert data["command"] == "design-rectangular"
     assert data["status"] == "pass"
+    assert data["result"]["status"] == "pass"
+    assert data["result"]["strength_status"] == "pass"
+    assert data["result"]["serviceability_status"] == "not_checked"
+    assert data["result"]["overall_status"] == "pass"
+    assert data["result"]["protocol_strength_status"] == "pass"
+    assert data["result"]["protocol_serviceability_status"] == "not_checked"
+    assert data["result"]["protocol_overall_status"] == "pass"
     assert "constructive_status" in data["result"]["selected_transverse"]
     assert "constructive_max_spacing" in data["result"]["selected_transverse"]
     assert "sw_max_by_shear_rule" in data["result"]["selected_transverse"]

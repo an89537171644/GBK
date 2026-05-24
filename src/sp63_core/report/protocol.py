@@ -5,6 +5,11 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Literal
 
 ProtocolStatus = Literal["pass", "fail", "review_or_fail"]
+GroupStatus = Literal["pass", "fail", "review_or_fail", "not_checked"]
+
+STRENGTH_CHECKS = frozenset(("bending", "shear"))
+SERVICEABILITY_CHECKS = frozenset(("crack_formation", "crack_width", "deflection"))
+SERVICEABILITY_PASS_LIKE_STATUSES = frozenset(("pass", "no_crack", "not_required"))
 
 
 @dataclass(frozen=True)
@@ -17,6 +22,9 @@ class CalculationProtocol:
     reinforcement: dict[str, Any]
     checks: dict[str, dict[str, Any]]
     warnings: tuple[str, ...]
+    strength_status: GroupStatus
+    serviceability_status: GroupStatus
+    overall_status: ProtocolStatus
     status: ProtocolStatus
     requires_engineer_review: bool = True
 
@@ -29,6 +37,9 @@ class CalculationProtocol:
             "reinforcement": self.reinforcement,
             "checks": self.checks,
             "warnings": list(self.warnings),
+            "strength_status": self.strength_status,
+            "serviceability_status": self.serviceability_status,
+            "overall_status": self.overall_status,
             "status": self.status,
             "requires_engineer_review": self.requires_engineer_review,
         }
@@ -48,7 +59,12 @@ def build_calculation_protocol(
 
     normalized_checks = {name: _check_to_dict(check) for name, check in checks.items()}
     warnings = _collect_warnings(normalized_checks)
-    status = _overall_status(normalized_checks)
+    strength_status = _strength_status(normalized_checks)
+    serviceability_status = _serviceability_status(normalized_checks)
+    overall_status = _overall_status(
+        strength_status=strength_status,
+        serviceability_status=serviceability_status,
+    )
 
     return CalculationProtocol(
         input_data=dict(input_data),
@@ -57,7 +73,10 @@ def build_calculation_protocol(
         reinforcement=dict(reinforcement),
         checks=normalized_checks,
         warnings=warnings,
-        status=status,
+        strength_status=strength_status,
+        serviceability_status=serviceability_status,
+        overall_status=overall_status,
+        status=overall_status,
         requires_engineer_review=True,
     )
 
@@ -78,11 +97,51 @@ def _collect_warnings(checks: Mapping[str, Mapping[str, Any]]) -> tuple[str, ...
     return tuple(warnings)
 
 
-def _overall_status(checks: Mapping[str, Mapping[str, Any]]) -> ProtocolStatus:
-    statuses = [check.get("status") for check in checks.values()]
-    if "review_or_fail" in statuses:
-        return "review_or_fail"
-    pass_like_statuses = {"pass", "no_crack", "crack", "not_required"}
-    if all(status in pass_like_statuses for status in statuses):
+def _strength_status(checks: Mapping[str, Mapping[str, Any]]) -> GroupStatus:
+    strength_checks = [check for name, check in checks.items() if name in STRENGTH_CHECKS]
+    if not strength_checks:
+        return "not_checked"
+    if all(check.get("status") == "pass" for check in strength_checks):
         return "pass"
     return "fail"
+
+
+def _serviceability_status(checks: Mapping[str, Mapping[str, Any]]) -> GroupStatus:
+    serviceability_checks = {
+        name: check for name, check in checks.items() if name in SERVICEABILITY_CHECKS
+    }
+    if not serviceability_checks:
+        return "not_checked"
+    if any(check.get("status") == "fail" for check in serviceability_checks.values()):
+        return "fail"
+
+    crack_formation = serviceability_checks.get("crack_formation")
+    crack_width_present = "crack_width" in serviceability_checks
+    if (
+        crack_formation is not None
+        and crack_formation.get("status") == "crack"
+        and not crack_width_present
+    ):
+        return "review_or_fail"
+
+    for name, check in serviceability_checks.items():
+        status = check.get("status")
+        if name == "crack_formation" and status == "crack" and crack_width_present:
+            continue
+        if status not in SERVICEABILITY_PASS_LIKE_STATUSES:
+            return "review_or_fail"
+    return "pass"
+
+
+def _overall_status(
+    *,
+    strength_status: GroupStatus,
+    serviceability_status: GroupStatus,
+) -> ProtocolStatus:
+    if strength_status == "fail" or serviceability_status == "fail":
+        return "fail"
+    if serviceability_status == "review_or_fail":
+        return "review_or_fail"
+    if strength_status == "pass" and serviceability_status in ("pass", "not_checked"):
+        return "pass"
+    return "review_or_fail"

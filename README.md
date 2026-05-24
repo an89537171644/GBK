@@ -231,6 +231,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   deformation model are not implemented.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K17 status separation
+
+- `CalculationProtocol` now reports `strength_status`,
+  `serviceability_status`, and `overall_status`.
+- `strength_status` covers bending and shear checks only.
+- `serviceability_status` covers crack formation, crack width, and deflection
+  checks.
+- `overall_status` is the engineering summary status; the legacy `status`
+  field is kept as an alias for `overall_status`.
+- `design-rectangular` text and JSON output include all three separated
+  statuses.
+- K17 changes status aggregation only. K14-K16 calculation formulas are not
+  changed.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

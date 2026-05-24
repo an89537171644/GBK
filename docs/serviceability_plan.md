@@ -64,6 +64,20 @@ This remains a draft-MVP check. Long-term effects, creep, shrinkage, refined
 tension stiffening, nonlinear deformation, and refined SP 63 curvature are not
 implemented.
 
+## K17 Status Separation
+
+K17 separates protocol status reporting into strength and serviceability groups.
+This does not change any K14-K16 formulas.
+
+- `strength_status` covers bending and shear only;
+- `serviceability_status` covers crack formation, crack width, and deflection;
+- `overall_status` is the engineering summary status;
+- legacy `status` remains available as an alias for `overall_status`.
+
+Expected normal-crack formation with no crack width check is reported as
+`review_or_fail`, not as automatic failure. Crack width or deflection failure
+sets `serviceability_status = "fail"` and therefore `overall_status = "fail"`.
+
 ## Limitations
 
 - no long-term deflection;

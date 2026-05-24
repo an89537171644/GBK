@@ -24,10 +24,16 @@ def test_design_rectangular_element_returns_passing_result():
     result = design_rectangular_element(mvp_input())
 
     assert result.status == "pass"
+    assert result.strength_status == "pass"
+    assert result.serviceability_status == "not_checked"
+    assert result.overall_status == "pass"
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is not None
     assert result.protocol is not None
     assert result.protocol.status == "pass"
+    assert result.protocol.strength_status == "pass"
+    assert result.protocol.serviceability_status == "not_checked"
+    assert result.protocol.overall_status == "pass"
     assert result.selected_longitudinal.bending.status == "pass"
     assert result.selected_longitudinal.constructive.status == "pass"
     assert result.selected_transverse.shear.status == "pass"
@@ -40,6 +46,9 @@ def test_design_rectangular_element_fails_when_no_longitudinal_option():
     result = design_rectangular_element(mvp_input(M=2_000_000_000))
 
     assert result.status == "fail"
+    assert result.strength_status == "fail"
+    assert result.serviceability_status == "not_checked"
+    assert result.overall_status == "fail"
     assert result.selected_longitudinal is None
     assert result.selected_transverse is None
     assert result.protocol is None
@@ -50,6 +59,9 @@ def test_design_rectangular_element_fails_when_no_transverse_option():
     result = design_rectangular_element(mvp_input(M=150_000_000, Q=2_000_000))
 
     assert result.status == "fail"
+    assert result.strength_status == "fail"
+    assert result.serviceability_status == "not_checked"
+    assert result.overall_status == "fail"
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is None
     assert result.protocol is None
@@ -84,15 +96,18 @@ def test_design_rectangular_forwards_load_duration():
 
 
 def test_design_rectangular_with_crack_check():
-    result = design_rectangular_element(
-        mvp_input(check_cracks=True, Mser=30_000_000)
-    )
+    result = design_rectangular_element(mvp_input(check_cracks=True, Mser=30_000_000))
 
-    assert result.status == "pass"
+    assert result.status == "review_or_fail"
+    assert result.strength_status == "pass"
+    assert result.serviceability_status == "review_or_fail"
+    assert result.overall_status == "review_or_fail"
     assert result.crack_formation is not None
     assert result.crack_formation.status == "crack"
     assert result.crack_formation.requires_engineer_review is True
     assert result.protocol is not None
+    assert result.protocol.serviceability_status == "review_or_fail"
+    assert result.protocol.overall_status == "review_or_fail"
     assert "crack_formation" in result.protocol.checks
     assert any("crack width check is required" in warning for warning in result.warnings)
 
@@ -103,23 +118,31 @@ def test_design_rectangular_with_crack_width_check():
     )
 
     assert result.status == "pass"
+    assert result.strength_status == "pass"
+    assert result.serviceability_status == "pass"
+    assert result.overall_status == "pass"
     assert result.crack_formation is not None
     assert result.crack_width is not None
     assert result.crack_width.acrc >= 0
     assert result.protocol is not None
+    assert result.protocol.serviceability_status == "pass"
     assert "crack_width" in result.protocol.checks
 
 
 def test_design_rectangular_with_deflection_check():
     result = design_rectangular_element(
-        mvp_input(check_deflection=True, Mser=30_000_000, span=6000)
+        mvp_input(check_deflection=True, Mser=10_000_000, span=6000)
     )
 
     assert result.status == "pass"
+    assert result.strength_status == "pass"
+    assert result.serviceability_status == "pass"
+    assert result.overall_status == "pass"
     assert result.crack_formation is not None
     assert result.deflection is not None
     assert result.deflection.requires_engineer_review is True
     assert result.protocol is not None
+    assert result.protocol.serviceability_status == "pass"
     assert "deflection" in result.protocol.checks
 
 
@@ -133,7 +156,13 @@ def test_design_rectangular_with_deflection_fail_warning():
         )
     )
 
-    assert result.status == "pass"
+    assert result.status == "fail"
+    assert result.strength_status == "pass"
+    assert result.serviceability_status == "fail"
+    assert result.overall_status == "fail"
     assert result.deflection is not None
     assert result.deflection.status == "fail"
+    assert result.protocol is not None
+    assert result.protocol.serviceability_status == "fail"
+    assert result.protocol.overall_status == "fail"
     assert any("deflection exceeds draft limit" in warning for warning in result.warnings)
