@@ -381,6 +381,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   advisory-only, deterministic SP63 checks remain mandatory, and neural
   networks are still not implemented.
 
+## K29 neural surrogate smoke MVP status
+
+- CLI command `neural-surrogate --diagnostic-limit 1000 --json` is available
+  for an advisory-only neural surrogate smoke report.
+- Classification uses a small scikit-learn `MLPClassifier` on the K28
+  diagnostic dataset target `overall_status`.
+- Regression smoke metrics use scikit-learn `MLPRegressor` on safe deterministic
+  dataset targets such as `longitudinal_as_mm2` and `bending_utilization`.
+- The neural surrogate is not a design checker, is not certified, and must not
+  be used as the basis for project design.
+- Every ML prediction requires deterministic SP63 verification, and external
+  engineering validation remains required before any broader ML work.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

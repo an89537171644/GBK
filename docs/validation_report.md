@@ -451,6 +451,26 @@ feature warnings.
 The diagnostic dataset is still not a design solution set. It exists for
 ML-readiness review only, and ML remains advisory-only.
 
+## K29 Neural Surrogate Smoke MVP
+
+K29 adds an advisory-only neural surrogate smoke command:
+
+```bash
+python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json
+```
+
+The report uses scikit-learn neural-network estimators only:
+
+- `MLPClassifier` for diagnostic `overall_status`;
+- `MLPRegressor` for safe deterministic regression targets such as
+  `longitudinal_as_mm2` and `bending_utilization`.
+
+The report records classification accuracy, macro F1, confusion matrix, and
+regression MAE/RMSE/R2 metrics. These metrics are smoke signals only and are not
+production evidence. The neural surrogate is not a design checker, no model is
+saved as a project calculator, and every ML prediction requires deterministic
+SP63 verification.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

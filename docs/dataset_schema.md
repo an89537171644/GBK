@@ -251,6 +251,18 @@ The diagnostic dataset remains an ML-readiness artifact only. It is not a set
 of approved project solutions, every row requires engineer review, and ML
 remains advisory-only.
 
+## K29 Neural Surrogate Smoke Dataset Use
+
+`python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes
+the K28 diagnostic dataset for `overall_status` classification and a safe
+deterministic dataset for regression smoke targets. The command does not create
+a new dataset schema, does not approve ML output, and does not save a model as
+a design checker.
+
+The diagnostic dataset remains synthetic and review-only. Neural surrogate
+metrics are smoke signals, not production evidence, and deterministic SP63
+checks remain mandatory for every ML prediction.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

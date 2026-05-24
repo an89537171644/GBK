@@ -742,6 +742,24 @@ def test_cli_ml_baseline_json_output(capsys):
     assert any("deterministic output values" in warning for warning in data["warnings"])
 
 
+def test_cli_neural_surrogate_json_output(capsys):
+    exit_code = main(["neural-surrogate", "--diagnostic-limit", "100", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "neural-surrogate"
+    assert data["neural_network_used"] is True
+    assert data["ml_is_advisory_only"] is True
+    assert data["deterministic_checks_required"] is True
+    assert data["requires_engineer_review"] is True
+    assert data["classification_target"] == "overall_status"
+    assert "accuracy" in data["classification_metrics"]
+    assert "macro_f1" in data["classification_metrics"]
+    assert "longitudinal_as_mm2" in data["regression_metrics"]
+    assert any("must not be used as a design checker" in warning for warning in data["warnings"])
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

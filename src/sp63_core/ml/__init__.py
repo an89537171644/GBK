@@ -10,6 +10,10 @@ from sp63_core.ml.baseline import (
 from sp63_core.ml.baseline_report import BaselineMLReport, build_baseline_ml_report
 from sp63_core.ml.evaluate import evaluate_baseline_models, evaluate_ml_safety
 from sp63_core.ml.features import build_feature_matrix
+from sp63_core.ml.neural_surrogate import (
+    NeuralSurrogateReport,
+    build_neural_surrogate_report,
+)
 from sp63_core.ml.proposal import MLReinforcementProposal, proposal_from_prediction
 from sp63_core.ml.quality import MLQualityGateResult, evaluate_ml_quality_gate
 from sp63_core.ml.readiness import MLReadinessReport, build_ml_readiness_report
@@ -21,9 +25,11 @@ __all__ = [
     "MLReadinessReport",
     "MLQualityGateResult",
     "MLReinforcementProposal",
+    "NeuralSurrogateReport",
     "build_feature_matrix",
     "build_baseline_ml_report",
     "build_ml_readiness_report",
+    "build_neural_surrogate_report",
     "check_ml_prediction_safety",
     "check_ml_proposal_safety",
     "evaluate_baseline_models",

@@ -301,6 +301,22 @@ neural network, and does not make ML a design checker. The diagnostic dataset
 remains an engineer-review artifact and is not a set of approved project
 solutions.
 
+## K29 Neural Surrogate Smoke MVP
+
+K29 introduces the first neural-network smoke surrogate using scikit-learn
+`MLPClassifier` and `MLPRegressor`. This is explicitly advisory-only and is not
+a calculation module. It does not change deterministic SP63 formulas, material
+catalogs, validation gates, or external validation workflow.
+
+The neural surrogate report warns that it must not be used as a design checker,
+that all ML predictions require deterministic SP63 verification, that the
+diagnostic dataset is synthetic and engineer-review material, and that the
+metrics are not production evidence.
+
+Before any broader neural-network work, the project still needs engineering
+review of diagnostic distributions, deterministic validation, external
+validation, and ML safety policy.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
