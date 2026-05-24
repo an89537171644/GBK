@@ -26,6 +26,7 @@ from sp63_core.dataset import (
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
     split_dataset_cases,
+    split_diagnostic_dataset_by_group,
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
@@ -1003,11 +1004,16 @@ def _handle_diagnostic_dataset(args: Namespace) -> int:
     cases = generate_diagnostic_dataset_cases(limit=args.limit)
     status_counts = diagnostic_status_counts(cases)
     warnings = diagnostic_dataset_warnings(cases)
+    split = split_diagnostic_dataset_by_group(cases)
     status = "pass" if not warnings else "review_required"
     payload = {
         "command": "diagnostic-dataset",
         "status": status,
         "case_count": len(cases),
+        "group_key_present": all(case.group_key for case in cases),
+        "group_leakage_count": split.group_leakage_count,
+        "train_group_count": split.train_group_count,
+        "test_group_count": split.test_group_count,
         "status_counts": status_counts,
         "rows": [case.as_row() for case in cases],
         "warnings": list(warnings),
@@ -1020,6 +1026,8 @@ def _handle_diagnostic_dataset(args: Namespace) -> int:
     print("Diagnostic dataset")
     print(f"status: {status}")
     print(f"case_count: {len(cases)}")
+    print(f"group_key_present: {all(case.group_key for case in cases)}")
+    print(f"group_leakage_count: {split.group_leakage_count}")
     print(f"overall_status_counts: {status_counts['overall_status']}")
     for case in cases:
         print(f"{case.case_id}: {case.case_type} -> {case.overall_status}")
@@ -1054,6 +1062,7 @@ def _handle_ml_readiness(args: Namespace) -> int:
     print(f"feature_columns_count: {report.feature_columns_count}")
     print(f"target_columns_count: {report.target_columns_count}")
     print(f"unsafe_rows_count: {report.unsafe_rows_count}")
+    print(f"group_key_present: {report.group_key_present}")
     print(f"group_leakage_count: {report.group_leakage_count}")
     print(
         "missing_required_columns: "

@@ -408,6 +408,27 @@ can leak deterministic calculation results into ML classification. K26 does not
 add a neural network and does not make ML a design checker. Deterministic SP63
 checks remain mandatory.
 
+## K27 Scalable Diagnostic Dataset Validation
+
+K27 scales the diagnostic dataset command:
+
+```bash
+python -m sp63_core diagnostic-dataset --limit 1000 --json
+```
+
+Each diagnostic row now includes `group_key`. The diagnostic status report also
+includes `group_key_present`, `group_leakage_count`, train/test group counts,
+`overall_status` distribution, and `failure_reason` distribution.
+
+`ml-readiness --diagnostic --json` reports group-key availability and keeps the
+diagnostic set in `review_required` status when unsafe/failing rows are present.
+`ml-baseline --diagnostic-limit 1000 --json` uses the diagnostic group split
+when `group_key` is available and keeps the warning for deterministic-derived
+feature leakage.
+
+The diagnostic dataset is for ML-readiness and classification experiments only.
+It does not authorize ML output and does not replace deterministic SP63 checks.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

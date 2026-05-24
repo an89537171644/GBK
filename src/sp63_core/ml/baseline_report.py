@@ -10,6 +10,7 @@ from sp63_core.dataset import (
     DIAGNOSTIC_DATASET_SOURCE,
     DatasetCase,
     DiagnosticDatasetCase,
+    split_diagnostic_dataset_by_group,
 )
 
 SAFE_REGRESSION_TARGETS: tuple[str, ...] = (
@@ -65,7 +66,7 @@ EXPANDED_DIAGNOSTIC_DETERMINISTIC_DERIVED_FEATURES: tuple[str, ...] = (
     "crack_width_mm",
     "deflection_mm",
 )
-EXPANDED_DIAGNOSTIC_SMALL_DATASET_LIMIT = 200
+EXPANDED_DIAGNOSTIC_SMALL_DATASET_LIMIT = 1000
 BASELINE_REPORT_NOTES: tuple[str, ...] = (
     "ML is advisory-only and is not a deterministic design checker.",
     "Neural network is not used in this baseline report.",
@@ -260,12 +261,16 @@ def _build_expanded_diagnostic_classification(
     class_distribution = dict(sorted(Counter(target).items()))
 
     warnings: list[str] = []
+    group_key_present = all(
+        getattr(case, "group_key", "") not in (None, "") for case in diagnostic_cases
+    )
     if len(diagnostic_cases) < EXPANDED_DIAGNOSTIC_SMALL_DATASET_LIMIT:
         warnings.append(
-            "expanded diagnostic dataset has fewer than 200 rows; "
+            "expanded diagnostic dataset has fewer than 1000 rows; "
             "classification metrics are review-only"
         )
-    warnings.append("diagnostic dataset has no group_key; group leakage cannot be checked")
+    if not group_key_present:
+        warnings.append("diagnostic dataset has no group_key; group leakage cannot be checked")
     warnings.append(
         "deterministic_derived_features include deterministic output values and may "
         "leak target information for project ML"
@@ -281,8 +286,9 @@ def _build_expanded_diagnostic_classification(
             "test_rows": 0,
             "split": {
                 "random_state": seed,
-                "group_key_present": False,
-                "group_leakage_checked": False,
+                "group_key_present": group_key_present,
+                "group_leakage_checked": group_key_present,
+                "group_leakage_count": 0,
             },
             "feature_modes": {},
             "warnings": tuple(
@@ -294,10 +300,21 @@ def _build_expanded_diagnostic_classification(
             ),
         }
 
-    train_cases, test_cases = _stratified_diagnostic_split(
-        tuple(diagnostic_cases),
-        seed=seed,
-    )
+    group_split = None
+    if group_key_present:
+        group_split = split_diagnostic_dataset_by_group(diagnostic_cases, seed=seed)
+        train_cases = group_split.train
+        test_cases = group_split.test
+        if not train_cases or not test_cases:
+            train_cases, test_cases = _stratified_diagnostic_split(
+                tuple(diagnostic_cases),
+                seed=seed,
+            )
+    else:
+        train_cases, test_cases = _stratified_diagnostic_split(
+            tuple(diagnostic_cases),
+            seed=seed,
+        )
     feature_modes = {
         "input_only_features": _evaluate_classification_feature_mode(
             train_cases=train_cases,
@@ -341,10 +358,18 @@ def _build_expanded_diagnostic_classification(
         "test_rows": len(test_cases),
         "split": {
             "random_state": seed,
-            "strategy": "stratified_by_overall_status",
-            "group_key_present": False,
-            "group_leakage_checked": False,
-            "warning": "diagnostic dataset has no group_key; group leakage cannot be checked",
+            "strategy": (
+                "group_shuffle_by_group_key"
+                if group_key_present
+                else "stratified_by_overall_status"
+            ),
+            "group_key_present": group_key_present,
+            "group_leakage_checked": group_key_present,
+            "group_leakage_count": (
+                0 if group_split is None else group_split.group_leakage_count
+            ),
+            "train_group_count": 0 if group_split is None else group_split.train_group_count,
+            "test_group_count": 0 if group_split is None else group_split.test_group_count,
         },
         "feature_modes": feature_modes,
         "warnings": tuple(warnings),

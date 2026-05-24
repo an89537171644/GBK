@@ -1,7 +1,8 @@
 """Diagnostic dataset rows with pass, fail, and review cases."""
 
+import random
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -35,6 +36,7 @@ class DiagnosticDatasetCase:
     """One deterministic diagnostic row for future ML classification datasets."""
 
     case_id: str
+    group_key: str
     case_type: str
     description: str
     section_b_mm: float
@@ -85,6 +87,17 @@ class DiagnosticDatasetCase:
         return row
 
 
+@dataclass(frozen=True)
+class DiagnosticDatasetSplit:
+    """Leakage-safe diagnostic train/test split by group_key."""
+
+    train: tuple[DiagnosticDatasetCase, ...]
+    test: tuple[DiagnosticDatasetCase, ...]
+    train_group_count: int
+    test_group_count: int
+    group_leakage_count: int
+
+
 def generate_diagnostic_dataset_cases(
     limit: int = 100,
 ) -> tuple[DiagnosticDatasetCase, ...]:
@@ -118,6 +131,52 @@ def generate_diagnostic_dataset_cases(
             cases.append(_candidate_multiple_fail(len(cases) + 1, variant))
             variant += 1
     return tuple(cases[:limit])
+
+
+def split_diagnostic_dataset_by_group(
+    cases: Sequence[DiagnosticDatasetCase],
+    *,
+    train_ratio: float = 0.7,
+    seed: int = 42,
+) -> DiagnosticDatasetSplit:
+    """Split diagnostic rows by group_key so groups cannot leak across splits."""
+    if not cases:
+        return DiagnosticDatasetSplit((), (), 0, 0, 0)
+    if not 0 < train_ratio < 1:
+        raise ValueError("train_ratio must be between 0 and 1")
+
+    groups: dict[str, list[DiagnosticDatasetCase]] = {}
+    for case in cases:
+        groups.setdefault(case.group_key, []).append(case)
+
+    group_keys = list(groups)
+    random.Random(seed).shuffle(group_keys)
+    train_group_count = max(1, int(len(group_keys) * train_ratio))
+    if train_group_count >= len(group_keys) and len(group_keys) > 1:
+        train_group_count = len(group_keys) - 1
+    train_groups = set(group_keys[:train_group_count])
+    test_groups = set(group_keys[train_group_count:])
+
+    train = tuple(case for case in cases if case.group_key in train_groups)
+    test = tuple(case for case in cases if case.group_key in test_groups)
+    leakage_count = len(train_groups & test_groups)
+    return DiagnosticDatasetSplit(
+        train=train,
+        test=test,
+        train_group_count=len(train_groups),
+        test_group_count=len(test_groups),
+        group_leakage_count=leakage_count,
+    )
+
+
+def diagnostic_group_leakage_count(
+    train_cases: Sequence[DiagnosticDatasetCase],
+    test_cases: Sequence[DiagnosticDatasetCase],
+) -> int:
+    """Return count of diagnostic group_keys present in both train and test."""
+    train_groups = {case.group_key for case in train_cases}
+    test_groups = {case.group_key for case in test_cases}
+    return len(train_groups & test_groups)
 
 
 def diagnostic_status_counts(
@@ -779,6 +838,12 @@ def _build_case(
     )
     return DiagnosticDatasetCase(
         case_id=case_id,
+        group_key=_build_group_key(
+            section=section,
+            concrete_class=concrete_class,
+            main_rebar_class=main_rebar_class,
+            stirrup_rebar_class=stirrup_rebar_class,
+        ),
         case_type=case_type,
         description=description,
         section_b_mm=section.b,
@@ -870,3 +935,20 @@ def _value(checks: Mapping[str, Any], check_name: str, attr_name: str) -> float 
         return None
     value = getattr(check, attr_name)
     return float(value)
+
+
+def _build_group_key(
+    *,
+    section: RectangularSection,
+    concrete_class: str,
+    main_rebar_class: str,
+    stirrup_rebar_class: str,
+) -> str:
+    return (
+        "beam_rectangular"
+        f"|b={section.b:g}"
+        f"|h={section.h:g}"
+        f"|concrete={concrete_class}"
+        f"|main_rebar={main_rebar_class}"
+        f"|stirrup_rebar={stirrup_rebar_class}"
+    )

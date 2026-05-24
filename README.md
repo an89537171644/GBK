@@ -351,6 +351,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - No neural network is used. ML remains advisory-only, and deterministic SP63
   checks remain mandatory.
 
+## K27 scalable diagnostic dataset status
+
+- CLI command `diagnostic-dataset --limit 1000 --json` is supported for a
+  larger deterministic diagnostic/candidate dataset.
+- Every diagnostic row now includes `group_key` for leakage-safe ML splitting.
+- `ml-readiness --diagnostic --json` reports `group_key_present`,
+  `group_leakage_count`, status distribution, and failure-reason distribution.
+- `ml-baseline --diagnostic-limit 1000 --json` uses a group-aware diagnostic
+  split when `group_key` is available.
+- The diagnostic dataset is not a set of approved design solutions; every row
+  remains engineer-review material.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

@@ -45,7 +45,7 @@ def test_train_evaluate_save_and_load_baseline_models(tmp_path):
 
 def test_build_baseline_ml_report_uses_non_neural_models():
     safe_cases = generate_dataset_cases(limit=30)
-    diagnostic_cases = generate_diagnostic_dataset_cases()
+    diagnostic_cases = generate_diagnostic_dataset_cases(limit=1000)
 
     report = build_baseline_ml_report(safe_cases, diagnostic_cases)
 
@@ -89,8 +89,12 @@ def test_build_baseline_ml_report_uses_non_neural_models():
         >= 0.0
     )
     assert "neural" not in report.regression_models["ridge"].lower()
+    assert expanded["split"]["group_key_present"] is True
+    assert expanded["split"]["group_leakage_checked"] is True
+    assert expanded["split"]["group_leakage_count"] == 0
+    assert not any("fewer than 1000 rows" in warning for warning in report.warnings)
+    assert not any("no group_key" in warning for warning in report.warnings)
     assert any(
-        "expanded diagnostic dataset has fewer than 200 rows" in warning
+        "deterministic_derived_features include deterministic output values" in warning
         for warning in report.warnings
     )
-    assert any("no group_key" in warning for warning in report.warnings)
