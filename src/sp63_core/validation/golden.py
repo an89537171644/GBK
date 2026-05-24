@@ -161,6 +161,11 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
         )
     )
     protocol_status = "" if design.protocol is None else design.protocol.status
+    protocol_strength_status = "" if design.protocol is None else design.protocol.strength_status
+    protocol_serviceability_status = (
+        "" if design.protocol is None else design.protocol.serviceability_status
+    )
+    protocol_overall_status = "" if design.protocol is None else design.protocol.overall_status
     bending_status = (
         ""
         if design.selected_longitudinal is None
@@ -174,13 +179,25 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
             case_id="design_rectangular_case_01",
             expected={
                 "design_status": "pass",
+                "strength_status": "pass",
+                "serviceability_status": "not_checked",
+                "overall_status": "pass",
                 "protocol_status": "pass",
+                "protocol_strength_status": "pass",
+                "protocol_serviceability_status": "not_checked",
+                "protocol_overall_status": "pass",
                 "bending_status": "pass",
                 "shear_status": "pass",
             },
             actual={
                 "design_status": design.status,
+                "strength_status": design.strength_status,
+                "serviceability_status": design.serviceability_status,
+                "overall_status": design.overall_status,
                 "protocol_status": protocol_status,
+                "protocol_strength_status": protocol_strength_status,
+                "protocol_serviceability_status": protocol_serviceability_status,
+                "protocol_overall_status": protocol_overall_status,
                 "bending_status": bending_status,
                 "shear_status": shear_status,
             },

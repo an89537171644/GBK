@@ -14,8 +14,8 @@
 | `rebar/constructive.py` | implemented draft constructive checks | yes | yes | engineer review |
 | `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
-| `design/rectangular.py` | implemented draft end-to-end rectangular design | yes | yes | engineer review and CLI integration |
-| `report/protocol.py` | draft | yes | yes | keep protocol structure stable |
+| `design/rectangular.py` | implemented draft end-to-end rectangular design with separated strength, serviceability, and overall statuses | yes | yes | engineer review and CLI integration |
+| `report/protocol.py` | implemented separated strength_status, serviceability_status, and overall_status; legacy status aliases overall_status | yes | yes | keep protocol structure stable |
 | `dataset/generator.py` | implemented draft with beam-only MVP, expanded columns including cover, stirrup geometry consistency, and shuffled full-grid limit | yes | yes | engineer review dataset ranges |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K8 report counters | yes | no | compare report ranges during dataset review |
@@ -29,7 +29,7 @@
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
-| `cli.py` | implemented with subcommands including crack formation, crack width, and deflection | yes | no | dataset split and ML preparation |
+| `cli.py` | implemented with subcommands including crack formation, crack width, deflection, and separated design statuses | yes | no | dataset split and ML preparation |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |

@@ -228,6 +228,23 @@ This validation does not cover long-term deflection, creep, shrinkage, refined
 tension stiffening, nonlinear deformation, slabs, columns, T-sections,
 punching, torsion, anchorage, support zones, bar curtailment, or Streamlit.
 
+## K17 Status Separation Validation
+
+K17 updates protocol and design golden validation to include separated
+`strength_status`, `serviceability_status`, and `overall_status` values. The
+legacy `status` remains an alias for `overall_status`.
+
+The design golden case keeps the same calculation values and now checks:
+
+- `strength_status = "pass"` for bending and shear;
+- `serviceability_status = "not_checked"` when serviceability checks are not
+  requested;
+- `overall_status = "pass"`;
+- `status = "pass"`.
+
+K17 validation changes status aggregation only. Bending, shear, crack
+formation, crack width, and deflection formulas are not changed.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
