@@ -760,6 +760,21 @@ def test_cli_neural_surrogate_json_output(capsys):
     assert any("must not be used as a design checker" in warning for warning in data["warnings"])
 
 
+def test_cli_ml_proposal_verify_json_output(capsys):
+    exit_code = main(["ml-proposal-verify", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "ml-proposal-verify"
+    assert data["status"] == "pass"
+    assert data["verified_count"] == 2
+    assert data["accepted_count"] == 1
+    assert data["rejected_count"] == 1
+    assert data["ml_is_advisory_only"] is True
+    assert data["deterministic_checks_required"] is True
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

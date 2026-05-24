@@ -471,6 +471,28 @@ production evidence. The neural surrogate is not a design checker, no model is
 saved as a project calculator, and every ML prediction requires deterministic
 SP63 verification.
 
+## K30 ML Proposal Safety Wrapper
+
+K30 adds deterministic verification for advisory ML proposals:
+
+```bash
+python -m sp63_core ml-proposal-verify --json
+```
+
+The smoke command verifies one passing and one failing rectangular
+reinforcement proposal. The wrapper accepts a proposal only when deterministic
+strength status is `pass`, serviceability status is `pass` or `not_checked`,
+and overall status is `pass`.
+
+For `rectangular_rebar_scheme` proposals, the wrapper reconstructs the proposed
+reinforcement and runs deterministic bending and shear checks. When service
+inputs are present, it also runs normal crack formation, crack width, and
+deflection checks. Proposals with deterministic `fail` or `review_or_fail`
+status are rejected.
+
+The wrapper is a safety gate, not an ML approval mechanism. Accepted proposals
+still require engineer review, and ML remains advisory-only.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
