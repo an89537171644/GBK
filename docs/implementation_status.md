@@ -21,6 +21,7 @@
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K8 report counters | yes | no | compare report ranges during dataset review |
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |
+| `validation/manual_cases.py` | implemented manual SP63 verification cases | yes | yes | engineer review manual expected values and tolerances |
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |
 | `validation/scad_lira_template.py` | implemented manual comparison template | yes | yes | fill with SCAD/LIRA engineer results |
 | `validation/external.py` | implemented external validation templates, filled CSV loading, delta export, and strict acceptance gates | yes | yes | fill SCAD/LIRA values manually |

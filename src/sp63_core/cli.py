@@ -48,6 +48,7 @@ from sp63_core.validation import (
     run_crack_width_golden_cases,
     run_deflection_golden_cases,
     run_design_golden_cases,
+    run_manual_verification_cases,
     run_shear_golden_cases,
     validate_dataset_cases,
 )
@@ -215,6 +216,13 @@ def build_parser() -> ArgumentParser:
     )
     materials_audit.add_argument("--json", action="store_true", help="print JSON output")
     materials_audit.set_defaults(handler=_handle_materials_audit)
+
+    manual_cases = subparsers.add_parser(
+        "manual-cases",
+        help="run manual SP63 verification cases",
+    )
+    manual_cases.add_argument("--json", action="store_true", help="print JSON output")
+    manual_cases.set_defaults(handler=_handle_manual_cases)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -920,6 +928,38 @@ def _handle_materials_audit(args: Namespace) -> int:
             f"requires_engineer_review={row.requires_engineer_review}"
         )
     _print_warnings(warnings)
+    return 0
+
+
+def _handle_manual_cases(args: Namespace) -> int:
+    results = run_manual_verification_cases()
+    passed_count = sum(1 for result in results if result.passed)
+    status = "pass" if passed_count == len(results) else "fail"
+    payload = {
+        "command": "manual-cases",
+        "status": status,
+        "case_count": len(results),
+        "passed_count": passed_count,
+        "cases": [asdict(result) for result in results],
+        "requires_engineer_review": True,
+        "warnings": [
+            "manual SP63 verification cases are draft MVP checks and require engineer review"
+        ],
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Manual SP63 verification cases")
+    print(f"status: {status}")
+    print(f"case_count: {len(results)}")
+    print(f"passed_count: {passed_count}")
+    for result in results:
+        print(f"{result.case_id}: {result.status} - {result.title}")
+        print(f"  strength_status: {result.actual_statuses.get('strength_status')}")
+        print(f"  serviceability_status: {result.actual_statuses.get('serviceability_status')}")
+        print(f"  overall_status: {result.actual_statuses.get('overall_status')}")
+    _print_warnings(tuple(payload["warnings"]))
     return 0
 
 

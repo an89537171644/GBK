@@ -24,12 +24,19 @@ from sp63_core.validation.golden import (
     run_design_golden_cases,
     run_shear_golden_cases,
 )
+from sp63_core.validation.manual_cases import (
+    ManualVerificationCase,
+    ManualVerificationResult,
+    run_manual_verification_cases,
+)
 from sp63_core.validation.scad_lira_template import build_scad_lira_comparison_template
 
 __all__ = [
     "DatasetValidationResult",
     "ExternalComparisonRow",
     "GoldenCaseResult",
+    "ManualVerificationCase",
+    "ManualVerificationResult",
     "build_external_comparison_rows",
     "build_scad_lira_comparison_template",
     "compute_external_deltas",
@@ -44,6 +51,7 @@ __all__ = [
     "run_crack_width_golden_cases",
     "run_deflection_golden_cases",
     "run_design_golden_cases",
+    "run_manual_verification_cases",
     "run_shear_golden_cases",
     "validate_dataset_cases",
 ]

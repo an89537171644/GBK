@@ -658,6 +658,31 @@ def test_cli_materials_audit_json_output(capsys):
     )
 
 
+def test_cli_manual_cases_text_output(capsys):
+    exit_code = main(["manual-cases"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Manual SP63 verification cases" in captured.out
+    assert "status: pass" in captured.out
+    assert "case_count: 6" in captured.out
+    assert "manual_case_01" in captured.out
+
+
+def test_cli_manual_cases_json_output(capsys):
+    exit_code = main(["manual-cases", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "manual-cases"
+    assert data["status"] == "pass"
+    assert data["case_count"] == 6
+    assert data["passed_count"] == 6
+    assert all(case["passed"] for case in data["cases"])
+    assert data["requires_engineer_review"] is True
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

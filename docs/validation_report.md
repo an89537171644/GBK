@@ -264,6 +264,30 @@ an engineer before final design use. The full normative text is not stored in
 the repository. ML remains advisory-only and must not treat the material catalog
 as final approved design data.
 
+## K20 Manual SP63 Verification Cases
+
+K20 adds a manual verification package:
+
+```bash
+python -m sp63_core manual-cases --json
+```
+
+The package runs six manual control cases and compares program output against
+manual expected values with documented tolerances. It also checks
+`strength_status`, `serviceability_status`, and `overall_status`.
+
+The six cases cover:
+
+- passing beam with strength and serviceability checks;
+- bending failure from insufficient longitudinal reinforcement;
+- expected cracks without crack-width check;
+- crack-width failure;
+- deflection failure;
+- shear failure.
+
+The manual cases are a draft validation aid, not final certification. Engineer
+review remains required.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
