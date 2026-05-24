@@ -7,6 +7,7 @@ from sp63_core.dataset.diagnostic import (
     diagnostic_dataset_warnings,
     diagnostic_group_leakage_count,
     diagnostic_status_counts,
+    diagnostic_unique_group_count,
     generate_diagnostic_dataset_cases,
     split_diagnostic_dataset_by_group,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "diagnostic_dataset_warnings",
     "diagnostic_group_leakage_count",
     "diagnostic_status_counts",
+    "diagnostic_unique_group_count",
     "export_dataset_csv",
     "export_dataset_report_json",
     "export_dataset_split_csv",

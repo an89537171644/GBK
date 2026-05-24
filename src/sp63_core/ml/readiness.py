@@ -58,6 +58,7 @@ TARGET_COLUMNS: tuple[str, ...] = RESULT_REQUIRED_COLUMNS + STATUS_COLUMNS
 DIAGNOSTIC_DATASET_SOURCE = "diagnostic_deterministic_sp63_core"
 DIAGNOSTIC_REQUIRED_OVERALL_STATUSES = ("pass", "fail", "review_or_fail")
 DIAGNOSTIC_MIN_CLASSIFICATION_ROWS = 1000
+DIAGNOSTIC_MIN_UNIQUE_GROUPS = 50
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,7 @@ class MLReadinessReport:
     status_counts: dict[str, dict[str, int]]
     failure_reason_counts: dict[str, int]
     group_key_present: bool
+    unique_group_count: int
     unsafe_rows_count: int
     group_leakage_count: int
     constant_target_columns: tuple[str, ...]
@@ -90,6 +92,7 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
     group_key_present = bool(normalized_rows) and all(
         row.get("group_key") not in (None, "") for row in normalized_rows
     )
+    unique_group_count = _unique_group_count(normalized_rows) if group_key_present else 0
     unsafe_rows_count = sum(
         1 for row in normalized_rows if _is_truthy(row.get("unsafe_row", False))
     )
@@ -134,6 +137,11 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
             )
         if not group_key_present:
             warnings.append("diagnostic dataset is missing group_key values")
+        if unique_group_count < DIAGNOSTIC_MIN_UNIQUE_GROUPS:
+            warnings.append(
+                "diagnostic dataset has fewer than 50 unique group_key values; "
+                "group-diverse ML validation remains review-only"
+            )
         if total_rows < DIAGNOSTIC_MIN_CLASSIFICATION_ROWS:
             warnings.append(
                 "diagnostic dataset has fewer than 1000 rows; "
@@ -155,6 +163,7 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
         status_counts=status_counts,
         failure_reason_counts=failure_reason_counts,
         group_key_present=group_key_present,
+        unique_group_count=unique_group_count,
         unsafe_rows_count=unsafe_rows_count,
         group_leakage_count=group_leakage_count,
         constant_target_columns=constant_target_columns,
@@ -205,6 +214,10 @@ def _group_leakage_count(rows: tuple[dict[str, Any], ...]) -> int:
     train_groups = set(shuffled[:train_count])
     test_groups = set(shuffled[train_count:])
     return len(train_groups & test_groups)
+
+
+def _unique_group_count(rows: tuple[dict[str, Any], ...]) -> int:
+    return len({str(row["group_key"]) for row in rows if row.get("group_key")})
 
 
 def _constant_columns(

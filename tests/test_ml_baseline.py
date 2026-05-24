@@ -90,8 +90,11 @@ def test_build_baseline_ml_report_uses_non_neural_models():
     )
     assert "neural" not in report.regression_models["ridge"].lower()
     assert expanded["split"]["group_key_present"] is True
+    assert expanded["split"]["unique_group_count"] >= 50
     assert expanded["split"]["group_leakage_checked"] is True
     assert expanded["split"]["group_leakage_count"] == 0
+    assert expanded["split"]["train_group_count"] > 1
+    assert expanded["split"]["test_group_count"] > 1
     assert not any("fewer than 1000 rows" in warning for warning in report.warnings)
     assert not any("no group_key" in warning for warning in report.warnings)
     assert any(

@@ -20,6 +20,7 @@ from sp63_core.dataset import (
     build_dataset_report,
     diagnostic_dataset_warnings,
     diagnostic_status_counts,
+    diagnostic_unique_group_count,
     export_dataset_csv,
     export_dataset_report_json,
     export_dataset_split_csv,
@@ -1005,11 +1006,13 @@ def _handle_diagnostic_dataset(args: Namespace) -> int:
     status_counts = diagnostic_status_counts(cases)
     warnings = diagnostic_dataset_warnings(cases)
     split = split_diagnostic_dataset_by_group(cases)
+    unique_group_count = diagnostic_unique_group_count(cases)
     status = "pass" if not warnings else "review_required"
     payload = {
         "command": "diagnostic-dataset",
         "status": status,
         "case_count": len(cases),
+        "unique_group_count": unique_group_count,
         "group_key_present": all(case.group_key for case in cases),
         "group_leakage_count": split.group_leakage_count,
         "train_group_count": split.train_group_count,
@@ -1026,6 +1029,7 @@ def _handle_diagnostic_dataset(args: Namespace) -> int:
     print("Diagnostic dataset")
     print(f"status: {status}")
     print(f"case_count: {len(cases)}")
+    print(f"unique_group_count: {unique_group_count}")
     print(f"group_key_present: {all(case.group_key for case in cases)}")
     print(f"group_leakage_count: {split.group_leakage_count}")
     print(f"overall_status_counts: {status_counts['overall_status']}")
@@ -1063,6 +1067,7 @@ def _handle_ml_readiness(args: Namespace) -> int:
     print(f"target_columns_count: {report.target_columns_count}")
     print(f"unsafe_rows_count: {report.unsafe_rows_count}")
     print(f"group_key_present: {report.group_key_present}")
+    print(f"unique_group_count: {report.unique_group_count}")
     print(f"group_leakage_count: {report.group_leakage_count}")
     print(
         "missing_required_columns: "
