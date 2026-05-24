@@ -245,6 +245,25 @@ The design golden case keeps the same calculation values and now checks:
 K17 validation changes status aggregation only. Bending, shear, crack
 formation, crack width, and deflection formulas are not changed.
 
+## K19 Material Catalog Audit
+
+K19 adds a material audit report for the current draft concrete and
+reinforcement catalog values. The report is available through:
+
+```bash
+python -m sp63_core materials-audit --json
+```
+
+The audit report is a validation smoke for catalog transparency. It confirms
+that every current material property is exposed with a unit, usage note,
+`draft_requires_engineer_review` status, and an explicit review flag. It does
+not certify the values.
+
+Material catalog values must still be checked manually against SP 63 tables by
+an engineer before final design use. The full normative text is not stored in
+the repository. ML remains advisory-only and must not treat the material catalog
+as final approved design data.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

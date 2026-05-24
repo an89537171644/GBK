@@ -166,6 +166,22 @@ deflection formulas. It makes serviceability failures visible in the final
 design status instead of allowing a passed strength result to mask them. ML
 modules were not changed and ML remains advisory-only.
 
+## K19 Material Catalog Audit
+
+K19 adds a transparent audit layer for the concrete and reinforcement catalogs.
+The audit report lists current draft values, their usage in strength or
+serviceability checks, units, and review flags.
+
+All material values remain `draft_requires_engineer_review`. The audit does not
+approve normative values and does not store full SP 63 text. An engineer must
+verify concrete `Rb`, `Rbt`, `Rbser`, `Rbtser`, `Eb` and reinforcement `Rsn`,
+`Rs`, `Rsser`, `Rsc_short`, `Rsc_long`, `Rsw`, `Es` against the applicable
+tables before final use.
+
+K19 does not change calculation formulas, ML modules, dataset generation, or
+external validation gates. ML remains advisory-only and deterministic SP 63
+checks remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

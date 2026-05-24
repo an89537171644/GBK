@@ -3,8 +3,9 @@
 | module | status | tests | requires_engineer_review | next_action |
 |---|---|---|---|---|
 | `units.py` | done | yes | no | keep stable |
-| `materials/concrete.py` | implemented draft with strength and service properties Rb/Rbt/Rbser/Rbtser | yes | yes | engineer review of SP63 table values before crack calculations |
-| `materials/rebar.py` | implemented draft with `Rsc_short`/`Rsc_long` and service `Rsser` | yes | yes | engineer review of material values |
+| `materials/concrete.py` | implemented draft with strength/service values exposed in material audit | yes | yes | engineer must verify values against SP 63 tables before final use |
+| `materials/rebar.py` | implemented draft with strength/service values exposed in material audit | yes | yes | engineer must verify values against SP 63 tables before final use |
+| `materials/audit.py` | implemented material audit report | yes | yes | engineer must verify values against SP 63 tables before final use |
 | `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
 | `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
 | `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |
