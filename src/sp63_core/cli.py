@@ -18,10 +18,13 @@ from sp63_core.dataset import (
     DATASET_VERSION,
     DatasetCase,
     build_dataset_report,
+    diagnostic_dataset_warnings,
+    diagnostic_status_counts,
     export_dataset_csv,
     export_dataset_report_json,
     export_dataset_split_csv,
     generate_dataset_cases,
+    generate_diagnostic_dataset_cases,
     split_dataset_cases,
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
@@ -225,11 +228,24 @@ def build_parser() -> ArgumentParser:
     manual_cases.add_argument("--json", action="store_true", help="print JSON output")
     manual_cases.set_defaults(handler=_handle_manual_cases)
 
+    diagnostic_dataset = subparsers.add_parser(
+        "diagnostic-dataset",
+        help="generate deterministic diagnostic pass/fail/review dataset rows",
+    )
+    diagnostic_dataset.add_argument("--limit", type=int, default=100)
+    diagnostic_dataset.add_argument("--json", action="store_true", help="print JSON output")
+    diagnostic_dataset.set_defaults(handler=_handle_diagnostic_dataset)
+
     ml_readiness = subparsers.add_parser(
         "ml-readiness",
         help="check deterministic dataset readiness for later advisory ML",
     )
     ml_readiness.add_argument("--generate-dataset-limit", type=int, default=100)
+    ml_readiness.add_argument(
+        "--diagnostic",
+        action="store_true",
+        help="check diagnostic pass/fail/review dataset instead of safe accepted dataset",
+    )
     ml_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_readiness.set_defaults(handler=_handle_ml_readiness)
 
@@ -972,11 +988,49 @@ def _handle_manual_cases(args: Namespace) -> int:
     return 0
 
 
+def _handle_diagnostic_dataset(args: Namespace) -> int:
+    cases = generate_diagnostic_dataset_cases(limit=args.limit)
+    status_counts = diagnostic_status_counts(cases)
+    warnings = diagnostic_dataset_warnings(cases)
+    status = "pass" if not warnings else "review_required"
+    payload = {
+        "command": "diagnostic-dataset",
+        "status": status,
+        "case_count": len(cases),
+        "status_counts": status_counts,
+        "rows": [case.as_row() for case in cases],
+        "warnings": list(warnings),
+        "requires_engineer_review": True,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Diagnostic dataset")
+    print(f"status: {status}")
+    print(f"case_count: {len(cases)}")
+    print(f"overall_status_counts: {status_counts['overall_status']}")
+    for case in cases:
+        print(f"{case.case_id}: {case.case_type} -> {case.overall_status}")
+        if case.failure_reason:
+            print(f"  failure_reason: {case.failure_reason}")
+    _print_warnings(warnings)
+    return 0
+
+
 def _handle_ml_readiness(args: Namespace) -> int:
-    cases = generate_dataset_cases(limit=args.generate_dataset_limit)
-    report = build_ml_readiness_report(case.as_row() for case in cases)
+    if args.diagnostic:
+        cases = generate_diagnostic_dataset_cases(limit=args.generate_dataset_limit)
+        rows = (case.as_readiness_row() for case in cases)
+        dataset_mode = "diagnostic"
+    else:
+        cases = generate_dataset_cases(limit=args.generate_dataset_limit)
+        rows = (case.as_row() for case in cases)
+        dataset_mode = "safe_accepted"
+    report = build_ml_readiness_report(rows)
     payload = {
         "command": "ml-readiness",
+        "dataset_mode": dataset_mode,
         **asdict(report),
     }
     if args.json:

@@ -140,6 +140,29 @@ needed before classification ML.
 K22 does not train ML and does not add a neural network. ML remains
 advisory-only.
 
+## K23 Diagnostic Dataset
+
+`python -m sp63_core diagnostic-dataset --json` generates a separate
+diagnostic/candidate dataset. This dataset is intentionally different from the
+safe accepted dataset produced by `generate_dataset_cases()`.
+
+Diagnostic rows include:
+
+- geometry, material, load, reinforcement, strength, and serviceability fields;
+- status fields for bending, shear, crack formation, crack width, deflection,
+  strength, serviceability, and overall result;
+- `failure_reason` and `warning_text`;
+- `requires_engineer_review = true`;
+- `dataset_source = diagnostic_deterministic_sp63_core`.
+
+The default K23 diagnostic set is based on the K20 manual verification scenarios
+and contains `overall_status` values `pass`, `fail`, and `review_or_fail`. It is
+intended for future classification dataset preparation, not for project design.
+
+`python -m sp63_core ml-readiness --diagnostic --json` checks the diagnostic
+dataset with the K22 readiness gate. The diagnostic set is expected to require
+review because it deliberately includes failing and review rows.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

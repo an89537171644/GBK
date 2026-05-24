@@ -323,6 +323,30 @@ This is intentionally reported as `review_required`: classification ML is not
 ready until a separate diagnostic dataset includes fail and review cases. ML
 remains advisory-only.
 
+## K23 Diagnostic Dataset Validation
+
+K23 adds a separate diagnostic dataset command:
+
+```bash
+python -m sp63_core diagnostic-dataset --json
+```
+
+The diagnostic dataset contains deterministic rows with `overall_status` values
+`pass`, `fail`, and `review_or_fail`. The rows are based on K20 manual
+verification scenarios and are computed through the existing deterministic
+checks.
+
+K23 also allows:
+
+```bash
+python -m sp63_core ml-readiness --diagnostic --json
+```
+
+This confirms that `overall_status` is no longer a constant target for the
+diagnostic set. The diagnostic readiness status can still be `review_required`
+because the set deliberately includes unsafe/failing rows. It is a future ML
+classification aid, not a final design dataset.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
