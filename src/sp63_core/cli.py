@@ -34,6 +34,7 @@ from sp63_core.materials import build_material_audit_rows, get_concrete, get_reb
 from sp63_core.ml import (
     build_baseline_ml_report,
     build_ml_readiness_report,
+    build_neural_surrogate_report,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
@@ -261,6 +262,15 @@ def build_parser() -> ArgumentParser:
     ml_baseline.add_argument("--seed", type=int, default=42)
     ml_baseline.add_argument("--json", action="store_true", help="print JSON output")
     ml_baseline.set_defaults(handler=_handle_ml_baseline)
+
+    neural_surrogate = subparsers.add_parser(
+        "neural-surrogate",
+        help="run advisory-only neural surrogate smoke report",
+    )
+    neural_surrogate.add_argument("--diagnostic-limit", type=int, default=5000)
+    neural_surrogate.add_argument("--seed", type=int, default=42)
+    neural_surrogate.add_argument("--json", action="store_true", help="print JSON output")
+    neural_surrogate.set_defaults(handler=_handle_neural_surrogate)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -1125,6 +1135,50 @@ def _handle_ml_baseline(args: Namespace) -> int:
             f"  {mode_name}: logistic_accuracy={logistic_metrics['accuracy']:.6g}, "
             f"logistic_macro_f1={logistic_metrics['macro_f1']:.6g}"
         )
+    _print_warnings(report.warnings)
+    return 0
+
+
+def _handle_neural_surrogate(args: Namespace) -> int:
+    report = build_neural_surrogate_report(
+        diagnostic_limit=args.diagnostic_limit,
+        random_state=args.seed,
+    )
+    payload = {
+        "command": "neural-surrogate",
+        **asdict(report),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Neural surrogate smoke report")
+    print(f"status: {report.status}")
+    print("ML is advisory-only.")
+    print("Neural network is a smoke MVP, not a design checker.")
+    print("Deterministic SP63 checks remain mandatory.")
+    print(f"dataset_name: {report.dataset_name}")
+    print(f"total_rows: {report.total_rows}")
+    print(f"train_rows: {report.train_rows}")
+    print(f"test_rows: {report.test_rows}")
+    print(f"group_key_present: {report.group_key_present}")
+    print(f"group_leakage_count: {report.group_leakage_count}")
+    print(f"classification_target: {report.classification_target}")
+    print(
+        "classification_accuracy: "
+        f"{report.classification_metrics.get('accuracy', 'not_available')}"
+    )
+    print(
+        "classification_macro_f1: "
+        f"{report.classification_metrics.get('macro_f1', 'not_available')}"
+    )
+    for target_name in ("longitudinal_as_mm2", "bending_utilization"):
+        if target_name in report.regression_metrics:
+            metrics = report.regression_metrics[target_name]
+            print(
+                f"{target_name}: mae={metrics['mae']:.6g}, "
+                f"rmse={metrics['rmse']:.6g}, r2={metrics['r2']:.6g}"
+            )
     _print_warnings(report.warnings)
     return 0
 
