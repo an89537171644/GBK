@@ -26,6 +26,7 @@ requires_engineer_review = true
   sandbox quality gate.
 - K13 service concrete properties `Rbser` and `Rbtser` for future second
   limit-state preparation.
+- K15 draft normal crack width `acrc` check for rectangular beams.
 - End-to-end rectangular element design workflow.
 - CLI scenarios for checks, selection, design, and dataset generation.
 
@@ -52,8 +53,8 @@ requires_engineer_review = true
 
 ## Not Implemented
 
-- Crack width, deflections, and other serviceability checks beyond draft normal
-  crack formation.
+- Deflections and other serviceability checks beyond draft normal crack
+  formation and draft normal crack width.
 - T-sections, columns, punching, torsion, prestress, anchorage, support zones,
   and bar curtailment.
 - HTML/PDF protocol rendering.
@@ -71,10 +72,10 @@ K7 strengthens the shear check by reporting draft Qsw-counting conditions. This
 does not make ML acceptable as a final stage; deterministic checks and manual
 engineering review are still required.
 
-K8 makes the dataset pipeline more stable, but it still does not cover cracks,
-deflections, T-sections, columns, slabs, punching, torsion, anchorage, support
-zones, or bar curtailment. ML may begin only after reviewing `dataset_report`
-outputs and manually checking the draft golden cases.
+K8 makes the dataset pipeline more stable, but it still does not cover
+serviceability data, deflections, T-sections, columns, slabs, punching, torsion,
+anchorage, support zones, or bar curtailment. ML may begin only after reviewing
+`dataset_report` outputs and manually checking the draft golden cases.
 
 K9 adds automated validation summaries, but this is not certification. The
 outputs still require manual engineering review and external comparison.
@@ -123,6 +124,18 @@ section behavior, long-term effects, axial force, prestress, slabs, T-sections,
 or nonlinear deformation modeling. The result is a draft-MVP signal that crack
 width `acrc` must be checked in a later deterministic step when normal cracks
 are expected.
+
+## K15 Normal Crack Width
+
+K15 adds a draft normal crack width `acrc` check for rectangular reinforced
+concrete beams. The implementation uses service reinforcement property `Rsser`,
+a simplified elastic cracked reinforcement stress estimate, and bounded draft
+crack spacing.
+
+This is not a refined SP 63 crack width model. It does not include refined crack
+spacing, tension stiffening, long-term effects, transformed-section behavior,
+or nonlinear deformation modeling. Deflection is still not implemented. ML
+modules were not changed and ML remains advisory-only.
 
 ## Next Stages
 

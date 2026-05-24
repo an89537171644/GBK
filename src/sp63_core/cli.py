@@ -9,6 +9,7 @@ from typing import Any
 from sp63_core.checks import (
     check_bending_rectangular,
     check_normal_crack_formation_rectangular,
+    check_normal_crack_width_rectangular,
     check_shear_rectangular,
 )
 from sp63_core.dataset import (
@@ -43,6 +44,7 @@ from sp63_core.validation import (
     load_external_comparison_csv,
     run_bending_golden_cases,
     run_crack_formation_golden_cases,
+    run_crack_width_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
     validate_dataset_cases,
@@ -92,6 +94,23 @@ def build_parser() -> ArgumentParser:
     )
     cracking.add_argument("--json", action="store_true", help="print JSON output")
     cracking.set_defaults(handler=_handle_crack_formation)
+
+    crack_width = subparsers.add_parser(
+        "crack-width",
+        help="check draft normal crack width for a rectangular section",
+    )
+    _add_section_arguments(crack_width)
+    _add_material_arguments(crack_width, include_rebar=True)
+    crack_width.add_argument(
+        "--moment-ser",
+        type=float,
+        required=True,
+        help="service bending moment, N*mm",
+    )
+    crack_width.add_argument("--as-area", type=float, required=True, help="tensile area As, mm2")
+    crack_width.add_argument("--acrc-limit", type=float, default=0.3, help="crack width limit, mm")
+    crack_width.add_argument("--json", action="store_true", help="print JSON output")
+    crack_width.set_defaults(handler=_handle_crack_width)
 
     longitudinal = subparsers.add_parser(
         "select-longitudinal", help="select longitudinal reinforcement"
@@ -230,6 +249,8 @@ def _add_design_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--shear", type=float, required=True, help="shear force, N")
     parser.add_argument("--moment-ser", type=float, default=None, help="service moment, N*mm")
     parser.add_argument("--check-cracks", action="store_true", help="run Mcrc crack check")
+    parser.add_argument("--check-crack-width", action="store_true", help="run acrc crack check")
+    parser.add_argument("--acrc-limit", type=float, default=0.3, help="crack width limit, mm")
     parser.add_argument("--load-duration", choices=("short", "long"), default="short")
 
 
@@ -357,6 +378,37 @@ def _handle_crack_formation(args: Namespace) -> int:
     return 0
 
 
+def _handle_crack_width(args: Namespace) -> int:
+    section = _section_from_args(args)
+    concrete = get_concrete(args.concrete)
+    rebar = get_rebar(args.rebar)
+    crack_width = check_normal_crack_width_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        Mser=args.moment_ser,
+        As=args.as_area,
+        main_bar_diameter=args.main_bar_diameter,
+        acrc_limit=args.acrc_limit,
+    )
+    result = _crack_width_to_dict(crack_width)
+    if args.json:
+        _print_json("crack-width", crack_width.status, result, crack_width.warnings)
+        return 0
+
+    print("Crack width")
+    print(f"status: {crack_width.status}")
+    print(f"acrc: {crack_width.acrc:.6f} mm")
+    print(f"acrc_limit: {crack_width.acrc_limit:.3f} mm")
+    print(f"utilization: {crack_width.utilization:.3f}")
+    print(f"sigma_s: {crack_width.sigma_s:.3f} MPa")
+    print(f"epsilon_s: {crack_width.epsilon_s:.8f}")
+    print(f"crack_spacing: {crack_width.crack_spacing:.2f} mm")
+    print(f"Mcrc: {crack_width.Mcrc:.2f} N*mm")
+    _print_warnings(crack_width.warnings)
+    return 0
+
+
 def _handle_select_longitudinal(args: Namespace) -> int:
     section = _section_from_args(args)
     concrete = get_concrete(args.concrete)
@@ -446,6 +498,8 @@ def _handle_design_rectangular(args: Namespace) -> int:
         load_duration=args.load_duration,
         Mser=args.moment_ser,
         check_cracks=args.check_cracks,
+        check_crack_width=args.check_crack_width,
+        acrc_limit=args.acrc_limit,
     )
     design = design_rectangular_element(design_input)
     result = _design_result_to_dict(design)
@@ -492,6 +546,12 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"crack_formation_status: {crack.status}")
         print(f"Mcrc: {crack.Mcrc:.2f} N*mm")
         print(f"crack_utilization: {crack.utilization:.3f}")
+    if design.crack_width is not None:
+        crack_width = design.crack_width
+        print(f"crack_width_status: {crack_width.status}")
+        print(f"acrc: {crack_width.acrc:.6f} mm")
+        print(f"acrc_limit: {crack_width.acrc_limit:.3f} mm")
+        print(f"crack_width_utilization: {crack_width.utilization:.3f}")
     _print_warnings(design.warnings)
     return 0
 
@@ -587,6 +647,7 @@ def _handle_validate(args: Namespace) -> int:
             *run_bending_golden_cases(),
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
+            *run_crack_width_golden_cases(),
             *run_design_golden_cases(),
         ]
 
@@ -631,6 +692,7 @@ def _handle_validate(args: Namespace) -> int:
             *run_bending_golden_cases(),
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
+            *run_crack_width_golden_cases(),
             *run_design_golden_cases(),
         ]
         acceptance_cases = generate_dataset_cases(
@@ -911,6 +973,9 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
             if design.crack_formation is None
             else _crack_formation_to_dict(design.crack_formation)
         ),
+        "crack_width": (
+            None if design.crack_width is None else _crack_width_to_dict(design.crack_width)
+        ),
         "protocol_status": None if design.protocol is None else design.protocol.status,
     }
 
@@ -924,6 +989,21 @@ def _crack_formation_to_dict(crack: Any) -> dict[str, Any]:
         "W": crack.intermediate_values["W"],
         "Rbtser": crack.intermediate_values["Rbtser"],
         "warnings": list(crack.warnings),
+    }
+
+
+def _crack_width_to_dict(crack_width: Any) -> dict[str, Any]:
+    return {
+        "Mser": crack_width.Mser,
+        "Mcrc": crack_width.Mcrc,
+        "acrc": crack_width.acrc,
+        "acrc_limit": crack_width.acrc_limit,
+        "utilization": crack_width.utilization,
+        "sigma_s": crack_width.sigma_s,
+        "epsilon_s": crack_width.epsilon_s,
+        "crack_spacing": crack_width.crack_spacing,
+        "status": crack_width.status,
+        "warnings": list(crack_width.warnings),
     }
 
 

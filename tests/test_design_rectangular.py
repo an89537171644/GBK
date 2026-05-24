@@ -95,3 +95,16 @@ def test_design_rectangular_with_crack_check():
     assert result.protocol is not None
     assert "crack_formation" in result.protocol.checks
     assert any("crack width check is required" in warning for warning in result.warnings)
+
+
+def test_design_rectangular_with_crack_width_check():
+    result = design_rectangular_element(
+        mvp_input(check_crack_width=True, Mser=30_000_000, acrc_limit=0.3)
+    )
+
+    assert result.status == "pass"
+    assert result.crack_formation is not None
+    assert result.crack_width is not None
+    assert result.crack_width.acrc >= 0
+    assert result.protocol is not None
+    assert "crack_width" in result.protocol.checks

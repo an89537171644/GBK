@@ -47,6 +47,7 @@ def test_get_rebar_a500_draft_values():
     rebar = get_rebar("A500")
 
     assert rebar.Rs == 435
+    assert rebar.Rsser == 500
     assert rebar.Rsc == 400
     assert rebar.Rsc_short == 400
     assert rebar.Rsc_long == 435
@@ -74,6 +75,19 @@ def test_get_rebar_a400_rsc_same_for_short_and_long():
 def test_get_Rsc_rejects_unknown_load_duration():
     with pytest.raises(ValueError, match="load_duration must be 'short' or 'long'"):
         get_rebar("A500").get_Rsc("invalid")
+
+
+def test_rebar_service_properties():
+    a240 = get_rebar("A240")
+    a400 = get_rebar("A400")
+    a500 = get_rebar("A500")
+
+    assert a240.Rsser == pytest.approx(240)
+    assert a400.Rsser == pytest.approx(400)
+    assert a500.Rsser == pytest.approx(500)
+    assert a400.Rsser > a400.Rs
+    assert a500.Rsser > a500.Rs
+    assert all(rebar.Es > 0 for rebar in (a240, a400, a500))
 
 
 def test_area_by_diameter():

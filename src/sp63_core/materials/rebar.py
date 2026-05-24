@@ -16,6 +16,7 @@ class Rebar(BaseModel):
     class_name: str
     Rsn: float
     Rs: float
+    Rsser: float
     Rsc_long: float
     Rsc_short: float
     Rsw: float
@@ -41,6 +42,7 @@ REBAR_CATALOG: dict[str, Rebar] = {
         class_name="A240",
         Rsn=240,
         Rs=210,
+        Rsser=240,
         Rsc_long=210,
         Rsc_short=210,
         Rsw=170,
@@ -50,6 +52,7 @@ REBAR_CATALOG: dict[str, Rebar] = {
         class_name="A400",
         Rsn=400,
         Rs=350,
+        Rsser=400,
         Rsc_long=350,
         Rsc_short=350,
         Rsw=280,
@@ -59,6 +62,7 @@ REBAR_CATALOG: dict[str, Rebar] = {
         class_name="A500",
         Rsn=500,
         Rs=435,
+        Rsser=500,
         Rsc_long=435,
         Rsc_short=400,
         Rsw=300,
