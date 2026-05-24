@@ -332,6 +332,20 @@ This step does not change formulas or material values. It reinforces the
 project rule that ML is advisory-only, deterministic SP63 verification is
 mandatory, and engineer review remains required even for accepted proposals.
 
+## K31 External Validation Workflow
+
+K31 prepares the external engineering validation workflow for comparing
+`sp63_core` draft-MVP outputs with independent manual, SCAD, LIRA, or
+engineer-maintained Excel results.
+
+The step adds a public CSV template and summary report only. It does not add
+closed external model files, personal documents, full normative text, or any
+formula changes. External values must be filled and accepted by an engineer
+before the draft-MVP can be treated as externally validated.
+
+ML and neural surrogate modules remain advisory-only. They do not replace the
+external validation workflow or deterministic SP63 checks.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

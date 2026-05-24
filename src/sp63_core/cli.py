@@ -1,5 +1,6 @@
 """Command line entry point for the SP 63 MVP scaffold."""
 
+import csv
 import json as jsonlib
 from argparse import ArgumentParser, Namespace
 from dataclasses import asdict
@@ -46,7 +47,10 @@ from sp63_core.ml import (
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
+    EXTERNAL_VALIDATION_COLUMNS,
+    EXTERNAL_VALUES_REQUIRED_WARNING,
     build_external_comparison_rows,
+    build_external_validation_summary,
     compute_external_deltas,
     evaluate_acceptance_gates,
     export_acceptance_report_json,
@@ -280,6 +284,19 @@ def build_parser() -> ArgumentParser:
     )
     ml_proposal_verify.add_argument("--json", action="store_true", help="print JSON output")
     ml_proposal_verify.set_defaults(handler=_handle_ml_proposal_verify)
+
+    external_validation = subparsers.add_parser(
+        "external-validation",
+        help="summarize engineer-filled external validation comparison CSV",
+    )
+    external_validation.add_argument(
+        "--template",
+        action="store_true",
+        help="print the external validation CSV template path",
+    )
+    external_validation.add_argument("--csv", help="engineer-filled external validation CSV")
+    external_validation.add_argument("--json", action="store_true", help="print JSON output")
+    external_validation.set_defaults(handler=_handle_external_validation)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -1228,6 +1245,57 @@ def _handle_ml_proposal_verify(args: Namespace) -> int:
     return 0
 
 
+def _handle_external_validation(args: Namespace) -> int:
+    template_path = _external_validation_template_path()
+
+    if args.template and args.csv is None:
+        payload = {
+            "command": "external-validation",
+            "status": "template",
+            "template_path": str(template_path),
+            "columns": list(EXTERNAL_VALIDATION_COLUMNS),
+            "warnings": [EXTERNAL_VALUES_REQUIRED_WARNING],
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("External validation template")
+        print(f"template_path: {template_path}")
+        _print_warnings(tuple(payload["warnings"]))
+        return 0
+
+    if args.csv is None:
+        raise ValueError("--template or --csv is required")
+
+    csv_path = Path(args.csv)
+    rows = _load_external_validation_csv(csv_path)
+    summary = build_external_validation_summary(rows)
+    payload = {
+        "command": "external-validation",
+        "status": summary.status,
+        "csv": str(csv_path),
+        "template_path": str(template_path),
+        "rows_read": summary.total_cases,
+        "summary": asdict(summary),
+        "warnings": list(summary.warnings),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("External validation")
+    print(f"status: {summary.status}")
+    print(f"csv: {csv_path}")
+    print(f"total_cases: {summary.total_cases}")
+    print(f"accepted_cases: {summary.accepted_cases}")
+    print(f"review_cases: {summary.review_cases}")
+    print(f"failed_cases: {summary.failed_cases}")
+    print(f"missing_external_values_count: {summary.missing_external_values_count}")
+    _print_warnings(summary.warnings)
+    return 0
+
+
 def _ml_proposal_smoke_examples() -> tuple[MLProposal, ...]:
     base_input = {
         "b": 300,
@@ -1530,9 +1598,32 @@ def _deflection_to_dict(deflection: Any) -> dict[str, Any]:
     }
 
 
-def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
-    import csv
+def _external_validation_template_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "validation"
+        / "templates"
+        / "external_validation_cases_template.csv"
+    )
 
+
+def _load_external_validation_csv(path: Path) -> tuple[dict[str, str], ...]:
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        if reader.fieldnames is None:
+            raise ValueError("external validation CSV is missing header")
+        missing_columns = [
+            column for column in EXTERNAL_VALIDATION_COLUMNS if column not in reader.fieldnames
+        ]
+        if missing_columns:
+            raise ValueError(
+                "external validation CSV is missing columns: " + ", ".join(missing_columns)
+            )
+        return tuple(dict(row) for row in reader)
+
+
+def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
     with path.open(encoding="utf-8", newline="") as csv_file:
         rows = list(csv.DictReader(csv_file))
     cases = []
