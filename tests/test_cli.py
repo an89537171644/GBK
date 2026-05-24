@@ -724,10 +724,8 @@ def test_cli_ml_baseline_json_output(capsys):
     assert "longitudinal_as_mm2" in data["regression_metrics"]
     assert "bending_utilization" in data["regression_metrics"]
     assert data["classification_metrics"]["target"] == "overall_status"
-    assert any(
-        "diagnostic dataset is small" in warning
-        for warning in data["warnings"]
-    )
+    assert data["diagnostic_rows"] == 100
+    assert all("diagnostic dataset is small" not in warning for warning in data["warnings"])
 
 
 def test_cli_train_baseline_command(tmp_path, capsys):

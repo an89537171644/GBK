@@ -58,5 +58,6 @@ def test_build_baseline_ml_report_uses_non_neural_models():
     assert report.classification_metrics["target"] == "overall_status"
     assert report.diagnostic_status_counts["pass"] >= 1
     assert report.diagnostic_status_counts["fail"] >= 1
+    assert report.diagnostic_status_counts["review_or_fail"] >= 1
     assert "neural" not in report.regression_models["ridge"].lower()
-    assert any("diagnostic dataset is small" in warning for warning in report.warnings)
+    assert all("diagnostic dataset is small" not in warning for warning in report.warnings)

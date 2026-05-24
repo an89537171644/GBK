@@ -163,6 +163,28 @@ intended for future classification dataset preparation, not for project design.
 dataset with the K22 readiness gate. The diagnostic set is expected to require
 review because it deliberately includes failing and review rows.
 
+## K25 Expanded Diagnostic Dataset
+
+`python -m sp63_core diagnostic-dataset --limit 100 --json` now emits an
+expanded deterministic diagnostic/candidate dataset. The first six K20/K23
+manual diagnostic cases are preserved, and additional candidate rows are
+generated through the deterministic draft core.
+
+Expanded diagnostic rows cover these case types:
+
+- `pass_base`;
+- `bending_fail`;
+- `shear_fail`;
+- `crack_review_without_width`;
+- `crack_width_fail`;
+- `deflection_fail`;
+- `multiple_fail`.
+
+The diagnostic status report includes distributions for `overall_status`,
+`strength_status`, `serviceability_status`, and `failure_reason`. The
+diagnostic dataset is for classification readiness only. It is not a set of
+approved design solutions, and every row requires engineer review.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions
