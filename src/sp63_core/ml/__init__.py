@@ -7,6 +7,7 @@ from sp63_core.ml.baseline import (
     save_baseline_model_bundle,
     train_baseline_models,
 )
+from sp63_core.ml.baseline_report import BaselineMLReport, build_baseline_ml_report
 from sp63_core.ml.evaluate import evaluate_baseline_models, evaluate_ml_safety
 from sp63_core.ml.features import build_feature_matrix
 from sp63_core.ml.proposal import MLReinforcementProposal, proposal_from_prediction
@@ -16,10 +17,12 @@ from sp63_core.ml.safety import check_ml_prediction_safety, check_ml_proposal_sa
 
 __all__ = [
     "BaselineModelBundle",
+    "BaselineMLReport",
     "MLReadinessReport",
     "MLQualityGateResult",
     "MLReinforcementProposal",
     "build_feature_matrix",
+    "build_baseline_ml_report",
     "build_ml_readiness_report",
     "check_ml_prediction_safety",
     "check_ml_proposal_safety",

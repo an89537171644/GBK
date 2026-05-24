@@ -234,6 +234,18 @@ future classification ML development possible after engineer review. Rows with
 failure and review statuses must not be interpreted as approved reinforcement
 solutions. ML remains advisory-only.
 
+## K24 Baseline ML Without Neural Network
+
+K24 adds a non-neural baseline ML report for engineering review of dataset
+readiness. It uses simple sklearn baselines for regression on the safe accepted
+dataset and classification of `overall_status` on the diagnostic dataset.
+
+The report does not make ML a calculator and does not train a neural network.
+It explicitly records that ML is advisory-only and deterministic SP63 checks
+remain mandatory. The diagnostic dataset is intentionally small, so
+classification metrics are smoke metrics rather than evidence of production ML
+quality.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
