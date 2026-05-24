@@ -25,6 +25,9 @@ def build_dataset_report(
         "unique_group_count": len({case.group_key for case in cases}),
         "counts_by_main_rebar_scheme": _counts(cases, "main_rebar_scheme"),
         "counts_by_stirrup_scheme": _counts(cases, "stirrup_scheme"),
+        "counts_by_strength_status": _counts(cases, "strength_status"),
+        "counts_by_serviceability_status": _counts(cases, "serviceability_status"),
+        "counts_by_overall_status": _counts(cases, "overall_status"),
         "geometry_stirrup_mismatch_count": _geometry_stirrup_mismatch_count(cases),
         "duplicate_case_id_count": _duplicate_case_id_count(cases),
         "unsafe_rows_count": _unsafe_rows_count(cases),
@@ -37,6 +40,12 @@ def build_dataset_report(
         "Q",
         "bending_utilization",
         "shear_utilization",
+        "moment_service_nmm",
+        "span_mm",
+        "mcrc_nmm",
+        "crack_width_mm",
+        "deflection_mm",
+        "warnings_count",
         "main_rebar_ratio_percent",
         "stirrup_steel_consumption",
     ):
@@ -95,7 +104,11 @@ def _duplicate_case_id_count(cases: Sequence[DatasetCase]) -> int:
 
 def _is_unsafe(case: DatasetCase) -> bool:
     return (
-        case.status != "pass"
+        case.unsafe_row
+        or case.status != "pass"
+        or case.strength_status != "pass"
+        or case.serviceability_status != "pass"
+        or case.overall_status != "pass"
         or case.bending_utilization > 1.0
         or case.shear_utilization > 1.0
         or case.main_rebar_constructive_status != "pass"

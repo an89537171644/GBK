@@ -17,9 +17,9 @@
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
 | `design/rectangular.py` | implemented draft end-to-end rectangular design with separated strength, serviceability, and overall statuses | yes | yes | engineer review and CLI integration |
 | `report/protocol.py` | implemented separated strength_status, serviceability_status, and overall_status; legacy status aliases overall_status | yes | yes | keep protocol structure stable |
-| `dataset/generator.py` | implemented draft with beam-only MVP, expanded columns including cover, stirrup geometry consistency, and shuffled full-grid limit | yes | yes | engineer review dataset ranges |
+| `dataset/generator.py` | implemented draft with beam-only MVP, expanded deterministic strength/serviceability output columns and status fields | yes | yes | engineer review enriched dataset ranges before ML readiness gate |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
-| `dataset/report.py` | implemented with extended K8 report counters | yes | no | compare report ranges during dataset review |
+| `dataset/report.py` | implemented with extended K21 report counters for deterministic statuses and serviceability output ranges | yes | no | compare enriched report ranges during dataset review |
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |
 | `validation/manual_cases.py` | implemented manual SP63 verification cases | yes | yes | engineer review manual expected values and tolerances |
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |

@@ -63,8 +63,61 @@ geometry stirrup diameters.
 | `bending_utilization` | float | - | `M / Mult` |
 | `shear_utilization` | float | - | `Q / Qult` |
 | `status` | str | - | `pass` for exported rows |
+| `section_b_mm` | float | mm | Explicit K21 section width alias |
+| `section_h_mm` | float | mm | Explicit K21 section height alias |
+| `effective_depth_mm` | float | mm | Explicit K21 effective depth alias |
+| `cover_mm` | float | mm | Explicit K21 cover alias |
+| `main_bar_diameter_mm` | int | mm | Explicit K21 selected main bar diameter |
+| `stirrup_diameter_mm` | int | mm | Explicit K21 selected stirrup diameter |
+| `stirrup_spacing_mm` | int | mm | Explicit K21 selected stirrup spacing |
+| `main_rebar_class` | str | - | Explicit K21 longitudinal reinforcement class |
+| `stirrup_rebar_class` | str | - | Explicit K21 transverse reinforcement class |
+| `moment_nmm` | float | N*mm | Explicit K21 bending moment |
+| `shear_n` | float | N | Explicit K21 shear force |
+| `moment_service_nmm` | float | N*mm | Service moment used for draft serviceability outputs |
+| `span_mm` | float | mm | Span used for draft deflection output |
+| `longitudinal_as_mm2` | float | mm2 | Explicit K21 selected longitudinal area |
+| `transverse_asw_mm2` | float | mm2 | Explicit K21 selected transverse area |
+| `bending_mult_nmm` | float | N*mm | Explicit K21 bending resistance |
+| `shear_qult_n` | float | N | Explicit K21 shear resistance |
+| `mcrc_nmm` | float | N*mm | Draft normal crack formation moment |
+| `crack_width_mm` | float | mm | Draft normal crack width result |
+| `deflection_mm` | float | mm | Draft deflection result |
+| `bending_status` | str | - | Deterministic bending status |
+| `shear_status` | str | - | Deterministic shear status |
+| `crack_formation_status` | str | - | Draft crack formation status |
+| `crack_width_status` | str | - | Draft crack width status |
+| `deflection_status` | str | - | Draft deflection status |
+| `strength_status` | str | - | Separated strength status from deterministic protocol |
+| `serviceability_status` | str | - | Separated serviceability status from deterministic protocol |
+| `overall_status` | str | - | Overall deterministic protocol status |
+| `warnings_count` | int | - | Count of deterministic protocol warnings |
+| `requires_engineer_review` | bool | - | Always true for draft deterministic rows |
+| `unsafe_row` | bool | - | True when the row fails deterministic safety rules |
+| `dataset_source` | str | - | `deterministic_sp63_core` |
 | `sp63_core_version` | str | - | Calculation core version |
 | `dataset_version` | str | - | Dataset schema version |
+
+## K21 Dataset Enrichment
+
+K21 adds explicit deterministic calculation output fields for strength and
+draft serviceability checks. The generator still emits only rows that pass the
+deterministic safety filters, but each row now carries the protocol statuses and
+serviceability outputs used to make that decision.
+
+The serviceability values are draft MVP outputs from the deterministic core:
+
+- `mcrc_nmm` from normal crack formation;
+- `crack_width_mm` from draft normal crack width;
+- `deflection_mm` from draft short-term deflection.
+
+The generated row includes `strength_status`, `serviceability_status`, and
+`overall_status`. For exported MVP rows these are expected to be `pass`.
+`unsafe_row` is expected to be `false`, and `dataset_source` is always
+`deterministic_sp63_core`.
+
+The dataset remains a deterministic draft artifact. It does not replace
+engineering review, and ML remains advisory-only.
 
 ## K8 Dataset Split
 
@@ -96,7 +149,10 @@ validation/test.
 - counts by element type, concrete class, rebar class, and stirrup class;
 - counts by selected longitudinal and transverse reinforcement schemes;
 - min/max ranges for geometry, loads, and utilization values;
+- min/max ranges for service moment, span, Mcrc, crack width, deflection, and
+  warnings count;
 - min/max ranges for longitudinal reinforcement ratio and stirrup steel consumption;
+- counts by strength, serviceability, and overall status;
 - unique group count;
 - geometry stirrup mismatch count;
 - duplicate case id count;
@@ -106,6 +162,10 @@ validation/test.
 `unsafe_rows_count` is the count of rows where any of these is true:
 
 - `status != "pass"`;
+- `strength_status != "pass"`;
+- `serviceability_status != "pass"`;
+- `overall_status != "pass"`;
+- `unsafe_row is True`;
 - `bending_utilization > 1.0`;
 - `shear_utilization > 1.0`;
 - `main_rebar_constructive_status != "pass"`;
