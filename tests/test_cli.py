@@ -702,6 +702,34 @@ def test_cli_ml_readiness_json_output(capsys):
     )
 
 
+def test_cli_ml_baseline_json_output(capsys):
+    exit_code = main(
+        [
+            "ml-baseline",
+            "--safe-limit",
+            "30",
+            "--diagnostic-limit",
+            "100",
+            "--json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "ml-baseline"
+    assert data["ml_is_advisory_only"] is True
+    assert data["neural_network_used"] is False
+    assert data["deterministic_checks_required"] is True
+    assert "longitudinal_as_mm2" in data["regression_metrics"]
+    assert "bending_utilization" in data["regression_metrics"]
+    assert data["classification_metrics"]["target"] == "overall_status"
+    assert any(
+        "diagnostic dataset is small" in warning
+        for warning in data["warnings"]
+    )
+
+
 def test_cli_train_baseline_command(tmp_path, capsys):
     model_path = tmp_path / "baseline_model.pkl"
     metrics_path = tmp_path / "baseline_metrics.json"

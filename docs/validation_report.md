@@ -347,6 +347,25 @@ diagnostic set. The diagnostic readiness status can still be `review_required`
 because the set deliberately includes unsafe/failing rows. It is a future ML
 classification aid, not a final design dataset.
 
+## K24 Non-Neural Baseline ML Report
+
+K24 adds a baseline ML smoke report:
+
+```bash
+python -m sp63_core ml-baseline --json
+```
+
+The report uses simple non-neural models only. It checks regression baselines
+for safe deterministic dataset targets `longitudinal_as_mm2` and
+`bending_utilization`, and classification baselines for `overall_status` on the
+diagnostic dataset.
+
+The report is not a design calculation and does not approve ML output. It
+records that ML is advisory-only, neural networks are not used, and
+deterministic SP63 checks remain mandatory. Because the diagnostic dataset is
+small, classification metrics are smoke metrics and require engineer review
+before any later ML stage.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

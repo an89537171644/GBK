@@ -30,6 +30,7 @@ from sp63_core.dataset import (
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
 from sp63_core.ml import (
+    build_baseline_ml_report,
     build_ml_readiness_report,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
@@ -248,6 +249,16 @@ def build_parser() -> ArgumentParser:
     )
     ml_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_readiness.set_defaults(handler=_handle_ml_readiness)
+
+    ml_baseline = subparsers.add_parser(
+        "ml-baseline",
+        help="run non-neural baseline ML report for safe and diagnostic datasets",
+    )
+    ml_baseline.add_argument("--safe-limit", type=int, default=100)
+    ml_baseline.add_argument("--diagnostic-limit", type=int, default=100)
+    ml_baseline.add_argument("--seed", type=int, default=42)
+    ml_baseline.add_argument("--json", action="store_true", help="print JSON output")
+    ml_baseline.set_defaults(handler=_handle_ml_baseline)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -1052,6 +1063,42 @@ def _handle_ml_readiness(args: Namespace) -> int:
         "constant_target_columns: "
         f"{', '.join(report.constant_target_columns) if report.constant_target_columns else '-'}"
     )
+    _print_warnings(report.warnings)
+    return 0
+
+
+def _handle_ml_baseline(args: Namespace) -> int:
+    safe_cases = generate_dataset_cases(limit=args.safe_limit, seed=args.seed)
+    diagnostic_cases = generate_diagnostic_dataset_cases(limit=args.diagnostic_limit)
+    report = build_baseline_ml_report(
+        safe_cases=safe_cases,
+        diagnostic_cases=diagnostic_cases,
+        seed=args.seed,
+    )
+    payload = {
+        "command": "ml-baseline",
+        **asdict(report),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Baseline ML report")
+    print(f"status: {report.status}")
+    print("ML is advisory-only.")
+    print("Neural network is not used.")
+    print("Deterministic SP63 checks remain mandatory.")
+    print(f"safe_rows: {report.safe_rows}")
+    print(f"diagnostic_rows: {report.diagnostic_rows}")
+    print(f"regression_targets: {', '.join(report.regression_targets)}")
+    print(f"classification_target: {report.classification_target}")
+    for target_name, metrics in report.regression_metrics.items():
+        print(f"{target_name}:")
+        for metric_name, value in metrics.items():
+            print(f"  {metric_name}: {value:.6g}")
+    print("classification_metrics:")
+    for metric_name, value in report.classification_metrics.items():
+        print(f"  {metric_name}: {value}")
     _print_warnings(report.warnings)
     return 0
 

@@ -1,5 +1,10 @@
-from sp63_core.dataset import generate_dataset_cases, split_dataset_cases
+from sp63_core.dataset import (
+    generate_dataset_cases,
+    generate_diagnostic_dataset_cases,
+    split_dataset_cases,
+)
 from sp63_core.ml import (
+    build_baseline_ml_report,
     evaluate_baseline_models,
     evaluate_ml_safety,
     load_baseline_model_bundle,
@@ -36,3 +41,22 @@ def test_train_evaluate_save_and_load_baseline_models(tmp_path):
     assert "deterministic_accept_rate" in safety_metrics
     assert bundle.metadata["stirrup_diameter_mode"] == "input_geometry_parameter"
     assert bundle.metadata["target_leakage_checked"] is True
+
+
+def test_build_baseline_ml_report_uses_non_neural_models():
+    safe_cases = generate_dataset_cases(limit=30)
+    diagnostic_cases = generate_diagnostic_dataset_cases()
+
+    report = build_baseline_ml_report(safe_cases, diagnostic_cases)
+
+    assert report.ml_is_advisory_only is True
+    assert report.neural_network_used is False
+    assert report.deterministic_checks_required is True
+    assert report.requires_engineer_review is True
+    assert "longitudinal_as_mm2" in report.regression_metrics
+    assert "bending_utilization" in report.regression_metrics
+    assert report.classification_metrics["target"] == "overall_status"
+    assert report.diagnostic_status_counts["pass"] >= 1
+    assert report.diagnostic_status_counts["fail"] >= 1
+    assert "neural" not in report.regression_models["ridge"].lower()
+    assert any("diagnostic dataset is small" in warning for warning in report.warnings)

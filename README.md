@@ -311,6 +311,18 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   not a project-design solution dataset, and every row requires engineer review.
 - ML remains advisory-only and no model is trained in K23.
 
+## K24 baseline ML without neural network
+
+- CLI command `ml-baseline` is available for a non-neural ML smoke report.
+- The report runs simple baselines for safe dataset regression targets
+  `longitudinal_as_mm2` and `bending_utilization`.
+- The report runs simple classification baselines for `overall_status` on the
+  diagnostic dataset.
+- Neural networks are not used, and the report explicitly states that ML is
+  advisory-only.
+- Deterministic SP63 checks remain mandatory for every ML proposal.
+- Small diagnostic dataset warnings must be reviewed before any later ML stage.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
