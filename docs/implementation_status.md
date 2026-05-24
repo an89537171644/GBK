@@ -33,7 +33,7 @@
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
 | `ml/readiness.py` | implemented deterministic dataset ML readiness gate with diagnostic coverage warnings | yes | yes | review diagnostic distributions before classification ML |
-| `ml/baseline_report.py` | implemented non-neural baseline ML report for safe regression and diagnostic classification | yes | yes | review baseline metrics before any model promotion |
+| `ml/baseline_report.py` | implemented non-neural baseline ML report with expanded diagnostic classification evaluation | yes | yes | review expanded diagnostic metrics and leakage warnings before any model promotion |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, and separated design statuses | yes | no | dataset split and ML preparation |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

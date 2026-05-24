@@ -337,6 +337,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   project-design solution dataset, and every row requires engineer review.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K26 baseline ML evaluation status
+
+- CLI command `ml-baseline --diagnostic-limit 100 --json` now includes an
+  `expanded_diagnostic_classification` block for the K25 diagnostic dataset.
+- The expanded block reports train/test classification metrics for
+  `overall_status`, including accuracy, macro F1, per-class precision/recall,
+  confusion matrix, and class distribution.
+- Two feature modes are reported: `input_only_features` and
+  `deterministic_derived_features`.
+- Deterministic-derived features are explicitly marked as review-only because
+  they can leak deterministic calculation outcomes into project ML.
+- No neural network is used. ML remains advisory-only, and deterministic SP63
+  checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

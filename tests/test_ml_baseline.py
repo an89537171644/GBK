@@ -59,5 +59,38 @@ def test_build_baseline_ml_report_uses_non_neural_models():
     assert report.diagnostic_status_counts["pass"] >= 1
     assert report.diagnostic_status_counts["fail"] >= 1
     assert report.diagnostic_status_counts["review_or_fail"] >= 1
+    expanded = report.expanded_diagnostic_classification
+    assert expanded["target"] == "overall_status"
+    assert expanded["target_constant"] is False
+    assert expanded["class_distribution"]["pass"] >= 1
+    assert expanded["class_distribution"]["fail"] >= 1
+    assert expanded["class_distribution"]["review_or_fail"] >= 1
+    assert expanded["train_rows"] > 0
+    assert expanded["test_rows"] > 0
+    assert "input_only_features" in expanded["feature_modes"]
+    assert "deterministic_derived_features" in expanded["feature_modes"]
+    assert (
+        expanded["feature_modes"]["input_only_features"][
+            "deterministic_derived_features_used"
+        ]
+        is False
+    )
+    assert (
+        expanded["feature_modes"]["deterministic_derived_features"][
+            "deterministic_derived_features_used"
+        ]
+        is True
+    )
+    assert "overall_status" not in (
+        expanded["feature_modes"]["input_only_features"]["feature_columns"]
+    )
+    assert (
+        expanded["feature_modes"]["input_only_features"]["logistic"]["macro_f1"]
+        >= 0.0
+    )
     assert "neural" not in report.regression_models["ridge"].lower()
-    assert all("diagnostic dataset is small" not in warning for warning in report.warnings)
+    assert any(
+        "expanded diagnostic dataset has fewer than 200 rows" in warning
+        for warning in report.warnings
+    )
+    assert any("no group_key" in warning for warning in report.warnings)

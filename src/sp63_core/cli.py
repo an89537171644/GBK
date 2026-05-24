@@ -1099,6 +1099,18 @@ def _handle_ml_baseline(args: Namespace) -> int:
     print("classification_metrics:")
     for metric_name, value in report.classification_metrics.items():
         print(f"  {metric_name}: {value}")
+    print("expanded_diagnostic_classification:")
+    print(f"  status: {report.expanded_diagnostic_classification['status']}")
+    print(f"  train_rows: {report.expanded_diagnostic_classification['train_rows']}")
+    print(f"  test_rows: {report.expanded_diagnostic_classification['test_rows']}")
+    for mode_name, mode_report in report.expanded_diagnostic_classification[
+        "feature_modes"
+    ].items():
+        logistic_metrics = mode_report["logistic"]
+        print(
+            f"  {mode_name}: logistic_accuracy={logistic_metrics['accuracy']:.6g}, "
+            f"logistic_macro_f1={logistic_metrics['macro_f1']:.6g}"
+        )
     _print_warnings(report.warnings)
     return 0
 

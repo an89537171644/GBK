@@ -185,6 +185,22 @@ The diagnostic status report includes distributions for `overall_status`,
 diagnostic dataset is for classification readiness only. It is not a set of
 approved design solutions, and every row requires engineer review.
 
+## K26 Diagnostic Baseline Feature Modes
+
+`python -m sp63_core ml-baseline --diagnostic-limit 100 --json` evaluates the
+expanded diagnostic dataset with two feature modes:
+
+- `input_only_features`: geometry, material class codes, loads, reinforcement
+  parameters, span, `As`, and `Asw`;
+- `deterministic_derived_features`: input-only features plus deterministic
+  outputs such as bending capacity, shear capacity, `Mcrc`, crack width, and
+  deflection.
+
+The classification target is `overall_status`. Direct status fields,
+`failure_reason`, `warning_text`, and other target status columns are excluded
+from the feature modes. Deterministic-derived features are flagged as
+review-only because they can leak deterministic calculation outcomes into ML.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions
