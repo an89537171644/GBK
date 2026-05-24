@@ -263,6 +263,16 @@ The diagnostic dataset remains synthetic and review-only. Neural surrogate
 metrics are smoke signals, not production evidence, and deterministic SP63
 checks remain mandatory for every ML prediction.
 
+## K30 ML Proposal Verification
+
+`python -m sp63_core ml-proposal-verify --json` verifies advisory ML proposal
+examples through deterministic SP63 checks. This command does not add a new
+dataset schema and does not approve ML as a project calculator.
+
+ML proposals may include reinforcement scheme values, but they are accepted
+only after deterministic verification. Unsafe or review-required proposals are
+rejected, and accepted proposals still require engineer review.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

@@ -394,6 +394,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Every ML prediction requires deterministic SP63 verification, and external
   engineering validation remains required before any broader ML work.
 
+## K30 ML proposal safety wrapper
+
+- CLI command `ml-proposal-verify --json` is available for deterministic
+  verification smoke examples.
+- ML and neural surrogate proposals are advisory-only and are never accepted
+  directly as project calculations.
+- The K30 wrapper verifies proposed rectangular reinforcement schemes through
+  deterministic SP63 core checks for bending, shear, crack formation, crack
+  width, and deflection when the required service inputs are present.
+- Unsafe or review-required proposals are rejected by the wrapper. Accepted
+  proposals still require engineer review.
+- Deterministic SP63 checks remain mandatory for every ML output.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

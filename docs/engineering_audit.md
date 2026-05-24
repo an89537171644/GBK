@@ -317,6 +317,21 @@ Before any broader neural-network work, the project still needs engineering
 review of diagnostic distributions, deterministic validation, external
 validation, and ML safety policy.
 
+## K30 ML Proposal Safety Wrapper
+
+K30 adds a deterministic safety wrapper for advisory ML and neural-surrogate
+reinforcement proposals. The wrapper rebuilds the proposed rectangular
+reinforcement scheme and runs the deterministic SP63 draft checks before any
+proposal can be accepted.
+
+Acceptance requires deterministic strength status `pass`, serviceability status
+`pass` or `not_checked`, and overall status `pass`. Proposals producing
+`fail` or `review_or_fail` are rejected and include rejection reasons.
+
+This step does not change formulas or material values. It reinforces the
+project rule that ML is advisory-only, deterministic SP63 verification is
+mandatory, and engineer review remains required even for accepted proposals.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

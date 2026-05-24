@@ -29,6 +29,7 @@
 | `ml/features.py` | implemented leakage-controlled feature extraction | yes | yes | engineer review before ML use |
 | `ml/baseline.py` | implemented target-hygiene baseline ML | yes | yes | retrain models after K12.2 |
 | `ml/proposal.py` | implemented ML prediction snapping to reinforcement proposal | yes | yes | engineer review snapping policy |
+| `ml/proposal_safety.py` | implemented deterministic verification wrapper for advisory ML proposals | yes | yes | keep all ML proposal acceptance behind deterministic SP63 checks |
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |

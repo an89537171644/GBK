@@ -32,6 +32,7 @@ from sp63_core.dataset import (
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
 from sp63_core.ml import (
+    MLProposal,
     build_baseline_ml_report,
     build_ml_readiness_report,
     build_neural_surrogate_report,
@@ -40,6 +41,7 @@ from sp63_core.ml import (
     evaluate_ml_safety,
     save_baseline_model_bundle,
     train_baseline_models,
+    verify_ml_proposal_with_deterministic_core,
 )
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.sections import RectangularSection
@@ -271,6 +273,13 @@ def build_parser() -> ArgumentParser:
     neural_surrogate.add_argument("--seed", type=int, default=42)
     neural_surrogate.add_argument("--json", action="store_true", help="print JSON output")
     neural_surrogate.set_defaults(handler=_handle_neural_surrogate)
+
+    ml_proposal_verify = subparsers.add_parser(
+        "ml-proposal-verify",
+        help="verify advisory ML proposals with deterministic SP63 checks",
+    )
+    ml_proposal_verify.add_argument("--json", action="store_true", help="print JSON output")
+    ml_proposal_verify.set_defaults(handler=_handle_ml_proposal_verify)
 
     baseline = subparsers.add_parser(
         "train-baseline",
@@ -1181,6 +1190,88 @@ def _handle_neural_surrogate(args: Namespace) -> int:
             )
     _print_warnings(report.warnings)
     return 0
+
+
+def _handle_ml_proposal_verify(args: Namespace) -> int:
+    proposals = _ml_proposal_smoke_examples()
+    results = tuple(verify_ml_proposal_with_deterministic_core(proposal) for proposal in proposals)
+    accepted_count = sum(1 for result in results if result.accepted)
+    rejected_count = len(results) - accepted_count
+    status = "pass" if accepted_count >= 1 and rejected_count >= 1 else "review_required"
+    payload = {
+        "command": "ml-proposal-verify",
+        "status": status,
+        "verified_count": len(results),
+        "accepted_count": accepted_count,
+        "rejected_count": rejected_count,
+        "results": [asdict(result) for result in results],
+        "ml_is_advisory_only": True,
+        "deterministic_checks_required": True,
+        "requires_engineer_review": True,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("ML proposal deterministic verification")
+    print(f"status: {status}")
+    print(f"verified_count: {len(results)}")
+    print(f"accepted_count: {accepted_count}")
+    print(f"rejected_count: {rejected_count}")
+    for result in results:
+        print(
+            f"{result.proposal_id}: {result.verification_status} "
+            f"(overall={result.deterministic_overall_status})"
+        )
+        for reason in result.rejection_reasons:
+            print(f"  rejection_reason: {reason}")
+    return 0
+
+
+def _ml_proposal_smoke_examples() -> tuple[MLProposal, ...]:
+    base_input = {
+        "b": 300,
+        "h": 500,
+        "cover": 32,
+        "stirrup_diameter_for_geometry": 8,
+        "concrete_class": "B25",
+        "longitudinal_rebar_class": "A500",
+        "stirrup_rebar_class": "A240",
+        "M": 150_000_000,
+        "Q": 80_000,
+        "Mser": 30_000_000,
+        "span": 6000,
+    }
+    return (
+        MLProposal(
+            proposal_id="smoke_pass_proposal",
+            proposal_type="rectangular_rebar_scheme",
+            input_data=dict(base_input),
+            proposed_values={
+                "main_bar_count": 3,
+                "main_bar_diameter": 20,
+                "stirrup_diameter": 8,
+                "stirrup_legs": 2,
+                "stirrup_spacing": 200,
+            },
+            model_name="k30_smoke_example",
+            model_kind="manual_smoke",
+        ),
+        MLProposal(
+            proposal_id="smoke_fail_proposal",
+            proposal_type="rectangular_rebar_scheme",
+            input_data=dict(base_input),
+            proposed_values={
+                "main_bar_count": 2,
+                "main_bar_diameter": 12,
+                "stirrup_diameter": 6,
+                "stirrup_legs": 2,
+                "stirrup_spacing": 300,
+            },
+            model_name="k30_smoke_example",
+            model_kind="manual_smoke",
+        ),
+    )
 
 
 BASELINE_ML_WARNING = (

@@ -15,6 +15,11 @@ from sp63_core.ml.neural_surrogate import (
     build_neural_surrogate_report,
 )
 from sp63_core.ml.proposal import MLReinforcementProposal, proposal_from_prediction
+from sp63_core.ml.proposal_safety import (
+    MLProposal,
+    MLProposalVerificationResult,
+    verify_ml_proposal_with_deterministic_core,
+)
 from sp63_core.ml.quality import MLQualityGateResult, evaluate_ml_quality_gate
 from sp63_core.ml.readiness import MLReadinessReport, build_ml_readiness_report
 from sp63_core.ml.safety import check_ml_prediction_safety, check_ml_proposal_safety
@@ -25,6 +30,8 @@ __all__ = [
     "MLReadinessReport",
     "MLQualityGateResult",
     "MLReinforcementProposal",
+    "MLProposal",
+    "MLProposalVerificationResult",
     "NeuralSurrogateReport",
     "build_feature_matrix",
     "build_baseline_ml_report",
@@ -40,4 +47,5 @@ __all__ = [
     "proposal_from_prediction",
     "save_baseline_model_bundle",
     "train_baseline_models",
+    "verify_ml_proposal_with_deterministic_core",
 ]
