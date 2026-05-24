@@ -15,6 +15,7 @@ values, and explicit warnings where the MVP still has applicability limits.
 - Draft transverse reinforcement counting conditions for Qsw.
 - Draft normal crack formation check.
 - Draft normal crack width check.
+- Draft short-term curvature and deflection check.
 - Longitudinal reinforcement selection.
 - Transverse reinforcement selection.
 - End-to-end rectangular design workflow.
@@ -26,7 +27,7 @@ values, and explicit warnings where the MVP still has applicability limits.
 - `tests/golden_cases/bending_rectangular_case_02.md`
 - `tests/golden_cases/shear_rectangular_case_01.md`
 - `tests/golden_cases/design_rectangular_case_01.md`
-- Automated K14/K15 serviceability golden cases in `sp63_core.validation.golden`.
+- Automated K14/K15/K16 serviceability golden cases in `sp63_core.validation.golden`.
 
 ## Covered Modules
 
@@ -34,6 +35,7 @@ values, and explicit warnings where the MVP still has applicability limits.
 - `sp63_core.checks.shear`
 - `sp63_core.checks.cracking`
 - `sp63_core.checks.crack_width`
+- `sp63_core.checks.deflection`
 - `sp63_core.rebar.longitudinal`
 - `sp63_core.rebar.transverse`
 - `sp63_core.rebar.constructive`
@@ -42,8 +44,8 @@ values, and explicit warnings where the MVP still has applicability limits.
 
 ## Remaining Limits
 
-- No deflections or refined serviceability models beyond draft crack formation
-  and draft crack width.
+- No long-term deflections or refined serviceability models beyond draft crack
+  formation, draft crack width, and draft short-term deflection.
 - No anchorage, bar curtailment, support zones, torsion, punching, columns, or T-sections.
 - Material catalogs and constructive rules remain draft and require review.
 - Golden cases are draft validation anchors, not final approval cases.
@@ -103,6 +105,7 @@ K9 adds a programmable validation package:
 - `run_shear_golden_cases()`;
 - `run_crack_formation_golden_cases()`;
 - `run_crack_width_golden_cases()`;
+- `run_deflection_golden_cases()`;
 - `run_design_golden_cases()`;
 - `validate_dataset_cases()`;
 - `build_scad_lira_comparison_template()`.
@@ -209,6 +212,21 @@ epsilon_s, rho_eff, bounded crack spacing, acrc, and status.
 This validation does not cover refined crack spacing, tension stiffening,
 long-term effects, deflection, transformed section behavior, prestress, axial
 force, slabs, T-sections, or nonlinear deformation checks.
+
+## K16 Curvature And Deflection Validation
+
+K16 adds a draft golden case for short-term curvature and deflection in a
+rectangular beam: B25 concrete, A500 reinforcement, b = 300 mm, h = 500 mm,
+As = 942.48 mm2, main bar diameter 20 mm, Mser = 30,000,000 N*mm, span =
+6000 mm, deflection_limit_ratio = 250, and loading scheme
+`simply_supported_uniform`.
+
+The golden case checks I_gross, transformed cracked neutral axis depth,
+I_cracked, I_eff, curvature, deflection, deflection_limit, and status.
+
+This validation does not cover long-term deflection, creep, shrinkage, refined
+tension stiffening, nonlinear deformation, slabs, columns, T-sections,
+punching, torsion, anchorage, support zones, bar curtailment, or Streamlit.
 
 ## Conclusion
 

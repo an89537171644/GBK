@@ -20,6 +20,7 @@ from sp63_core.validation.golden import (
     run_bending_golden_cases,
     run_crack_formation_golden_cases,
     run_crack_width_golden_cases,
+    run_deflection_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "run_bending_golden_cases",
     "run_crack_formation_golden_cases",
     "run_crack_width_golden_cases",
+    "run_deflection_golden_cases",
     "run_design_golden_cases",
     "run_shear_golden_cases",
     "validate_dataset_cases",

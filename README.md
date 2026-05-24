@@ -219,7 +219,17 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - The result is draft and keeps `requires_engineer_review = true`.
 - Refined crack spacing, tension stiffening, transformed section behavior, and
   long-term effects are not implemented.
-- Deflection is not implemented.
+
+## K16 curvature and deflection status
+
+- `check_curvature_deflection_rectangular()` is available for draft short-term
+  curvature and deflection checks in rectangular beams.
+- CLI command `deflection` is available.
+- `design-rectangular` supports `--check-deflection`.
+- The result is draft and keeps `requires_engineer_review = true`.
+- Long-term effects, creep, shrinkage, refined tension stiffening, and nonlinear
+  deformation model are not implemented.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
 ## Codex automation workflow
 

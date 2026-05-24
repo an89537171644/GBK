@@ -8,6 +8,7 @@ from typing import Any
 
 from sp63_core.checks import (
     check_bending_rectangular,
+    check_curvature_deflection_rectangular,
     check_normal_crack_formation_rectangular,
     check_normal_crack_width_rectangular,
     check_shear_rectangular,
@@ -45,6 +46,7 @@ from sp63_core.validation import (
     run_bending_golden_cases,
     run_crack_formation_golden_cases,
     run_crack_width_golden_cases,
+    run_deflection_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
     validate_dataset_cases,
@@ -111,6 +113,40 @@ def build_parser() -> ArgumentParser:
     crack_width.add_argument("--acrc-limit", type=float, default=0.3, help="crack width limit, mm")
     crack_width.add_argument("--json", action="store_true", help="print JSON output")
     crack_width.set_defaults(handler=_handle_crack_width)
+
+    deflection = subparsers.add_parser(
+        "deflection",
+        help="check draft curvature and deflection for a rectangular section",
+    )
+    _add_section_arguments(deflection)
+    _add_material_arguments(deflection, include_rebar=True)
+    deflection.add_argument(
+        "--moment-ser",
+        type=float,
+        required=True,
+        help="service bending moment, N*mm",
+    )
+    deflection.add_argument("--as-area", type=float, required=True, help="tensile area As, mm2")
+    deflection.add_argument("--span", type=float, required=True, help="beam span, mm")
+    deflection.add_argument(
+        "--deflection-limit",
+        type=float,
+        default=None,
+        help="deflection limit, mm",
+    )
+    deflection.add_argument(
+        "--deflection-limit-ratio",
+        type=float,
+        default=250.0,
+        help="span divisor for default deflection limit",
+    )
+    deflection.add_argument(
+        "--loading-scheme",
+        default="simply_supported_uniform",
+        help="draft loading scheme",
+    )
+    deflection.add_argument("--json", action="store_true", help="print JSON output")
+    deflection.set_defaults(handler=_handle_deflection)
 
     longitudinal = subparsers.add_parser(
         "select-longitudinal", help="select longitudinal reinforcement"
@@ -251,6 +287,20 @@ def _add_design_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--check-cracks", action="store_true", help="run Mcrc crack check")
     parser.add_argument("--check-crack-width", action="store_true", help="run acrc crack check")
     parser.add_argument("--acrc-limit", type=float, default=0.3, help="crack width limit, mm")
+    parser.add_argument("--check-deflection", action="store_true", help="run deflection check")
+    parser.add_argument("--span", type=float, default=None, help="beam span, mm")
+    parser.add_argument("--deflection-limit", type=float, default=None, help="deflection limit, mm")
+    parser.add_argument(
+        "--deflection-limit-ratio",
+        type=float,
+        default=250.0,
+        help="span divisor for default deflection limit",
+    )
+    parser.add_argument(
+        "--deflection-loading-scheme",
+        default="simply_supported_uniform",
+        help="draft deflection loading scheme",
+    )
     parser.add_argument("--load-duration", choices=("short", "long"), default="short")
 
 
@@ -409,6 +459,41 @@ def _handle_crack_width(args: Namespace) -> int:
     return 0
 
 
+def _handle_deflection(args: Namespace) -> int:
+    section = _section_from_args(args)
+    concrete = get_concrete(args.concrete)
+    rebar = get_rebar(args.rebar)
+    deflection = check_curvature_deflection_rectangular(
+        section=section,
+        concrete=concrete,
+        rebar=rebar,
+        Mser=args.moment_ser,
+        As=args.as_area,
+        span=args.span,
+        deflection_limit=args.deflection_limit,
+        deflection_limit_ratio=args.deflection_limit_ratio,
+        loading_scheme=args.loading_scheme,
+    )
+    result = _deflection_to_dict(deflection)
+    if args.json:
+        _print_json("deflection", deflection.status, result, deflection.warnings)
+        return 0
+
+    print("Deflection")
+    print(f"status: {deflection.status}")
+    print(f"curvature: {deflection.curvature:.10f} 1/mm")
+    print(f"deflection: {deflection.deflection:.6f} mm")
+    print(f"deflection_limit: {deflection.deflection_limit:.3f} mm")
+    print(f"utilization: {deflection.utilization:.3f}")
+    print(f"I_gross: {deflection.I_gross:.2f} mm4")
+    print(f"I_cracked: {deflection.I_cracked:.2f} mm4")
+    print(f"I_eff: {deflection.I_eff:.2f} mm4")
+    print(f"stiffness_status: {deflection.stiffness_status}")
+    print(f"Mcrc: {deflection.Mcrc:.2f} N*mm")
+    _print_warnings(deflection.warnings)
+    return 0
+
+
 def _handle_select_longitudinal(args: Namespace) -> int:
     section = _section_from_args(args)
     concrete = get_concrete(args.concrete)
@@ -500,6 +585,11 @@ def _handle_design_rectangular(args: Namespace) -> int:
         check_cracks=args.check_cracks,
         check_crack_width=args.check_crack_width,
         acrc_limit=args.acrc_limit,
+        check_deflection=args.check_deflection,
+        span=args.span,
+        deflection_limit=args.deflection_limit,
+        deflection_limit_ratio=args.deflection_limit_ratio,
+        deflection_loading_scheme=args.deflection_loading_scheme,
     )
     design = design_rectangular_element(design_input)
     result = _design_result_to_dict(design)
@@ -552,6 +642,13 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"acrc: {crack_width.acrc:.6f} mm")
         print(f"acrc_limit: {crack_width.acrc_limit:.3f} mm")
         print(f"crack_width_utilization: {crack_width.utilization:.3f}")
+    if design.deflection is not None:
+        deflection = design.deflection
+        print(f"deflection_status: {deflection.status}")
+        print(f"curvature: {deflection.curvature:.10f} 1/mm")
+        print(f"deflection: {deflection.deflection:.6f} mm")
+        print(f"deflection_limit: {deflection.deflection_limit:.3f} mm")
+        print(f"deflection_utilization: {deflection.utilization:.3f}")
     _print_warnings(design.warnings)
     return 0
 
@@ -648,6 +745,7 @@ def _handle_validate(args: Namespace) -> int:
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
             *run_crack_width_golden_cases(),
+            *run_deflection_golden_cases(),
             *run_design_golden_cases(),
         ]
 
@@ -693,6 +791,7 @@ def _handle_validate(args: Namespace) -> int:
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
             *run_crack_width_golden_cases(),
+            *run_deflection_golden_cases(),
             *run_design_golden_cases(),
         ]
         acceptance_cases = generate_dataset_cases(
@@ -976,6 +1075,9 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
         "crack_width": (
             None if design.crack_width is None else _crack_width_to_dict(design.crack_width)
         ),
+        "deflection": (
+            None if design.deflection is None else _deflection_to_dict(design.deflection)
+        ),
         "protocol_status": None if design.protocol is None else design.protocol.status,
     }
 
@@ -1004,6 +1106,25 @@ def _crack_width_to_dict(crack_width: Any) -> dict[str, Any]:
         "crack_spacing": crack_width.crack_spacing,
         "status": crack_width.status,
         "warnings": list(crack_width.warnings),
+    }
+
+
+def _deflection_to_dict(deflection: Any) -> dict[str, Any]:
+    return {
+        "Mser": deflection.Mser,
+        "Mcrc": deflection.Mcrc,
+        "span": deflection.span,
+        "curvature": deflection.curvature,
+        "deflection": deflection.deflection,
+        "deflection_limit": deflection.deflection_limit,
+        "utilization": deflection.utilization,
+        "I_gross": deflection.I_gross,
+        "I_cracked": deflection.I_cracked,
+        "I_eff": deflection.I_eff,
+        "stiffness_status": deflection.stiffness_status,
+        "loading_scheme": deflection.loading_scheme,
+        "status": deflection.status,
+        "warnings": list(deflection.warnings),
     }
 
 
