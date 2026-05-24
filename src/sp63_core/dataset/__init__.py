@@ -3,9 +3,12 @@
 from sp63_core.dataset.diagnostic import (
     DIAGNOSTIC_DATASET_SOURCE,
     DiagnosticDatasetCase,
+    DiagnosticDatasetSplit,
     diagnostic_dataset_warnings,
+    diagnostic_group_leakage_count,
     diagnostic_status_counts,
     generate_diagnostic_dataset_cases,
+    split_diagnostic_dataset_by_group,
 )
 from sp63_core.dataset.generator import (
     DATASET_COLUMNS,
@@ -28,13 +31,16 @@ __all__ = [
     "DatasetCase",
     "DatasetSplit",
     "DiagnosticDatasetCase",
+    "DiagnosticDatasetSplit",
     "build_dataset_report",
     "diagnostic_dataset_warnings",
+    "diagnostic_group_leakage_count",
     "diagnostic_status_counts",
     "export_dataset_csv",
     "export_dataset_report_json",
     "export_dataset_split_csv",
     "generate_diagnostic_dataset_cases",
     "generate_dataset_cases",
+    "split_diagnostic_dataset_by_group",
     "split_dataset_cases",
 ]

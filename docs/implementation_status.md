@@ -18,7 +18,7 @@
 | `design/rectangular.py` | implemented draft end-to-end rectangular design with separated strength, serviceability, and overall statuses | yes | yes | engineer review and CLI integration |
 | `report/protocol.py` | implemented separated strength_status, serviceability_status, and overall_status; legacy status aliases overall_status | yes | yes | keep protocol structure stable |
 | `dataset/generator.py` | implemented draft with beam-only MVP, expanded deterministic strength/serviceability output columns and status fields | yes | yes | engineer review enriched dataset ranges before ML readiness gate |
-| `dataset/diagnostic.py` | implemented expanded deterministic diagnostic dataset with pass/fail/review rows and failure-reason distribution | yes | yes | engineer review diagnostic candidate coverage before classification ML |
+| `dataset/diagnostic.py` | implemented scalable deterministic diagnostic dataset with group_key and leakage-safe split | yes | yes | engineer review diagnostic group coverage before classification ML |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K21 report counters for deterministic statuses and serviceability output ranges | yes | no | compare enriched report ranges during dataset review |
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |
@@ -32,8 +32,8 @@
 | `ml/evaluate.py` | implemented baseline and deterministic safety metrics | yes | yes | review unsafe prediction rate after dataset acceptance |
 | `ml/safety.py` | implemented deterministic safety check for reconstructed ML proposal | yes | yes | keep ML advisory only |
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
-| `ml/readiness.py` | implemented deterministic dataset ML readiness gate with diagnostic coverage warnings | yes | yes | review diagnostic distributions before classification ML |
-| `ml/baseline_report.py` | implemented non-neural baseline ML report with expanded diagnostic classification evaluation | yes | yes | review expanded diagnostic metrics and leakage warnings before any model promotion |
+| `ml/readiness.py` | implemented deterministic dataset ML readiness gate with diagnostic group-key and distribution reporting | yes | yes | review diagnostic group leakage and distributions before classification ML |
+| `ml/baseline_report.py` | implemented non-neural baseline ML report with group-aware expanded diagnostic classification evaluation | yes | yes | review expanded diagnostic metrics and leakage warnings before any model promotion |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, and separated design statuses | yes | no | dataset split and ML preparation |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

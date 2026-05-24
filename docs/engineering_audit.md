@@ -272,6 +272,18 @@ can leak calculation outcomes into a classifier. No neural network is added,
 and the metrics do not authorize project use of ML. Deterministic SP63 checks
 remain mandatory.
 
+## K27 Scalable Diagnostic Dataset and Leakage-Safe Splits
+
+K27 adds `group_key` to diagnostic rows and uses it for leakage-safe
+diagnostic train/test splits. The group key is based on rectangular beam
+geometry and material classes so similar variants of one section/material family
+are kept on one side of the split.
+
+The expanded diagnostic dataset can be generated at 1000 rows for ML-readiness
+review. It still contains intentional fail and review cases and is not a set of
+approved design solutions. Deterministic-derived ML features remain marked as
+potential leakage, and no neural network is added.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

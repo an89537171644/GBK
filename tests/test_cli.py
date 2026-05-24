@@ -709,7 +709,7 @@ def test_cli_ml_baseline_json_output(capsys):
             "--safe-limit",
             "30",
             "--diagnostic-limit",
-            "100",
+            "1000",
             "--json",
         ]
     )
@@ -724,20 +724,21 @@ def test_cli_ml_baseline_json_output(capsys):
     assert "longitudinal_as_mm2" in data["regression_metrics"]
     assert "bending_utilization" in data["regression_metrics"]
     assert data["classification_metrics"]["target"] == "overall_status"
-    assert data["diagnostic_rows"] == 100
+    assert data["diagnostic_rows"] == 1000
     expanded = data["expanded_diagnostic_classification"]
     assert expanded["target"] == "overall_status"
     assert expanded["target_constant"] is False
     assert expanded["class_distribution"]["pass"] >= 1
     assert expanded["class_distribution"]["fail"] >= 1
     assert expanded["class_distribution"]["review_or_fail"] >= 1
+    assert expanded["split"]["group_key_present"] is True
+    assert expanded["split"]["group_leakage_checked"] is True
+    assert expanded["split"]["group_leakage_count"] == 0
     assert "input_only_features" in expanded["feature_modes"]
     assert "deterministic_derived_features" in expanded["feature_modes"]
     assert expanded["feature_modes"]["input_only_features"]["logistic"]["accuracy"] >= 0
-    assert any(
-        "classification metrics are review-only" in warning
-        for warning in data["warnings"]
-    )
+    assert not any("fewer than 1000 rows" in warning for warning in data["warnings"])
+    assert any("deterministic output values" in warning for warning in data["warnings"])
 
 
 def test_cli_train_baseline_command(tmp_path, capsys):

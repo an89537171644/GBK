@@ -201,6 +201,29 @@ The classification target is `overall_status`. Direct status fields,
 from the feature modes. Deterministic-derived features are flagged as
 review-only because they can leak deterministic calculation outcomes into ML.
 
+## K27 Scalable Diagnostic Dataset
+
+`python -m sp63_core diagnostic-dataset --limit 1000 --json` emits a larger
+deterministic diagnostic/candidate dataset with the same `pass`, `fail`, and
+`review_or_fail` status classes. Each diagnostic row includes:
+
+- `group_key`;
+- `case_type`;
+- `failure_reason`;
+- strength, serviceability, and overall statuses;
+- `dataset_source = diagnostic_deterministic_sp63_core`.
+
+The diagnostic `group_key` uses rectangular beam geometry and material classes:
+
+```text
+beam_rectangular|b=<b>|h=<h>|concrete=<class>|main_rebar=<class>|stirrup_rebar=<class>
+```
+
+The group key is used for leakage-safe train/test splitting. Similar
+geometry/material variants must not appear in both train and test. The
+diagnostic dataset is not a design-solution dataset, and every row still
+requires engineer review.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

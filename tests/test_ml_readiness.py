@@ -26,6 +26,7 @@ def test_ml_readiness_report_counts_safe_dataset_rows():
     report = build_ml_readiness_report(case.as_row() for case in cases)
 
     assert report.unsafe_rows_count == 0
+    assert report.group_key_present is True
     assert report.group_leakage_count == 0
 
 
@@ -63,8 +64,9 @@ def test_ml_readiness_warns_for_small_diagnostic_dataset():
     report = build_ml_readiness_report(case.as_readiness_row() for case in cases)
 
     assert report.status == "review_required"
+    assert report.group_key_present is True
     assert "overall_status" not in report.constant_target_columns
     assert any(
-        "diagnostic dataset is small" in warning
+        "diagnostic dataset has fewer than 1000 rows" in warning
         for warning in report.warnings
     )
