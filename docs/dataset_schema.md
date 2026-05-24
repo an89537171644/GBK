@@ -224,6 +224,33 @@ geometry/material variants must not appear in both train and test. The
 diagnostic dataset is not a design-solution dataset, and every row still
 requires engineer review.
 
+## K28 Group-Diverse Diagnostic Dataset
+
+`python -m sp63_core diagnostic-dataset --limit 5000 --json` emits a larger
+diagnostic/candidate dataset with more independent groups. K28 expands the
+candidate space across section dimensions, cover, material classes, load
+families, spans, and reinforcement families while preserving the K20/K23 seed
+cases.
+
+The diagnostic `group_key` now includes:
+
+- rectangular beam element family;
+- diagnostic case type;
+- section width, height, and cover;
+- concrete, longitudinal rebar, and stirrup rebar classes;
+- load family buckets for `M`, `Q`, `Mser`, and span;
+- longitudinal and transverse reinforcement family.
+
+The diagnostic JSON report includes `unique_group_count`,
+`group_key_present`, `group_leakage_count`, train/test group counts,
+`overall_status` distribution, and `failure_reason` distribution. K28 expects
+the 5000-row diagnostic smoke command to provide at least 50 unique groups and
+zero group leakage.
+
+The diagnostic dataset remains an ML-readiness artifact only. It is not a set
+of approved project solutions, every row requires engineer review, and ML
+remains advisory-only.
+
 ## K8 Dataset Split
 
 `split_dataset_cases()` creates reproducible train/validation/test partitions

@@ -284,6 +284,23 @@ review. It still contains intentional fail and review cases and is not a set of
 approved design solutions. Deterministic-derived ML features remain marked as
 potential leakage, and no neural network is added.
 
+## K28 Group-Diverse Diagnostic Dataset
+
+K28 increases diagnostic group diversity by expanding geometry, cover,
+material, load, span, and reinforcement-family combinations. The diagnostic
+`group_key` now captures more engineering context than geometry/materials
+alone, including diagnostic case type, load family, and reinforcement family.
+
+The target review signal is `diagnostic-dataset --limit 5000 --json` with at
+least 50 unique groups and `group_leakage_count = 0`. `ml-readiness
+--diagnostic --json` and `ml-baseline --diagnostic-limit 1000 --json` expose
+the same group-split safety indicators.
+
+K28 does not change deterministic formulas or material values, does not add a
+neural network, and does not make ML a design checker. The diagnostic dataset
+remains an engineer-review artifact and is not a set of approved project
+solutions.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

@@ -732,6 +732,7 @@ def test_cli_ml_baseline_json_output(capsys):
     assert expanded["class_distribution"]["fail"] >= 1
     assert expanded["class_distribution"]["review_or_fail"] >= 1
     assert expanded["split"]["group_key_present"] is True
+    assert expanded["split"]["unique_group_count"] >= 50
     assert expanded["split"]["group_leakage_checked"] is True
     assert expanded["split"]["group_leakage_count"] == 0
     assert "input_only_features" in expanded["feature_modes"]

@@ -6,6 +6,7 @@ from sp63_core.cli import main
 from sp63_core.dataset import (
     DIAGNOSTIC_DATASET_SOURCE,
     diagnostic_status_counts,
+    diagnostic_unique_group_count,
     generate_diagnostic_dataset_cases,
     split_diagnostic_dataset_by_group,
 )
@@ -38,6 +39,14 @@ def test_generate_diagnostic_dataset_cases_honors_expanded_limits():
     assert len(cases_1000) == 1000
     assert cases_50[:6] == cases_100[:6]
     assert cases_100[:6] == cases_1000[:6]
+    assert diagnostic_unique_group_count(cases_1000) >= 50
+
+
+def test_generate_diagnostic_dataset_cases_supports_5000_row_smoke():
+    cases = generate_diagnostic_dataset_cases(limit=5000)
+
+    assert len(cases) == 5000
+    assert diagnostic_unique_group_count(cases) >= 50
 
 
 def test_generate_diagnostic_dataset_cases_contains_pass_fail_review_statuses():
@@ -53,6 +62,7 @@ def test_generate_diagnostic_dataset_cases_marks_review_and_source():
     assert all(case.requires_engineer_review is True for case in cases)
     assert all(case.dataset_source == DIAGNOSTIC_DATASET_SOURCE for case in cases)
     assert all(case.group_key for case in cases)
+    assert diagnostic_unique_group_count(cases) > 1
     assert all(
         case.failure_reason
         for case in cases
@@ -81,6 +91,8 @@ def test_split_diagnostic_dataset_by_group_has_no_group_leakage():
 
     assert split.group_leakage_count == 0
     assert train_groups.isdisjoint(test_groups)
+    assert len(train_groups) > 1
+    assert len(test_groups) > 1
     assert {case.overall_status for case in cases} >= {"pass", "fail", "review_or_fail"}
 
 
@@ -93,6 +105,7 @@ def test_cli_diagnostic_dataset_json_output(capsys):
     assert data["command"] == "diagnostic-dataset"
     assert data["status"] == "pass"
     assert data["case_count"] == 1000
+    assert data["unique_group_count"] >= 50
     assert data["group_key_present"] is True
     assert data["group_leakage_count"] == 0
     assert data["status_counts"]["overall_status"]["pass"] >= 1
@@ -112,6 +125,7 @@ def test_cli_ml_readiness_diagnostic_json_output(capsys):
     assert data["dataset_mode"] == "diagnostic"
     assert data["missing_required_columns"] == []
     assert data["group_key_present"] is True
+    assert data["unique_group_count"] >= 50
     assert data["group_leakage_count"] == 0
     assert "overall_status" not in data["constant_target_columns"]
     assert data["status_counts"]["overall_status"]["pass"] >= 1

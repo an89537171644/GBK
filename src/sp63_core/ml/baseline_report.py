@@ -67,6 +67,7 @@ EXPANDED_DIAGNOSTIC_DETERMINISTIC_DERIVED_FEATURES: tuple[str, ...] = (
     "deflection_mm",
 )
 EXPANDED_DIAGNOSTIC_SMALL_DATASET_LIMIT = 1000
+EXPANDED_DIAGNOSTIC_MIN_UNIQUE_GROUPS = 50
 BASELINE_REPORT_NOTES: tuple[str, ...] = (
     "ML is advisory-only and is not a deterministic design checker.",
     "Neural network is not used in this baseline report.",
@@ -264,6 +265,11 @@ def _build_expanded_diagnostic_classification(
     group_key_present = all(
         getattr(case, "group_key", "") not in (None, "") for case in diagnostic_cases
     )
+    unique_group_count = (
+        len({case.group_key for case in diagnostic_cases if case.group_key})
+        if group_key_present
+        else 0
+    )
     if len(diagnostic_cases) < EXPANDED_DIAGNOSTIC_SMALL_DATASET_LIMIT:
         warnings.append(
             "expanded diagnostic dataset has fewer than 1000 rows; "
@@ -271,6 +277,11 @@ def _build_expanded_diagnostic_classification(
         )
     if not group_key_present:
         warnings.append("diagnostic dataset has no group_key; group leakage cannot be checked")
+    if unique_group_count < EXPANDED_DIAGNOSTIC_MIN_UNIQUE_GROUPS:
+        warnings.append(
+            "expanded diagnostic dataset has fewer than 50 unique group_key values; "
+            "classification validation remains review-only"
+        )
     warnings.append(
         "deterministic_derived_features include deterministic output values and may "
         "leak target information for project ML"
@@ -287,6 +298,7 @@ def _build_expanded_diagnostic_classification(
             "split": {
                 "random_state": seed,
                 "group_key_present": group_key_present,
+                "unique_group_count": unique_group_count,
                 "group_leakage_checked": group_key_present,
                 "group_leakage_count": 0,
             },
@@ -364,6 +376,7 @@ def _build_expanded_diagnostic_classification(
                 else "stratified_by_overall_status"
             ),
             "group_key_present": group_key_present,
+            "unique_group_count": unique_group_count,
             "group_leakage_checked": group_key_present,
             "group_leakage_count": (
                 0 if group_split is None else group_split.group_leakage_count

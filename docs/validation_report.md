@@ -429,6 +429,28 @@ feature leakage.
 The diagnostic dataset is for ML-readiness and classification experiments only.
 It does not authorize ML output and does not replace deterministic SP63 checks.
 
+## K28 Group-Diverse Diagnostic Dataset Validation
+
+K28 expands the diagnostic candidate space:
+
+```bash
+python -m sp63_core diagnostic-dataset --limit 5000 --json
+```
+
+The diagnostic JSON report now includes `unique_group_count` in addition to
+`group_key_present`, `group_leakage_count`, train/test group counts,
+`overall_status` distribution, and `failure_reason` distribution. The 5000-row
+smoke command is expected to provide at least 50 unique diagnostic groups and
+zero group leakage.
+
+`ml-readiness --diagnostic --json` reports the same group diversity signals and
+warns when diagnostic groups are too few. `ml-baseline --diagnostic-limit 1000
+--json` continues to use group-aware splitting and keeps deterministic-derived
+feature warnings.
+
+The diagnostic dataset is still not a design solution set. It exists for
+ML-readiness review only, and ML remains advisory-only.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

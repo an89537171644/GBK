@@ -20,6 +20,7 @@ from sp63_core.sections import RectangularSection
 DIAGNOSTIC_DATASET_SOURCE = "diagnostic_deterministic_sp63_core"
 DIAGNOSTIC_REQUIRED_OVERALL_STATUSES = ("pass", "fail", "review_or_fail")
 DIAGNOSTIC_MIN_CLASSIFICATION_ROWS = 30
+DIAGNOSTIC_MIN_UNIQUE_GROUPS = 50
 _CANDIDATE_CASE_TYPES: tuple[str, ...] = (
     "pass_base",
     "bending_fail",
@@ -201,6 +202,11 @@ def diagnostic_status_counts(
     }
 
 
+def diagnostic_unique_group_count(cases: Sequence[DiagnosticDatasetCase]) -> int:
+    """Return the count of non-empty diagnostic group keys."""
+    return len({case.group_key for case in cases if case.group_key})
+
+
 def diagnostic_dataset_warnings(
     cases: tuple[DiagnosticDatasetCase, ...],
 ) -> tuple[str, ...]:
@@ -218,6 +224,12 @@ def diagnostic_dataset_warnings(
     if len(cases) < DIAGNOSTIC_MIN_CLASSIFICATION_ROWS:
         warnings.append(
             "diagnostic dataset is small; classification metrics are smoke metrics only"
+        )
+    unique_group_count = diagnostic_unique_group_count(cases)
+    if unique_group_count < DIAGNOSTIC_MIN_UNIQUE_GROUPS:
+        warnings.append(
+            "diagnostic dataset has fewer than 50 unique group_key values; "
+            "group-diverse ML validation remains review-only"
         )
     return tuple(warnings)
 
@@ -454,20 +466,23 @@ def _shear_fail() -> DiagnosticDatasetCase:
 
 def _candidate_pass_base(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
+    cover = _variant_cover(variant)
     main_bar_diameter = 20
     main_bar_count = 3
     stirrup_spacing = (150, 150, 200)[variant % 3]
     section = _section(
         b=b,
         h=h,
+        cover=cover,
         main_bar_diameter=main_bar_diameter,
         stirrup_diameter=8,
     )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = "A500"
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
-    stirrup_rebar = get_rebar("A240")
+    stirrup_rebar = get_rebar(stirrup_rebar_class)
     M = (45_000_000, 55_000_000, 65_000_000)[variant % 3]
     Q = (25_000, 35_000, 45_000)[variant % 3]
     Mser = 0.2 * M
@@ -509,7 +524,7 @@ def _candidate_pass_base(index: int, variant: int) -> DiagnosticDatasetCase:
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=M,
         Q=Q,
         Mser=Mser,
@@ -534,10 +549,18 @@ def _candidate_pass_base(index: int, variant: int) -> DiagnosticDatasetCase:
 
 def _candidate_bending_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
+    cover = _variant_cover(variant)
     main_bar_diameter = (12, 14, 16)[variant % 3]
-    section = _section(b=b, h=h, main_bar_diameter=main_bar_diameter, stirrup_diameter=8)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=main_bar_diameter,
+        stirrup_diameter=8,
+    )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = _variant_rebar_class(variant)
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
     M = (170_000_000, 190_000_000, 220_000_000)[variant % 3]
@@ -550,7 +573,7 @@ def _candidate_bending_fail(index: int, variant: int) -> DiagnosticDatasetCase:
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=M,
         Q=0.0,
         Mser=0.0,
@@ -569,11 +592,19 @@ def _candidate_bending_fail(index: int, variant: int) -> DiagnosticDatasetCase:
 
 def _candidate_shear_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
-    section = _section(b=b, h=h, main_bar_diameter=20, stirrup_diameter=6)
+    cover = _variant_cover(variant)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=20,
+        stirrup_diameter=6,
+    )
     concrete_class = _variant_concrete_class(variant)
     concrete = get_concrete(concrete_class)
-    stirrup_rebar = get_rebar("A240")
-    Q = (180_000, 210_000, 240_000)[variant % 3]
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
+    stirrup_rebar = get_rebar(stirrup_rebar_class)
+    Q = (220_000, 260_000, 300_000)[variant % 3]
     stirrup_spacing = (300, 350, 400)[variant % 3]
     Asw = 2 * area_by_diameter(6)
     shear = check_shear_rectangular(
@@ -591,7 +622,7 @@ def _candidate_shear_fail(index: int, variant: int) -> DiagnosticDatasetCase:
         section=section,
         concrete_class=concrete_class,
         main_rebar_class="A500",
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=0.0,
         Q=Q,
         Mser=0.0,
@@ -613,12 +644,20 @@ def _candidate_crack_review_without_width(
     variant: int,
 ) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
-    section = _section(b=b, h=h, main_bar_diameter=20, stirrup_diameter=8)
+    cover = _variant_cover(variant)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=20,
+        stirrup_diameter=8,
+    )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = _variant_rebar_class(variant)
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
-    stirrup_rebar = get_rebar("A240")
+    stirrup_rebar = get_rebar(stirrup_rebar_class)
     M = (90_000_000, 110_000_000, 130_000_000)[variant % 3]
     Q = (40_000, 55_000, 70_000)[variant % 3]
     Mser = max(30_000_000, 0.35 * M)
@@ -634,7 +673,7 @@ def _candidate_crack_review_without_width(
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=M,
         Q=Q,
         Mser=Mser,
@@ -653,10 +692,18 @@ def _candidate_crack_review_without_width(
 
 def _candidate_crack_width_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
+    cover = _variant_cover(variant)
     main_bar_diameter = (12, 14, 16)[variant % 3]
-    section = _section(b=b, h=h, main_bar_diameter=main_bar_diameter, stirrup_diameter=8)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=main_bar_diameter,
+        stirrup_diameter=8,
+    )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = _variant_rebar_class(variant)
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
     Mser = (70_000_000, 85_000_000, 100_000_000)[variant % 3]
@@ -678,7 +725,7 @@ def _candidate_crack_width_fail(index: int, variant: int) -> DiagnosticDatasetCa
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=0.0,
         Q=0.0,
         Mser=Mser,
@@ -697,10 +744,18 @@ def _candidate_crack_width_fail(index: int, variant: int) -> DiagnosticDatasetCa
 
 def _candidate_deflection_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
+    cover = _variant_cover(variant)
     main_bar_diameter = (14, 16, 18)[variant % 3]
-    section = _section(b=b, h=h, main_bar_diameter=main_bar_diameter, stirrup_diameter=8)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=main_bar_diameter,
+        stirrup_diameter=8,
+    )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = _variant_rebar_class(variant)
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
     Mser = (65_000_000, 80_000_000, 95_000_000)[variant % 3]
@@ -723,7 +778,7 @@ def _candidate_deflection_fail(index: int, variant: int) -> DiagnosticDatasetCas
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=0.0,
         Q=0.0,
         Mser=Mser,
@@ -742,13 +797,21 @@ def _candidate_deflection_fail(index: int, variant: int) -> DiagnosticDatasetCas
 
 def _candidate_multiple_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     b, h = _variant_section_dimensions(variant)
+    cover = _variant_cover(variant)
     main_bar_diameter = (12, 14, 16)[variant % 3]
-    section = _section(b=b, h=h, main_bar_diameter=main_bar_diameter, stirrup_diameter=6)
+    section = _section(
+        b=b,
+        h=h,
+        cover=cover,
+        main_bar_diameter=main_bar_diameter,
+        stirrup_diameter=6,
+    )
     concrete_class = _variant_concrete_class(variant)
     rebar_class = _variant_rebar_class(variant)
+    stirrup_rebar_class = _variant_stirrup_rebar_class(variant)
     concrete = get_concrete(concrete_class)
     rebar = get_rebar(rebar_class)
-    stirrup_rebar = get_rebar("A240")
+    stirrup_rebar = get_rebar(stirrup_rebar_class)
     M = (180_000_000, 210_000_000, 240_000_000)[variant % 3]
     Q = (190_000, 220_000, 250_000)[variant % 3]
     Mser = (75_000_000, 90_000_000, 105_000_000)[variant % 3]
@@ -783,7 +846,7 @@ def _candidate_multiple_fail(index: int, variant: int) -> DiagnosticDatasetCase:
         section=section,
         concrete_class=concrete_class,
         main_rebar_class=rebar_class,
-        stirrup_rebar_class="A240",
+        stirrup_rebar_class=stirrup_rebar_class,
         M=M,
         Q=Q,
         Mser=Mser,
@@ -839,10 +902,20 @@ def _build_case(
     return DiagnosticDatasetCase(
         case_id=case_id,
         group_key=_build_group_key(
+            case_type=case_type,
             section=section,
             concrete_class=concrete_class,
             main_rebar_class=main_rebar_class,
             stirrup_rebar_class=stirrup_rebar_class,
+            M=M,
+            Q=Q,
+            Mser=Mser,
+            span=span,
+            main_bar_count=main_bar_count,
+            main_bar_diameter=main_bar_diameter,
+            stirrup_diameter=stirrup_diameter,
+            stirrup_legs=stirrup_legs,
+            stirrup_spacing=stirrup_spacing,
         ),
         case_type=case_type,
         description=description,
@@ -890,13 +963,16 @@ def _candidate_case_id(index: int) -> str:
 
 
 def _variant_section_dimensions(variant: int) -> tuple[float, float]:
-    dimensions = (
-        (250.0, 450.0),
-        (300.0, 500.0),
-        (350.0, 550.0),
-        (400.0, 600.0),
-    )
-    return dimensions[variant % len(dimensions)]
+    widths = (250.0, 300.0, 350.0, 400.0, 500.0)
+    heights = (400.0, 450.0, 500.0, 550.0, 600.0)
+    width = widths[variant % len(widths)]
+    height = heights[(variant // len(widths)) % len(heights)]
+    return width, height
+
+
+def _variant_cover(variant: int) -> float:
+    covers = (25.0, 30.0, 32.0, 40.0)
+    return covers[(variant // 3) % len(covers)]
 
 
 def _variant_concrete_class(variant: int) -> str:
@@ -905,6 +981,10 @@ def _variant_concrete_class(variant: int) -> str:
 
 def _variant_rebar_class(variant: int) -> str:
     return ("A400", "A500")[variant % 2]
+
+
+def _variant_stirrup_rebar_class(variant: int) -> str:
+    return ("A240", "A400")[(variant // 2) % 2]
 
 
 def _section(
@@ -939,16 +1019,44 @@ def _value(checks: Mapping[str, Any], check_name: str, attr_name: str) -> float 
 
 def _build_group_key(
     *,
+    case_type: str,
     section: RectangularSection,
     concrete_class: str,
     main_rebar_class: str,
     stirrup_rebar_class: str,
+    M: float,
+    Q: float,
+    Mser: float,
+    span: float,
+    main_bar_count: int,
+    main_bar_diameter: int,
+    stirrup_diameter: int,
+    stirrup_legs: int,
+    stirrup_spacing: int,
 ) -> str:
     return (
         "beam_rectangular"
+        f"|case_type={case_type}"
         f"|b={section.b:g}"
         f"|h={section.h:g}"
+        f"|cover={section.cover:g}"
         f"|concrete={concrete_class}"
         f"|main_rebar={main_rebar_class}"
         f"|stirrup_rebar={stirrup_rebar_class}"
+        f"|load={_load_family(M=M, Q=Q, Mser=Mser, span=span)}"
+        f"|reinforcement={main_bar_count}D{main_bar_diameter}"
+        f"|stirrups={stirrup_diameter}-{stirrup_legs}-{stirrup_spacing}"
     )
+
+
+def _load_family(*, M: float, Q: float, Mser: float, span: float) -> str:
+    return (
+        f"M{_bucket(M, 25_000_000)}"
+        f"-Q{_bucket(Q, 50_000)}"
+        f"-Mser{_bucket(Mser, 25_000_000)}"
+        f"-L{_bucket(span, 1000)}"
+    )
+
+
+def _bucket(value: float, step: int) -> int:
+    return int(round(value / step))

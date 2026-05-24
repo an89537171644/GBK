@@ -364,6 +364,23 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   remains engineer-review material.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K28 group-diverse diagnostic dataset status
+
+- CLI command `diagnostic-dataset --limit 5000 --json` is supported for a
+  larger and more group-diverse deterministic diagnostic/candidate dataset.
+- Diagnostic `group_key` now includes case type, geometry, cover, material
+  classes, load family, and reinforcement family so ML validation can split
+  across more independent groups.
+- The diagnostic report includes `unique_group_count`, `group_key_present`,
+  `group_leakage_count`, status distribution, failure-reason distribution, and
+  warnings when group diversity is too low.
+- `ml-readiness --diagnostic --json` reports diagnostic group diversity, and
+  `ml-baseline --diagnostic-limit 1000 --json` continues to use group-aware
+  splitting.
+- The diagnostic dataset is not a set of approved design solutions. ML remains
+  advisory-only, deterministic SP63 checks remain mandatory, and neural
+  networks are still not implemented.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
