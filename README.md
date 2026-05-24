@@ -323,6 +323,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Deterministic SP63 checks remain mandatory for every ML proposal.
 - Small diagnostic dataset warnings must be reviewed before any later ML stage.
 
+## K25 expanded diagnostic dataset status
+
+- CLI command `diagnostic-dataset --limit 100 --json` now emits an expanded
+  deterministic candidate dataset instead of only the six seed cases.
+- The first six K20/K23 manual diagnostic cases are preserved.
+- Additional candidate rows cover `pass_base`, `bending_fail`, `shear_fail`,
+  `crack_review_without_width`, `crack_width_fail`, `deflection_fail`, and
+  `multiple_fail`.
+- The safe accepted dataset remains separate and is still the source for safe
+  regression experiments.
+- The diagnostic dataset is for classification readiness only. It is not a
+  project-design solution dataset, and every row requires engineer review.
+- ML remains advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

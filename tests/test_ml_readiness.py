@@ -1,6 +1,6 @@
 """Tests for ML readiness gate."""
 
-from sp63_core.dataset import generate_dataset_cases
+from sp63_core.dataset import generate_dataset_cases, generate_diagnostic_dataset_cases
 from sp63_core.ml import build_ml_readiness_report
 
 
@@ -56,3 +56,15 @@ def test_ml_readiness_fails_when_required_columns_are_missing():
     assert report.status == "fail"
     assert "section_h_mm" in report.missing_required_columns
     assert any("missing required columns" in warning for warning in report.warnings)
+
+
+def test_ml_readiness_warns_for_small_diagnostic_dataset():
+    cases = generate_diagnostic_dataset_cases(limit=6)
+    report = build_ml_readiness_report(case.as_readiness_row() for case in cases)
+
+    assert report.status == "review_required"
+    assert "overall_status" not in report.constant_target_columns
+    assert any(
+        "diagnostic dataset is small" in warning
+        for warning in report.warnings
+    )

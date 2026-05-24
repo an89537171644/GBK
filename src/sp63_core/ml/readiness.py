@@ -53,6 +53,9 @@ REQUIRED_COLUMNS: tuple[str, ...] = (
     + SERVICE_REQUIRED_COLUMNS
 )
 TARGET_COLUMNS: tuple[str, ...] = RESULT_REQUIRED_COLUMNS + STATUS_COLUMNS
+DIAGNOSTIC_DATASET_SOURCE = "diagnostic_deterministic_sp63_core"
+DIAGNOSTIC_REQUIRED_OVERALL_STATUSES = ("pass", "fail", "review_or_fail")
+DIAGNOSTIC_MIN_CLASSIFICATION_ROWS = 30
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,7 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
     low_variance_status_columns = _constant_columns(normalized_rows, STATUS_COLUMNS)
 
     warnings: list[str] = []
+    diagnostic_dataset = _is_diagnostic_dataset(normalized_rows)
     if total_rows == 0:
         warnings.append("dataset must contain at least one row")
     if missing_required_columns:
@@ -108,6 +112,22 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
             "dataset contains constant target/status columns; "
             "review target variability before ML training"
         )
+    if diagnostic_dataset:
+        overall_counts = status_counts.get("overall_status", {})
+        missing_statuses = [
+            status
+            for status in DIAGNOSTIC_REQUIRED_OVERALL_STATUSES
+            if status not in overall_counts
+        ]
+        if missing_statuses:
+            warnings.append(
+                "diagnostic dataset is missing overall_status values: "
+                + ", ".join(missing_statuses)
+            )
+        if total_rows < DIAGNOSTIC_MIN_CLASSIFICATION_ROWS:
+            warnings.append(
+                "diagnostic dataset is small; classification metrics are smoke metrics only"
+            )
 
     if total_rows == 0 or missing_required_columns or group_leakage_count > 0:
         status = "fail"
@@ -171,3 +191,9 @@ def _is_truthy(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"true", "1", "yes"}
     return bool(value)
+
+
+def _is_diagnostic_dataset(rows: tuple[dict[str, Any], ...]) -> bool:
+    return bool(rows) and all(
+        row.get("dataset_source") == DIAGNOSTIC_DATASET_SOURCE for row in rows
+    )

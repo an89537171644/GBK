@@ -246,6 +246,18 @@ remain mandatory. The diagnostic dataset is intentionally small, so
 classification metrics are smoke metrics rather than evidence of production ML
 quality.
 
+## K25 Expanded Diagnostic Dataset
+
+K25 expands the diagnostic/candidate dataset while keeping the safe accepted
+dataset separate. The diagnostic set now includes generated deterministic rows
+for pass, bending failure, shear failure, crack-width failure, deflection
+failure, crack-review, and multiple-failure scenarios.
+
+This improves classification readiness diagnostics, but it does not create a
+design dataset and does not approve any failing or review-required rows as
+solutions. Every diagnostic row still requires engineer review. ML remains
+advisory-only and deterministic SP63 checks remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

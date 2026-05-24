@@ -366,6 +366,25 @@ deterministic SP63 checks remain mandatory. Because the diagnostic dataset is
 small, classification metrics are smoke metrics and require engineer review
 before any later ML stage.
 
+## K25 Expanded Diagnostic Dataset Validation
+
+K25 expands the diagnostic dataset command:
+
+```bash
+python -m sp63_core diagnostic-dataset --limit 100 --json
+```
+
+The command now preserves the six manual diagnostic seed cases and adds
+deterministic candidate rows for pass, bending failure, shear failure,
+crack-width failure, deflection failure, crack-review, and multiple-failure
+scenarios. The JSON status report includes `overall_status` and
+`failure_reason` distributions.
+
+The expanded diagnostic dataset remains an engineering review artifact. It is
+not a design solution set and does not authorize ML output. It exists to make
+future classification readiness checks more representative before any later ML
+stage.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
