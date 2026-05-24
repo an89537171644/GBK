@@ -270,6 +270,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - These cases are draft verification checks and require engineer review.
 - ML remains advisory-only and deterministic SP63 checks remain mandatory.
 
+## K21 dataset enrichment status
+
+- Generated dataset rows now include deterministic strength outputs, draft
+  serviceability outputs, and separated `strength_status`,
+  `serviceability_status`, and `overall_status` values.
+- The enriched fields include explicit geometry/load aliases, selected
+  reinforcement areas, `Mult`, `Qult`, `Mcrc`, crack width, deflection,
+  warning count, review flag, and `dataset_source`.
+- `dataset_source` is `deterministic_sp63_core`; the dataset is produced by the
+  deterministic calculation core and remains a draft engineering artifact.
+- `unsafe_row` is stored in every row and should remain `false` for exported MVP
+  rows used by validation and ML experiments.
+- ML remains advisory-only and the dataset does not replace engineering review.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

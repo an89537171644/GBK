@@ -12,11 +12,18 @@ from pathlib import Path
 from typing import Any
 
 from sp63_core import __version__
+from sp63_core.checks import (
+    check_curvature_deflection_rectangular,
+    check_normal_crack_formation_rectangular,
+    check_normal_crack_width_rectangular,
+)
 from sp63_core.materials import STIRRUP_DIAMETERS, LoadDuration, get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
+from sp63_core.report import build_calculation_protocol
 from sp63_core.sections import RectangularSection
 
 DATASET_VERSION = "0.1"
+DATASET_SOURCE = "deterministic_sp63_core"
 _FULL_GRID_CACHE: dict[tuple[Any, ...], tuple["DatasetCase", ...]] = {}
 DATASET_COLUMNS: tuple[str, ...] = (
     "case_id",
@@ -57,6 +64,38 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "bending_utilization",
     "shear_utilization",
     "status",
+    "section_b_mm",
+    "section_h_mm",
+    "effective_depth_mm",
+    "cover_mm",
+    "main_bar_diameter_mm",
+    "stirrup_diameter_mm",
+    "stirrup_spacing_mm",
+    "main_rebar_class",
+    "stirrup_rebar_class",
+    "moment_nmm",
+    "shear_n",
+    "moment_service_nmm",
+    "span_mm",
+    "longitudinal_as_mm2",
+    "transverse_asw_mm2",
+    "bending_mult_nmm",
+    "shear_qult_n",
+    "mcrc_nmm",
+    "crack_width_mm",
+    "deflection_mm",
+    "bending_status",
+    "shear_status",
+    "crack_formation_status",
+    "crack_width_status",
+    "deflection_status",
+    "strength_status",
+    "serviceability_status",
+    "overall_status",
+    "warnings_count",
+    "requires_engineer_review",
+    "unsafe_row",
+    "dataset_source",
     "sp63_core_version",
     "dataset_version",
 )
@@ -104,6 +143,38 @@ class DatasetCase:
     bending_utilization: float
     shear_utilization: float
     status: str
+    section_b_mm: float
+    section_h_mm: float
+    effective_depth_mm: float
+    cover_mm: float
+    main_bar_diameter_mm: int
+    stirrup_diameter_mm: int
+    stirrup_spacing_mm: int
+    main_rebar_class: str
+    stirrup_rebar_class: str
+    moment_nmm: float
+    shear_n: float
+    moment_service_nmm: float
+    span_mm: float
+    longitudinal_as_mm2: float
+    transverse_asw_mm2: float
+    bending_mult_nmm: float
+    shear_qult_n: float
+    mcrc_nmm: float
+    crack_width_mm: float
+    deflection_mm: float
+    bending_status: str
+    shear_status: str
+    crack_formation_status: str
+    crack_width_status: str
+    deflection_status: str
+    strength_status: str
+    serviceability_status: str
+    overall_status: str
+    warnings_count: int
+    requires_engineer_review: bool
+    unsafe_row: bool
+    dataset_source: str
     sp63_core_version: str
     dataset_version: str
 
@@ -128,6 +199,8 @@ def generate_dataset_cases(
     load_duration: LoadDuration = "short",
     moments: Iterable[float] = (80_000_000, 120_000_000, 150_000_000, 200_000_000),
     shears: Iterable[float] = (50_000, 80_000, 120_000, 160_000),
+    service_moment_ratio: float = 0.2,
+    span: float = 6000.0,
     shuffle: bool = True,
     seed: int = 42,
 ) -> tuple[DatasetCase, ...]:
@@ -138,6 +211,10 @@ def generate_dataset_cases(
     """
     if limit <= 0:
         raise ValueError("limit must be positive")
+    if service_moment_ratio < 0:
+        raise ValueError("service_moment_ratio must be non-negative")
+    if span <= 0:
+        raise ValueError("span must be positive")
 
     normalized_element_types = tuple(element_types)
     normalized_widths = tuple(widths)
@@ -170,6 +247,8 @@ def generate_dataset_cases(
         load_duration,
         normalized_moments,
         normalized_shears,
+        service_moment_ratio,
+        span,
     )
     cached_rows = _FULL_GRID_CACHE.get(cache_key)
     if cached_rows is None:
@@ -186,6 +265,8 @@ def generate_dataset_cases(
             load_duration=load_duration,
             moments=normalized_moments,
             shears=normalized_shears,
+            service_moment_ratio=service_moment_ratio,
+            span=span,
         )
         _FULL_GRID_CACHE[cache_key] = tuple(all_rows)
     else:
@@ -215,6 +296,8 @@ def _build_full_grid_rows(
     load_duration: LoadDuration,
     moments: tuple[float, ...],
     shears: tuple[float, ...],
+    service_moment_ratio: float,
+    span: float,
 ) -> list[DatasetCase]:
     all_rows: list[DatasetCase] = []
     longitudinal_cache: dict[tuple[Any, ...], Any] = {}
@@ -289,6 +372,60 @@ def _build_full_grid_rows(
                                     if not transverse_options:
                                         continue
                                     transverse_option = transverse_options[0]
+                                    moment_service = service_moment_ratio * M
+                                    crack_formation = (
+                                        check_normal_crack_formation_rectangular(
+                                            section=option.section,
+                                            concrete=concrete,
+                                            Mser=moment_service,
+                                        )
+                                    )
+                                    crack_width = check_normal_crack_width_rectangular(
+                                        section=option.section,
+                                        concrete=concrete,
+                                        rebar=rebar,
+                                        Mser=moment_service,
+                                        As=option.As,
+                                        main_bar_diameter=option.diameter,
+                                        crack_formation=crack_formation,
+                                    )
+                                    deflection = check_curvature_deflection_rectangular(
+                                        section=option.section,
+                                        concrete=concrete,
+                                        rebar=rebar,
+                                        Mser=moment_service,
+                                        As=option.As,
+                                        span=span,
+                                        crack_formation=crack_formation,
+                                    )
+                                    protocol = build_calculation_protocol(
+                                        input_data={},
+                                        materials={},
+                                        geometry={},
+                                        reinforcement={},
+                                        checks={
+                                            "bending": option.bending,
+                                            "shear": transverse_option.shear,
+                                            "crack_formation": crack_formation,
+                                            "crack_width": crack_width,
+                                            "deflection": deflection,
+                                        },
+                                    )
+                                    unsafe_row = (
+                                        protocol.overall_status != "pass"
+                                        or option.bending.utilization > 1.0
+                                        or transverse_option.shear.utilization > 1.0
+                                        or option.constructive.status != "pass"
+                                        or transverse_option.constructive.status
+                                        not in ("pass", "warning")
+                                        or transverse_option.shear.intermediate_values[
+                                            "transverse_reinforcement_countable"
+                                        ]
+                                        is not True
+                                    )
+                                    if unsafe_row:
+                                        continue
+
                                     main_constructive_values = (
                                         option.constructive.intermediate_values
                                     )
@@ -367,7 +504,43 @@ def _build_full_grid_rows(
                                             Qult=transverse_option.shear.Qult,
                                             bending_utilization=option.bending.utilization,
                                             shear_utilization=transverse_option.shear.utilization,
-                                            status="pass",
+                                            status=protocol.status,
+                                            section_b_mm=b,
+                                            section_h_mm=h,
+                                            effective_depth_mm=(
+                                                option.section.effective_depth()
+                                            ),
+                                            cover_mm=cover,
+                                            main_bar_diameter_mm=option.diameter,
+                                            stirrup_diameter_mm=transverse_option.diameter,
+                                            stirrup_spacing_mm=transverse_option.spacing,
+                                            main_rebar_class=rebar_class,
+                                            stirrup_rebar_class=stirrup_class,
+                                            moment_nmm=M,
+                                            shear_n=Q,
+                                            moment_service_nmm=moment_service,
+                                            span_mm=span,
+                                            longitudinal_as_mm2=option.As,
+                                            transverse_asw_mm2=transverse_option.Asw,
+                                            bending_mult_nmm=option.bending.Mult,
+                                            shear_qult_n=transverse_option.shear.Qult,
+                                            mcrc_nmm=crack_formation.Mcrc,
+                                            crack_width_mm=crack_width.acrc,
+                                            deflection_mm=deflection.deflection,
+                                            bending_status=option.bending.status,
+                                            shear_status=transverse_option.shear.status,
+                                            crack_formation_status=crack_formation.status,
+                                            crack_width_status=crack_width.status,
+                                            deflection_status=deflection.status,
+                                            strength_status=protocol.strength_status,
+                                            serviceability_status=(
+                                                protocol.serviceability_status
+                                            ),
+                                            overall_status=protocol.overall_status,
+                                            warnings_count=len(protocol.warnings),
+                                            requires_engineer_review=True,
+                                            unsafe_row=unsafe_row,
+                                            dataset_source=DATASET_SOURCE,
                                             sp63_core_version=__version__,
                                             dataset_version=DATASET_VERSION,
                                         )

@@ -19,10 +19,19 @@ def test_build_dataset_report_contains_core_counts():
     assert report["duplicate_case_id_count"] == 0
     assert report["counts_by_main_rebar_scheme"]
     assert report["counts_by_stirrup_scheme"]
+    assert report["counts_by_strength_status"] == {"pass": 10}
+    assert report["counts_by_serviceability_status"] == {"pass": 10}
+    assert report["counts_by_overall_status"] == {"pass": 10}
     assert "counts_by_concrete_class" in report
     assert report["counts_by_element_type"] == {"beam": 10}
     assert report["min_b"] <= report["max_b"]
     assert report["min_h0"] <= report["max_h0"]
+    assert report["min_moment_service_nmm"] <= report["max_moment_service_nmm"]
+    assert report["min_span_mm"] <= report["max_span_mm"]
+    assert report["min_mcrc_nmm"] <= report["max_mcrc_nmm"]
+    assert report["min_crack_width_mm"] <= report["max_crack_width_mm"]
+    assert report["min_deflection_mm"] <= report["max_deflection_mm"]
+    assert report["min_warnings_count"] <= report["max_warnings_count"]
 
 
 def test_export_dataset_report_json_creates_file(tmp_path):

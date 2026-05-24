@@ -288,6 +288,24 @@ The six cases cover:
 The manual cases are a draft validation aid, not final certification. Engineer
 review remains required.
 
+## K21 Dataset Enrichment Validation
+
+K21 expands generated dataset rows with deterministic calculation outputs and
+status fields. Each generated row now records strength outputs (`Mult`, `Qult`,
+utilization, bending and shear statuses), draft serviceability outputs (`Mcrc`,
+crack width, deflection, and their statuses), separated protocol statuses, and
+an `unsafe_row` flag.
+
+The validation smoke keeps the existing command stable:
+
+```bash
+python -m sp63_core validate --generate-dataset-limit 20 --json
+```
+
+The enriched dataset is still produced by deterministic draft-MVP checks and is
+not a final design dataset. Engineer review remains required before ML readiness
+or any broader dataset generation.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

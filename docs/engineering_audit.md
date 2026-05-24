@@ -197,6 +197,19 @@ K20 does not change calculation formulas, material values, ML modules, dataset
 generation, or external validation. The cases are draft verification material
 and still require engineer review.
 
+## K21 Dataset Enrichment
+
+K21 enriches the beam-only dataset with deterministic strength and draft
+serviceability outputs from the calculation core. Rows now expose selected
+reinforcement areas, bending and shear capacities, Mcrc, crack width,
+deflection, separated strength/serviceability/overall statuses, warning counts,
+review flags, and an `unsafe_row` marker.
+
+This improves ML-readiness diagnostics, but it does not approve the dataset for
+final design use. The generated values still depend on draft serviceability
+checks and material catalogs that require engineer review. ML remains
+advisory-only and every ML proposal must continue to pass deterministic checks.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
