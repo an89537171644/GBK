@@ -15,6 +15,12 @@ from sp63_core.validation.external import (
     external_row_has_completed_source,
     load_external_comparison_csv,
 )
+from sp63_core.validation.external_report import (
+    EXTERNAL_VALIDATION_COLUMNS,
+    EXTERNAL_VALUES_REQUIRED_WARNING,
+    ExternalValidationSummary,
+    build_external_validation_summary,
+)
 from sp63_core.validation.golden import (
     GoldenCaseResult,
     run_bending_golden_cases,
@@ -34,10 +40,14 @@ from sp63_core.validation.scad_lira_template import build_scad_lira_comparison_t
 __all__ = [
     "DatasetValidationResult",
     "ExternalComparisonRow",
+    "ExternalValidationSummary",
+    "EXTERNAL_VALIDATION_COLUMNS",
+    "EXTERNAL_VALUES_REQUIRED_WARNING",
     "GoldenCaseResult",
     "ManualVerificationCase",
     "ManualVerificationResult",
     "build_external_comparison_rows",
+    "build_external_validation_summary",
     "build_scad_lira_comparison_template",
     "compute_external_deltas",
     "evaluate_acceptance_gates",

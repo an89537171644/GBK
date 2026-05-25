@@ -493,6 +493,25 @@ status are rejected.
 The wrapper is a safety gate, not an ML approval mechanism. Accepted proposals
 still require engineer review, and ML remains advisory-only.
 
+## K31 External Validation Workflow
+
+K31 adds the external validation workflow shell:
+
+```bash
+python -m sp63_core external-validation --template
+python -m sp63_core external-validation --csv path/to/file.csv --json
+```
+
+The CSV template records program results and engineer-filled external values
+for bending, shear, normal crack formation, crack width, deflection, and
+separated strength/serviceability/overall statuses. Missing external values
+produce `review_required` with a warning that the values must be filled by an
+engineer.
+
+SCAD, LIRA, Excel, or manual external values are not stored automatically in
+the repository. K31 only prepares the report structure; it does not certify the
+calculation core and does not change deterministic formulas.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

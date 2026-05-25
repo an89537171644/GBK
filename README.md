@@ -407,6 +407,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   proposals still require engineer review.
 - Deterministic SP63 checks remain mandatory for every ML output.
 
+## K31 external validation workflow
+
+- CLI command `external-validation --template` prints the engineer-filled CSV
+  template path for manual, SCAD, LIRA, or Excel comparison cases.
+- CLI command `external-validation --csv path/to/file.csv --json` summarizes
+  filled external validation rows and reports `pass`, `review_required`, or
+  `fail`.
+- SCAD, LIRA, Excel, or manual external values are not included automatically;
+  an engineer must fill and review them.
+- The calculation core remains a draft-MVP until external validation is
+  completed and accepted.
+- ML and neural surrogate outputs remain advisory-only, and deterministic SP63
+  checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

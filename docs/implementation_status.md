@@ -26,6 +26,7 @@
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |
 | `validation/scad_lira_template.py` | implemented manual comparison template | yes | yes | fill with SCAD/LIRA engineer results |
 | `validation/external.py` | implemented external validation templates, filled CSV loading, delta export, and strict acceptance gates | yes | yes | fill SCAD/LIRA values manually |
+| `validation/external_report.py` | implemented external validation summary workflow for manual SCAD/LIRA/Excel comparison | yes | yes | engineer must fill and review external values before acceptance |
 | `ml/features.py` | implemented leakage-controlled feature extraction | yes | yes | engineer review before ML use |
 | `ml/baseline.py` | implemented target-hygiene baseline ML | yes | yes | retrain models after K12.2 |
 | `ml/proposal.py` | implemented ML prediction snapping to reinforcement proposal | yes | yes | engineer review snapping policy |
