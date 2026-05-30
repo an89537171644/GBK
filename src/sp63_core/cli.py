@@ -234,6 +234,15 @@ def build_parser() -> ArgumentParser:
         "materials-audit",
         help="print draft material catalog audit rows",
     )
+    materials_audit.add_argument(
+        "--verification-template",
+        action="store_true",
+        help="print the material verification CSV template path",
+    )
+    materials_audit.add_argument(
+        "--verification-csv",
+        help="engineer-filled material verification CSV",
+    )
     materials_audit.add_argument("--json", action="store_true", help="print JSON output")
     materials_audit.set_defaults(handler=_handle_materials_audit)
 
@@ -1012,6 +1021,58 @@ def _handle_validate(args: Namespace) -> int:
 
 
 def _handle_materials_audit(args: Namespace) -> int:
+    if args.verification_template and args.verification_csv is None:
+        template_path = _material_verification_template_path()
+        payload = {
+            "command": "materials-audit",
+            "status": "verification_template",
+            "verification_template_path": str(template_path),
+            "columns": list(MATERIAL_VERIFICATION_REQUIRED_COLUMNS),
+            "warnings": [
+                "engineer_verified requires engineer_name, review_date, and source_note"
+            ],
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("Material verification template")
+        print(f"verification_template_path: {template_path}")
+        _print_warnings(tuple(payload["warnings"]))
+        return 0
+
+    if args.verification_csv is not None:
+        csv_path = Path(args.verification_csv)
+        csv_rows = _load_material_verification_csv(csv_path)
+        report = build_material_verification_report(csv_rows)
+        payload = {
+            "command": "materials-audit",
+            "status": report.status,
+            "mode": "material-verification",
+            "verification_csv": str(csv_path),
+            "summary": {
+                key: value
+                for key, value in asdict(report).items()
+                if key != "rows"
+            },
+            "rows": [asdict(row) for row in report.rows],
+            "warnings": list(report.warnings),
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("Materials audit verification")
+        print(f"status: {report.status}")
+        print(f"verification_csv: {csv_path}")
+        print(f"total_rows: {report.total_rows}")
+        print(f"engineer_verified_count: {report.engineer_verified_count}")
+        print(f"draft_count: {report.draft_count}")
+        print(f"needs_review_count: {report.needs_review_count}")
+        print(f"invalid_rows_count: {report.invalid_rows_count}")
+        _print_warnings(report.warnings)
+        return 0
+
     rows = build_material_audit_rows()
     warnings = (
         "material catalog values are draft and require engineer review against SP 63 tables",
@@ -1050,7 +1111,7 @@ def _handle_material_verification(args: Namespace) -> int:
             "template_path": str(template_path),
             "columns": list(MATERIAL_VERIFICATION_REQUIRED_COLUMNS),
             "warnings": [
-                "engineer must fill verification_status and source_note before values are accepted"
+                "engineer_verified requires engineer_name, review_date, and source_note"
             ],
         }
         if args.json:

@@ -660,6 +660,30 @@ def test_cli_materials_audit_json_output(capsys):
     )
 
 
+def test_cli_materials_audit_verification_template_output(capsys):
+    exit_code = main(["materials-audit", "--verification-template"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Material verification template" in captured.out
+    assert "material_catalog_verification_template.csv" in captured.out
+
+
+def test_cli_materials_audit_verification_csv_json(tmp_path, capsys):
+    csv_path = tmp_path / "material_verification.csv"
+    _write_engineer_verified_material_csv(csv_path)
+
+    exit_code = main(["materials-audit", "--verification-csv", str(csv_path), "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "materials-audit"
+    assert data["mode"] == "material-verification"
+    assert data["status"] == "pass"
+    assert data["summary"]["engineer_verified_count"] == data["summary"]["required_rows_count"]
+
+
 def test_cli_material_verification_text_output(capsys):
     exit_code = main(["material-verification"])
 
@@ -694,26 +718,7 @@ def test_cli_material_verification_template_output(capsys):
 
 def test_cli_material_verification_engineer_csv_json(tmp_path, capsys):
     csv_path = tmp_path / "material_verification.csv"
-    rows = []
-    for row in build_material_verification_rows():
-        rows.append(
-            {
-                "material_type": row.material_type,
-                "class_name": row.class_name,
-                "property_name": row.property_name,
-                "catalog_value": row.catalog_value,
-                "unit": row.unit,
-                "verification_status": "engineer_verified",
-                "engineer_value": row.catalog_value,
-                "source_note": "engineer checked SP 63 table reference; no full text stored",
-                "engineer_comment": "test",
-                "requires_engineer_review": "false",
-            }
-        )
-    with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    _write_engineer_verified_material_csv(csv_path)
 
     exit_code = main(["material-verification", "--csv", str(csv_path), "--json"])
 
@@ -724,6 +729,19 @@ def test_cli_material_verification_engineer_csv_json(tmp_path, capsys):
     assert data["status"] == "pass"
     assert data["summary"]["engineer_verified_count"] == data["summary"]["required_rows_count"]
     assert data["summary"]["requires_engineer_review"] is False
+
+
+def test_cli_material_verification_incomplete_engineer_metadata_json(tmp_path, capsys):
+    csv_path = tmp_path / "material_verification.csv"
+    _write_engineer_verified_material_csv(csv_path, engineer_name="")
+
+    exit_code = main(["material-verification", "--csv", str(csv_path), "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["status"] == "review_required"
+    assert data["summary"]["needs_review_count"] >= 1
 
 
 def test_cli_manual_cases_text_output(capsys):
@@ -879,6 +897,37 @@ def test_cli_train_baseline_command(tmp_path, capsys):
     assert "unsafe_prediction_rate" in metrics["safety_metrics"]
     if metrics["quality_gate"]["status"] != "pass":
         assert "model remains sandbox-only" in captured.out
+
+
+def _write_engineer_verified_material_csv(
+    csv_path,
+    *,
+    engineer_name: str = "Test Engineer",
+    review_date: str = "2026-05-30",
+    source_note: str = "engineer checked SP 63 table reference; no full text stored",
+) -> None:
+    rows = []
+    for row in build_material_verification_rows():
+        rows.append(
+            {
+                "material_type": row.material_type,
+                "class_name": row.class_name,
+                "property_name": row.property_name,
+                "catalog_value": row.catalog_value,
+                "unit": row.unit,
+                "verification_status": "engineer_verified",
+                "engineer_value": row.catalog_value,
+                "engineer_name": engineer_name,
+                "review_date": review_date,
+                "source_note": source_note,
+                "engineer_comment": "test",
+                "requires_engineer_review": "false",
+            }
+        )
+    with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def _filled_external_row(scad_As: float | None = 101.0) -> ExternalComparisonRow:
