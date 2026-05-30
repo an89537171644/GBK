@@ -19,6 +19,7 @@ from sp63_core.validation.external_report import (
     EXTERNAL_VALIDATION_COLUMNS,
     EXTERNAL_VALUES_REQUIRED_WARNING,
     ExternalValidationSummary,
+    ExternalValidationTolerance,
     build_external_validation_summary,
 )
 from sp63_core.validation.golden import (
@@ -41,6 +42,7 @@ __all__ = [
     "DatasetValidationResult",
     "ExternalComparisonRow",
     "ExternalValidationSummary",
+    "ExternalValidationTolerance",
     "EXTERNAL_VALIDATION_COLUMNS",
     "EXTERNAL_VALUES_REQUIRED_WARNING",
     "GoldenCaseResult",

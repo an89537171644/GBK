@@ -346,6 +346,19 @@ before the draft-MVP can be treated as externally validated.
 ML and neural surrogate modules remain advisory-only. They do not replace the
 external validation workflow or deterministic SP63 checks.
 
+## K32 External Validation Filled Sample
+
+K32 adds a public synthetic/manual filled external validation sample aligned
+with the six K20 manual verification cases. The sample checks the reporting
+pipeline from program values to external/manual values, deltas,
+`acceptance_status`, and summary status.
+
+The sample is not real SCAD or LIRA evidence and does not certify the
+calculation core. It uses draft acceptance tolerances for bending, shear, Mcrc,
+crack width, and deflection deltas. Real external values must still be filled
+and accepted by an engineer before external validation can be considered
+complete.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

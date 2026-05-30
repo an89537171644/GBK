@@ -63,3 +63,39 @@ python -m sp63_core external-validation --csv path/to/external_validation.csv --
 ```
 
 If external values are missing, the summary status is `review_required`.
+
+Run the public synthetic/manual sample:
+
+```bash
+python -m sp63_core external-validation --sample --json
+```
+
+## K32 Filled Sample
+
+K32 adds:
+
+`docs/validation/samples/external_validation_filled_sample.csv`
+
+The sample contains six K20-aligned cases:
+
+- base pass beam;
+- bending fail;
+- crack review without width;
+- crack width fail;
+- deflection fail;
+- shear fail.
+
+The sample values are public synthetic/manual validation values. They are not
+real SCAD or LIRA files and are not a substitute for external engineering
+validation.
+
+Draft acceptance tolerances:
+
+- bending delta percent <= 1.0;
+- shear delta percent <= 1.0;
+- Mcrc delta percent <= 1.0;
+- crack width delta <= 0.005 mm;
+- deflection delta <= 0.05 mm.
+
+The sample is intended to verify the reporting pipeline from program values to
+external values, deltas, acceptance status, and summary status.

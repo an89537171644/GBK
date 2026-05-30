@@ -421,6 +421,22 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - ML and neural surrogate outputs remain advisory-only, and deterministic SP63
   checks remain mandatory.
 
+## K32 external validation filled sample status
+
+- CLI command `external-validation --sample --json` runs a filled public
+  synthetic/manual external validation sample.
+- The sample contains six K20-aligned cases: base pass beam, bending fail,
+  crack review without width, crack width fail, deflection fail, and shear fail.
+- Sample external values are synthetic/manual values close to program output;
+  they are not real SCAD or LIRA files.
+- Draft acceptance tolerances are recorded in code for bending, shear, Mcrc,
+  crack width, and deflection deltas.
+- The sample validates the external-validation pipeline only. Real SCAD, LIRA,
+  Excel, or manual values must still be filled and reviewed by an engineer.
+- The calculation core remains draft until full external validation is
+  completed. ML remains advisory-only and deterministic SP63 checks remain
+  mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

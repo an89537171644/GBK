@@ -512,6 +512,34 @@ SCAD, LIRA, Excel, or manual external values are not stored automatically in
 the repository. K31 only prepares the report structure; it does not certify the
 calculation core and does not change deterministic formulas.
 
+## K32 External Validation Filled Sample Cases
+
+K32 adds a public synthetic/manual sample:
+
+```bash
+python -m sp63_core external-validation --sample --json
+```
+
+The sample uses six K20-aligned cases and exercises:
+
+- program values;
+- external/manual values;
+- delta fields;
+- `acceptance_status`;
+- summary status and max delta reporting.
+
+Expected K32 sample result:
+
+- `status = pass`;
+- `accepted_cases = 6`;
+- `review_cases = 0`;
+- `failed_cases = 0`;
+- max deltas remain within draft tolerances.
+
+These cases are not real SCAD or LIRA files and do not replace engineer-filled
+external validation. They only prove that the external-validation reporting
+pipeline works end to end.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
