@@ -359,6 +359,22 @@ crack width, and deflection deltas. Real external values must still be filled
 and accepted by an engineer before external validation can be considered
 complete.
 
+## K33 External Validation Real-Data Gate
+
+K33 adds strict intake checks for real engineer-filled external validation CSV
+files. The step does not add real SCAD/LIRA files and does not invent external
+values. It prepares validation logic for data entered by an engineer.
+
+Strict mode checks required columns, filled external values, numeric parsing,
+computed or provided deltas, tolerance limits, and consistency of
+`acceptance_status`. Missing values produce review status, tolerance failures
+produce fail status, and contradictory acceptance status is reported.
+
+The engineer checklist and blank CSV template define what can be committed:
+only anonymized numeric comparison rows, not closed model files, private
+documents, or full normative text. ML remains advisory-only and deterministic
+SP63 checks remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

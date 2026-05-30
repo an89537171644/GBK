@@ -540,6 +540,31 @@ These cases are not real SCAD or LIRA files and do not replace engineer-filled
 external validation. They only prove that the external-validation reporting
 pipeline works end to end.
 
+## K33 External Validation Real-Data Acceptance Gate
+
+K33 adds strict mode for engineer-filled external validation CSV files:
+
+```bash
+python -m sp63_core external-validation --csv path/to/file.csv --strict --json
+```
+
+Strict mode reports:
+
+- `strict_mode`;
+- `missing_required_external_values_count`;
+- `inconsistent_acceptance_status_count`;
+- `tolerance_failed_count`;
+- accepted, review, and failed case counts;
+- max delta values for bending, shear, Mcrc, crack width, and deflection.
+
+The strict gate is intended for real manual, Excel, SCAD, or LIRA comparison
+values after an engineer fills an anonymized CSV. It does not add real external
+files to the repository and does not invent external values.
+
+Missing external values produce `review_required`. Tolerance failures produce
+`fail`. Contradictory `acceptance_status` values are reported for engineer
+review.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

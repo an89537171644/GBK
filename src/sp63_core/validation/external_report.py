@@ -55,6 +55,31 @@ EXTERNAL_RESULT_COLUMNS: tuple[str, ...] = (
     "external_overall_status",
 )
 
+EXTERNAL_NUMERIC_COLUMNS: tuple[str, ...] = (
+    "b_mm",
+    "h_mm",
+    "cover_mm",
+    "moment_nmm",
+    "shear_n",
+    "moment_service_nmm",
+    "span_mm",
+    "program_bending_mult_nmm",
+    "external_bending_mult_nmm",
+    "program_shear_qult_n",
+    "external_shear_qult_n",
+    "program_mcrc_nmm",
+    "external_mcrc_nmm",
+    "program_crack_width_mm",
+    "external_crack_width_mm",
+    "program_deflection_mm",
+    "external_deflection_mm",
+    "delta_bending_percent",
+    "delta_shear_percent",
+    "delta_mcrc_percent",
+    "delta_crack_width_mm",
+    "delta_deflection_mm",
+)
+
 EXTERNAL_VALUES_REQUIRED_WARNING = "external validation values must be filled by an engineer"
 
 
@@ -74,10 +99,15 @@ class ExternalValidationSummary:
     """Summary of engineer-filled external validation comparison rows."""
 
     total_cases: int
+    strict_mode: bool
     accepted_cases: int
     review_cases: int
     failed_cases: int
     missing_external_values_count: int
+    missing_required_external_values_count: int
+    inconsistent_acceptance_status_count: int
+    tolerance_failed_count: int
+    invalid_numeric_values_count: int
     max_bending_delta_percent: float | None
     max_shear_delta_percent: float | None
     max_mcrc_delta_percent: float | None
@@ -92,6 +122,7 @@ def build_external_validation_summary(
     rows: Iterable[Mapping[str, Any]],
     *,
     tolerances: ExternalValidationTolerance | None = None,
+    strict_mode: bool = False,
 ) -> ExternalValidationSummary:
     """Build a compact status summary for external validation rows."""
     active_tolerances = tolerances or ExternalValidationTolerance()
@@ -101,6 +132,9 @@ def build_external_validation_summary(
     review_cases = 0
     failed_cases = 0
     missing_external_values_count = 0
+    invalid_numeric_values_count = 0
+    inconsistent_acceptance_status_count = 0
+    tolerance_failed_count = 0
 
     bending_deltas: list[float] = []
     shear_deltas: list[float] = []
@@ -109,8 +143,11 @@ def build_external_validation_summary(
     deflection_deltas: list[float] = []
 
     for row in rows_tuple:
-        if _row_has_missing_external_values(row):
+        row_missing_external_values = _row_has_missing_external_values(row)
+        if row_missing_external_values:
             missing_external_values_count += 1
+        row_invalid_numeric_count = _invalid_numeric_values_count(row)
+        invalid_numeric_values_count += row_invalid_numeric_count
 
         status = _normalized_status(row.get("acceptance_status", ""))
         if status == "accepted":
@@ -152,6 +189,24 @@ def build_external_validation_summary(
         if deflection_delta is not None:
             deflection_deltas.append(abs(deflection_delta))
 
+        row_tolerance_failed = _deltas_exceed_tolerances(
+            bending_deltas=[] if bending_delta is None else [abs(bending_delta)],
+            shear_deltas=[] if shear_delta is None else [abs(shear_delta)],
+            mcrc_deltas=[] if mcrc_delta is None else [abs(mcrc_delta)],
+            crack_width_deltas=[] if crack_width_delta is None else [abs(crack_width_delta)],
+            deflection_deltas=[] if deflection_delta is None else [abs(deflection_delta)],
+            tolerances=active_tolerances,
+        )
+        if row_tolerance_failed:
+            tolerance_failed_count += 1
+        if strict_mode and _acceptance_status_is_inconsistent(
+            status=status,
+            has_missing_values=row_missing_external_values,
+            has_invalid_numeric_values=row_invalid_numeric_count > 0,
+            tolerance_failed=row_tolerance_failed,
+        ):
+            inconsistent_acceptance_status_count += 1
+
     warnings: list[str] = []
     if total_cases == 0:
         warnings.append("external validation case rows are not provided")
@@ -161,34 +216,35 @@ def build_external_validation_summary(
         warnings.append("external validation contains rows pending engineer review")
     if failed_cases:
         warnings.append("external validation contains failed comparison rows")
-    if _deltas_exceed_tolerances(
-        bending_deltas=bending_deltas,
-        shear_deltas=shear_deltas,
-        mcrc_deltas=mcrc_deltas,
-        crack_width_deltas=crack_width_deltas,
-        deflection_deltas=deflection_deltas,
-        tolerances=active_tolerances,
-    ):
+    if tolerance_failed_count:
         warnings.append("external validation delta exceeds draft tolerance")
+    if invalid_numeric_values_count:
+        warnings.append("external validation contains invalid numeric values")
+    if inconsistent_acceptance_status_count:
+        warnings.append("external validation acceptance_status is inconsistent with strict checks")
 
-    if failed_cases:
-        status = "fail"
-    elif (
-        missing_external_values_count
-        or review_cases
-        or total_cases == 0
-        or "external validation delta exceeds draft tolerance" in warnings
-    ):
-        status = "review_required"
-    else:
-        status = "pass"
+    status = _summary_status(
+        strict_mode=strict_mode,
+        total_cases=total_cases,
+        failed_cases=failed_cases,
+        review_cases=review_cases,
+        missing_external_values_count=missing_external_values_count,
+        invalid_numeric_values_count=invalid_numeric_values_count,
+        inconsistent_acceptance_status_count=inconsistent_acceptance_status_count,
+        tolerance_failed_count=tolerance_failed_count,
+    )
 
     return ExternalValidationSummary(
         total_cases=total_cases,
+        strict_mode=strict_mode,
         accepted_cases=accepted_cases,
         review_cases=review_cases,
         failed_cases=failed_cases,
         missing_external_values_count=missing_external_values_count,
+        missing_required_external_values_count=missing_external_values_count,
+        inconsistent_acceptance_status_count=inconsistent_acceptance_status_count,
+        tolerance_failed_count=tolerance_failed_count,
+        invalid_numeric_values_count=invalid_numeric_values_count,
         max_bending_delta_percent=_max_or_none(bending_deltas),
         max_shear_delta_percent=_max_or_none(shear_deltas),
         max_mcrc_delta_percent=_max_or_none(mcrc_deltas),
@@ -245,6 +301,65 @@ def _is_blank(value: Any) -> bool:
 
 def _max_or_none(values: list[float]) -> float | None:
     return max(values) if values else None
+
+
+def _invalid_numeric_values_count(row: Mapping[str, Any]) -> int:
+    return sum(
+        1
+        for column in EXTERNAL_NUMERIC_COLUMNS
+        if not _is_blank(row.get(column)) and _optional_float(row.get(column)) is None
+    )
+
+
+def _acceptance_status_is_inconsistent(
+    *,
+    status: str,
+    has_missing_values: bool,
+    has_invalid_numeric_values: bool,
+    tolerance_failed: bool,
+) -> bool:
+    if status == "accepted":
+        return has_missing_values or has_invalid_numeric_values or tolerance_failed
+    if status == "failed":
+        return not tolerance_failed
+    return False
+
+
+def _summary_status(
+    *,
+    strict_mode: bool,
+    total_cases: int,
+    failed_cases: int,
+    review_cases: int,
+    missing_external_values_count: int,
+    invalid_numeric_values_count: int,
+    inconsistent_acceptance_status_count: int,
+    tolerance_failed_count: int,
+) -> str:
+    if strict_mode:
+        if tolerance_failed_count or failed_cases:
+            return "fail"
+        if (
+            total_cases == 0
+            or review_cases
+            or missing_external_values_count
+            or invalid_numeric_values_count
+            or inconsistent_acceptance_status_count
+        ):
+            return "review_required"
+        return "pass"
+
+    if failed_cases:
+        return "fail"
+    if (
+        missing_external_values_count
+        or review_cases
+        or total_cases == 0
+        or invalid_numeric_values_count
+        or tolerance_failed_count
+    ):
+        return "review_required"
+    return "pass"
 
 
 def _deltas_exceed_tolerances(

@@ -64,6 +64,12 @@ python -m sp63_core external-validation --csv path/to/external_validation.csv --
 
 If external values are missing, the summary status is `review_required`.
 
+Run strict acceptance gate checks for engineer-filled real-data intake:
+
+```bash
+python -m sp63_core external-validation --csv path/to/engineer_filled.csv --strict --json
+```
+
 Run the public synthetic/manual sample:
 
 ```bash
@@ -99,3 +105,35 @@ Draft acceptance tolerances:
 
 The sample is intended to verify the reporting pipeline from program values to
 external values, deltas, acceptance status, and summary status.
+
+## K33 Real-Data Intake Gate
+
+K33 adds strict mode for engineer-filled CSV files. It does not add real SCAD,
+LIRA, Excel, or private manual calculation files. Real external values must be
+entered by an engineer in an anonymized CSV.
+
+Strict mode checks:
+
+- required columns are present;
+- external values are filled;
+- numeric fields parse correctly;
+- deltas are provided or computed;
+- deltas stay within draft tolerances;
+- `acceptance_status` is consistent with missing values, numeric parsing, and
+  tolerance results.
+
+Strict status logic:
+
+- `pass` when all cases are accepted, all external values are filled, and draft
+  tolerances pass;
+- `review_required` when values are missing, review rows are present, or
+  acceptance status is inconsistent without a tolerance failure;
+- `fail` when tolerances fail or explicit failed cases are present.
+
+Use the checklist before committing anonymized external validation rows:
+
+`docs/validation/external_validation_engineer_checklist.md`
+
+The blank engineer input template is:
+
+`docs/validation/templates/external_validation_engineer_input_template.csv`
