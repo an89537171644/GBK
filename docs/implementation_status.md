@@ -7,6 +7,7 @@
 | `materials/rebar.py` | implemented draft with strength/service values exposed in material audit | yes | yes | engineer must verify values against SP 63 tables before final use |
 | `materials/audit.py` | implemented material audit report | yes | yes | engineer must verify values against SP 63 tables before final use |
 | `materials/verification.py` | implemented material catalog engineer verification gate with draft/needs_review/engineer_verified statuses | yes | yes | engineer must fill verification CSV before material values are treated as verified |
+| `materials/verification_report.py` | implemented Markdown/JSON report integration for engineer-filled material verification CSV | yes | yes | engineer must review needs_review rows before accepting material catalog values |
 | `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
 | `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
 | `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |

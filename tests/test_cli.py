@@ -744,6 +744,46 @@ def test_cli_material_verification_incomplete_engineer_metadata_json(tmp_path, c
     assert data["summary"]["needs_review_count"] >= 1
 
 
+def test_cli_material_verification_report_json_output(tmp_path, capsys):
+    csv_path = tmp_path / "material_verification.csv"
+    _write_engineer_verified_material_csv(csv_path)
+
+    exit_code = main(["material-verification-report", "--csv", str(csv_path), "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "material-verification-report"
+    assert data["status"] == "pass"
+    assert data["summary"]["total_rows"] == 51
+    assert data["summary"]["engineer_verified_count"] == 51
+    assert data["summary"]["missing_required_fields_count"] == 0
+    assert data["needs_review_rows"] == []
+
+
+def test_cli_material_verification_report_markdown_output(tmp_path, capsys):
+    csv_path = tmp_path / "material_verification.csv"
+    report_path = tmp_path / "material_verification_report.md"
+    _write_engineer_verified_material_csv(csv_path, engineer_name="")
+
+    exit_code = main(
+        [
+            "material-verification-report",
+            "--csv",
+            str(csv_path),
+            "--output",
+            str(report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert report_path.exists()
+    assert "Material Verification Report" in captured.out
+    assert "missing_required_fields_count" in captured.out
+    assert "Needs Review Rows" in report_path.read_text(encoding="utf-8")
+
+
 def test_cli_manual_cases_text_output(capsys):
     exit_code = main(["manual-cases"])
 

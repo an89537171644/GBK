@@ -586,6 +586,22 @@ remain `needs_review`.
 K34 does not change formulas or material values. It adds an acceptance gate for
 review status only, and does not store full SP 63 text.
 
+## K35 Material Verification Report Integration
+
+K35 adds a report command for engineer-filled material verification CSV files:
+
+```bash
+python -m sp63_core material-verification-report --csv path/to/material_verification.csv --json
+python -m sp63_core material-verification-report --csv path/to/material_verification.csv --output reports/material_verification_report.md
+```
+
+The JSON summary includes `total_rows`, `engineer_verified_count`,
+`needs_review_count`, and `missing_required_fields_count`. The Markdown report
+lists rows that remain `needs_review`.
+
+The report is an integration and review aid only. It does not change material
+catalog values and does not certify values without engineer acceptance.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

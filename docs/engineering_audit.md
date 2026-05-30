@@ -400,6 +400,20 @@ SP 63 text, private documents, or personal data. ML remains advisory-only and
 must not treat material values as final unless deterministic checks and
 engineer verification both support the result.
 
+## K35 Material Verification Report Integration
+
+K35 adds a read-only report layer for engineer-filled material verification
+CSV files. The command can emit Markdown or JSON summaries and highlights rows
+that remain `needs_review`.
+
+The report includes total rows, engineer-verified rows, rows needing review,
+and missing required field counts. It does not update concrete or reinforcement
+catalog values and does not change formulas.
+
+The report is intended to support engineer review of material values before
+they are treated as accepted input data. Full SP 63 text and private documents
+must not be stored in the repository.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

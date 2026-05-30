@@ -472,6 +472,18 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K34 does not approve material values automatically, does not store full
   SP 63 text, and does not make ML a calculator.
 
+## K35 material verification report integration
+
+- CLI command `material-verification-report --csv path/to/material_verification.csv`
+  renders a Markdown report for an engineer-filled material verification CSV.
+- Add `--json` for a structured report with `total_rows`,
+  `engineer_verified_count`, `needs_review_count`, and
+  `missing_required_fields_count`.
+- Add `--output report.md` to write the Markdown report to disk.
+- The report lists rows that remain `needs_review`.
+- K35 does not change material catalog values automatically and does not store
+  full SP 63 text.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

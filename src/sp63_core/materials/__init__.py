@@ -27,6 +27,12 @@ from sp63_core.materials.verification import (
     build_material_verification_report,
     build_material_verification_rows,
 )
+from sp63_core.materials.verification_report import (
+    MaterialVerificationReportDocument,
+    MaterialVerificationReviewRow,
+    build_material_verification_report_document,
+    render_material_verification_markdown,
+)
 
 __all__ = [
     "Concrete",
@@ -36,6 +42,8 @@ __all__ = [
     "MATERIAL_VERIFICATION_REQUIRED_COLUMNS",
     "MATERIAL_VERIFICATION_STATUSES",
     "MaterialVerificationReport",
+    "MaterialVerificationReportDocument",
+    "MaterialVerificationReviewRow",
     "MaterialVerificationRow",
     "Rebar",
     "STIRRUP_DIAMETERS",
@@ -43,8 +51,10 @@ __all__ = [
     "build_concrete_audit_rows",
     "build_material_audit_rows",
     "build_material_verification_report",
+    "build_material_verification_report_document",
     "build_material_verification_rows",
     "build_rebar_audit_rows",
     "get_concrete",
     "get_rebar",
+    "render_material_verification_markdown",
 ]
