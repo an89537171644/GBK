@@ -59,6 +59,17 @@ EXTERNAL_VALUES_REQUIRED_WARNING = "external validation values must be filled by
 
 
 @dataclass(frozen=True)
+class ExternalValidationTolerance:
+    """Draft external validation acceptance tolerances."""
+
+    bending_delta_percent: float = 1.0
+    shear_delta_percent: float = 1.0
+    mcrc_delta_percent: float = 1.0
+    crack_width_delta_mm: float = 0.005
+    deflection_delta_mm: float = 0.05
+
+
+@dataclass(frozen=True)
 class ExternalValidationSummary:
     """Summary of engineer-filled external validation comparison rows."""
 
@@ -69,6 +80,7 @@ class ExternalValidationSummary:
     missing_external_values_count: int
     max_bending_delta_percent: float | None
     max_shear_delta_percent: float | None
+    max_mcrc_delta_percent: float | None
     max_crack_width_delta_mm: float | None
     max_deflection_delta_mm: float | None
     status: str
@@ -78,8 +90,11 @@ class ExternalValidationSummary:
 
 def build_external_validation_summary(
     rows: Iterable[Mapping[str, Any]],
+    *,
+    tolerances: ExternalValidationTolerance | None = None,
 ) -> ExternalValidationSummary:
     """Build a compact status summary for external validation rows."""
+    active_tolerances = tolerances or ExternalValidationTolerance()
     rows_tuple = tuple(rows)
     total_cases = len(rows_tuple)
     accepted_cases = 0
@@ -89,6 +104,7 @@ def build_external_validation_summary(
 
     bending_deltas: list[float] = []
     shear_deltas: list[float] = []
+    mcrc_deltas: list[float] = []
     crack_width_deltas: list[float] = []
     deflection_deltas: list[float] = []
 
@@ -116,6 +132,12 @@ def build_external_validation_summary(
             program_key="program_shear_qult_n",
             external_key="external_shear_qult_n",
         )
+        mcrc_delta = _delta_or_computed(
+            row,
+            delta_key="delta_mcrc_percent",
+            program_key="program_mcrc_nmm",
+            external_key="external_mcrc_nmm",
+        )
         crack_width_delta = _optional_float(row.get("delta_crack_width_mm"))
         deflection_delta = _optional_float(row.get("delta_deflection_mm"))
 
@@ -123,6 +145,8 @@ def build_external_validation_summary(
             bending_deltas.append(abs(bending_delta))
         if shear_delta is not None:
             shear_deltas.append(abs(shear_delta))
+        if mcrc_delta is not None:
+            mcrc_deltas.append(abs(mcrc_delta))
         if crack_width_delta is not None:
             crack_width_deltas.append(abs(crack_width_delta))
         if deflection_delta is not None:
@@ -137,10 +161,24 @@ def build_external_validation_summary(
         warnings.append("external validation contains rows pending engineer review")
     if failed_cases:
         warnings.append("external validation contains failed comparison rows")
+    if _deltas_exceed_tolerances(
+        bending_deltas=bending_deltas,
+        shear_deltas=shear_deltas,
+        mcrc_deltas=mcrc_deltas,
+        crack_width_deltas=crack_width_deltas,
+        deflection_deltas=deflection_deltas,
+        tolerances=active_tolerances,
+    ):
+        warnings.append("external validation delta exceeds draft tolerance")
 
     if failed_cases:
         status = "fail"
-    elif missing_external_values_count or review_cases or total_cases == 0:
+    elif (
+        missing_external_values_count
+        or review_cases
+        or total_cases == 0
+        or "external validation delta exceeds draft tolerance" in warnings
+    ):
         status = "review_required"
     else:
         status = "pass"
@@ -153,6 +191,7 @@ def build_external_validation_summary(
         missing_external_values_count=missing_external_values_count,
         max_bending_delta_percent=_max_or_none(bending_deltas),
         max_shear_delta_percent=_max_or_none(shear_deltas),
+        max_mcrc_delta_percent=_max_or_none(mcrc_deltas),
         max_crack_width_delta_mm=_max_or_none(crack_width_deltas),
         max_deflection_delta_mm=_max_or_none(deflection_deltas),
         status=status,
@@ -206,3 +245,25 @@ def _is_blank(value: Any) -> bool:
 
 def _max_or_none(values: list[float]) -> float | None:
     return max(values) if values else None
+
+
+def _deltas_exceed_tolerances(
+    *,
+    bending_deltas: list[float],
+    shear_deltas: list[float],
+    mcrc_deltas: list[float],
+    crack_width_deltas: list[float],
+    deflection_deltas: list[float],
+    tolerances: ExternalValidationTolerance,
+) -> bool:
+    return (
+        _exceeds(bending_deltas, tolerances.bending_delta_percent)
+        or _exceeds(shear_deltas, tolerances.shear_delta_percent)
+        or _exceeds(mcrc_deltas, tolerances.mcrc_delta_percent)
+        or _exceeds(crack_width_deltas, tolerances.crack_width_delta_mm)
+        or _exceeds(deflection_deltas, tolerances.deflection_delta_mm)
+    )
+
+
+def _exceeds(values: list[float], limit: float) -> bool:
+    return any(value > limit for value in values)

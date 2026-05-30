@@ -294,6 +294,11 @@ def build_parser() -> ArgumentParser:
         action="store_true",
         help="print the external validation CSV template path",
     )
+    external_validation.add_argument(
+        "--sample",
+        action="store_true",
+        help="summarize the public synthetic/manual external validation sample",
+    )
     external_validation.add_argument("--csv", help="engineer-filled external validation CSV")
     external_validation.add_argument("--json", action="store_true", help="print JSON output")
     external_validation.set_defaults(handler=_handle_external_validation)
@@ -1248,7 +1253,7 @@ def _handle_ml_proposal_verify(args: Namespace) -> int:
 def _handle_external_validation(args: Namespace) -> int:
     template_path = _external_validation_template_path()
 
-    if args.template and args.csv is None:
+    if args.template and args.csv is None and not args.sample:
         payload = {
             "command": "external-validation",
             "status": "template",
@@ -1265,16 +1270,20 @@ def _handle_external_validation(args: Namespace) -> int:
         _print_warnings(tuple(payload["warnings"]))
         return 0
 
-    if args.csv is None:
-        raise ValueError("--template or --csv is required")
+    if args.sample:
+        csv_path = _external_validation_sample_path()
+    elif args.csv is not None:
+        csv_path = Path(args.csv)
+    else:
+        raise ValueError("--template, --sample, or --csv is required")
 
-    csv_path = Path(args.csv)
     rows = _load_external_validation_csv(csv_path)
     summary = build_external_validation_summary(rows)
     payload = {
         "command": "external-validation",
         "status": summary.status,
         "csv": str(csv_path),
+        "sample": bool(args.sample),
         "template_path": str(template_path),
         "rows_read": summary.total_cases,
         "summary": asdict(summary),
@@ -1287,6 +1296,7 @@ def _handle_external_validation(args: Namespace) -> int:
     print("External validation")
     print(f"status: {summary.status}")
     print(f"csv: {csv_path}")
+    print(f"sample: {bool(args.sample)}")
     print(f"total_cases: {summary.total_cases}")
     print(f"accepted_cases: {summary.accepted_cases}")
     print(f"review_cases: {summary.review_cases}")
@@ -1605,6 +1615,16 @@ def _external_validation_template_path() -> Path:
         / "validation"
         / "templates"
         / "external_validation_cases_template.csv"
+    )
+
+
+def _external_validation_sample_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "validation"
+        / "samples"
+        / "external_validation_filled_sample.csv"
     )
 
 
