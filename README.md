@@ -484,6 +484,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K35 does not change material catalog values automatically and does not store
   full SP 63 text.
 
+## K36 design calculation report export
+
+- CLI command `design-report --markdown`, `design-report --html`, and
+  `design-report --json` exports a draft rectangular design calculation report.
+- Add `--output path/to/report.md` to write the selected report format to disk.
+- The report includes input data, geometry, materials, selected reinforcement,
+  bending and shear checks, serviceability checks, final separated statuses,
+  warnings, and limitations.
+- The report is not a certified design conclusion and keeps
+  `requires_engineer_review = true`.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

@@ -52,6 +52,7 @@ from sp63_core.ml import (
     verify_ml_proposal_with_deterministic_core,
 )
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
+from sp63_core.report import build_rectangular_design_report
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
     EXTERNAL_VALIDATION_COLUMNS,
@@ -197,6 +198,16 @@ def build_parser() -> ArgumentParser:
     _add_design_arguments(design)
     design.add_argument("--json", action="store_true", help="print JSON output")
     design.set_defaults(handler=_handle_design_rectangular)
+
+    design_report = subparsers.add_parser(
+        "design-report",
+        help="export a draft rectangular design calculation report",
+    )
+    design_report.add_argument("--json", action="store_true", help="print JSON report output")
+    design_report.add_argument("--markdown", action="store_true", help="print Markdown report")
+    design_report.add_argument("--html", action="store_true", help="print static HTML report")
+    design_report.add_argument("--output", help="optional report output path")
+    design_report.set_defaults(handler=_handle_design_report)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -807,6 +818,58 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"deflection_utilization: {deflection.utilization:.3f}")
     _print_warnings(design.warnings)
     return 0
+
+
+def _handle_design_report(args: Namespace) -> int:
+    design = _build_design_report_smoke_result()
+    include_html = bool(args.html)
+    report = build_rectangular_design_report(design, include_html=include_html)
+
+    if args.html:
+        content = report.html if report.html is not None else ""
+    elif args.json:
+        content = jsonlib.dumps(
+            {
+                "command": "design-report",
+                "status": report.status,
+                "report": report.json_data,
+                "warnings": list(report.warnings),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    else:
+        content = report.markdown
+
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(content, encoding="utf-8")
+        print(f"Design report written: {output_path}")
+        return 0
+
+    print(content, end="" if content.endswith("\n") else "\n")
+    return 0
+
+
+def _build_design_report_smoke_result() -> Any:
+    design_input = RectangularDesignInput(
+        b=300,
+        h=500,
+        cover=32,
+        stirrup_diameter_for_geometry=8,
+        concrete_class="B25",
+        longitudinal_rebar_class="A500",
+        stirrup_rebar_class="A240",
+        M=150_000_000,
+        Q=80_000,
+        Mser=30_000_000,
+        check_cracks=True,
+        check_crack_width=True,
+        check_deflection=True,
+        span=6000,
+    )
+    return design_rectangular_element(design_input)
 
 
 def _handle_generate_dataset(args: Namespace) -> int:

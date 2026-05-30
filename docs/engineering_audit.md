@@ -414,6 +414,28 @@ The report is intended to support engineer review of material values before
 they are treated as accepted input data. Full SP 63 text and private documents
 must not be stored in the repository.
 
+## K36 Design Calculation Report Export
+
+K36 adds a draft rectangular design calculation report export for the existing
+deterministic design workflow. The export can render Markdown, simple static
+HTML, or JSON through:
+
+```bash
+python -m sp63_core design-report --markdown
+python -m sp63_core design-report --html
+python -m sp63_core design-report --json
+```
+
+The report includes input data, geometry, materials, selected longitudinal and
+transverse reinforcement, bending and shear checks, serviceability checks,
+separated statuses, warnings, and limitations.
+
+This is a reporting layer only. It does not change formulas, material values,
+reinforcement selection, ML behavior, or external validation gates. The report
+is not a certified design conclusion, keeps `requires_engineer_review = true`,
+and continues to require deterministic SP63 checks, material verification, and
+external engineering validation.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
