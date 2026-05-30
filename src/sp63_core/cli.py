@@ -300,6 +300,11 @@ def build_parser() -> ArgumentParser:
         help="summarize the public synthetic/manual external validation sample",
     )
     external_validation.add_argument("--csv", help="engineer-filled external validation CSV")
+    external_validation.add_argument(
+        "--strict",
+        action="store_true",
+        help="enforce strict engineer-filled external validation acceptance gate",
+    )
     external_validation.add_argument("--json", action="store_true", help="print JSON output")
     external_validation.set_defaults(handler=_handle_external_validation)
 
@@ -1278,12 +1283,13 @@ def _handle_external_validation(args: Namespace) -> int:
         raise ValueError("--template, --sample, or --csv is required")
 
     rows = _load_external_validation_csv(csv_path)
-    summary = build_external_validation_summary(rows)
+    summary = build_external_validation_summary(rows, strict_mode=args.strict)
     payload = {
         "command": "external-validation",
         "status": summary.status,
         "csv": str(csv_path),
         "sample": bool(args.sample),
+        "strict": bool(args.strict),
         "template_path": str(template_path),
         "rows_read": summary.total_cases,
         "summary": asdict(summary),
@@ -1297,6 +1303,7 @@ def _handle_external_validation(args: Namespace) -> int:
     print(f"status: {summary.status}")
     print(f"csv: {csv_path}")
     print(f"sample: {bool(args.sample)}")
+    print(f"strict: {bool(args.strict)}")
     print(f"total_cases: {summary.total_cases}")
     print(f"accepted_cases: {summary.accepted_cases}")
     print(f"review_cases: {summary.review_cases}")

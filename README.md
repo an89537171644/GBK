@@ -437,6 +437,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   completed. ML remains advisory-only and deterministic SP63 checks remain
   mandatory.
 
+## K33 external validation real-data gate
+
+- CLI command `external-validation --csv path/to/engineer_filled.csv --strict --json`
+  is available for real engineer-filled CSV intake.
+- Strict mode checks required columns, filled external values, numeric parsing,
+  delta/tolerance results, and `acceptance_status` consistency.
+- Missing external values return `review_required`; tolerance failures return
+  `fail`.
+- `docs/validation/external_validation_engineer_checklist.md` describes what an
+  engineer must fill and what must not be committed.
+- `docs/validation/templates/external_validation_engineer_input_template.csv`
+  provides a blank anonymized input template.
+- K33 does not add real SCAD/LIRA files or invent external values. ML remains
+  advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

@@ -11,6 +11,10 @@ from sp63_core.validation import (
 )
 
 TEMPLATE_PATH = Path("docs/validation/templates/external_validation_cases_template.csv")
+ENGINEER_TEMPLATE_PATH = Path(
+    "docs/validation/templates/external_validation_engineer_input_template.csv"
+)
+CHECKLIST_PATH = Path("docs/validation/external_validation_engineer_checklist.md")
 SAMPLE_PATH = Path("tests/fixtures/external_validation_sample.csv")
 FILLED_SAMPLE_PATH = Path("docs/validation/samples/external_validation_filled_sample.csv")
 
@@ -24,12 +28,37 @@ def test_external_validation_template_exists_with_required_columns():
     assert header == list(EXTERNAL_VALIDATION_COLUMNS)
 
 
+def test_external_validation_engineer_template_and_checklist_exist():
+    assert ENGINEER_TEMPLATE_PATH.exists()
+    with ENGINEER_TEMPLATE_PATH.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.reader(csv_file)
+        header = next(reader)
+
+    assert header == list(EXTERNAL_VALIDATION_COLUMNS)
+    assert CHECKLIST_PATH.exists()
+    checklist = CHECKLIST_PATH.read_text(encoding="utf-8")
+    assert "external-validation --csv" in checklist
+    assert "closed model files" in checklist.lower()
+
+
 def test_external_validation_summary_review_required_for_missing_values():
     summary = build_external_validation_summary((_row_with_missing_external_values(),))
 
     assert summary.status == "review_required"
     assert summary.missing_external_values_count == 1
     assert EXTERNAL_VALUES_REQUIRED_WARNING in summary.warnings
+
+
+def test_external_validation_strict_review_required_for_missing_values():
+    summary = build_external_validation_summary(
+        (_row_with_missing_external_values(),),
+        strict_mode=True,
+    )
+
+    assert summary.status == "review_required"
+    assert summary.strict_mode is True
+    assert summary.missing_required_external_values_count == 1
+    assert summary.inconsistent_acceptance_status_count == 0
 
 
 def test_external_validation_summary_passes_for_accepted_rows():
@@ -65,6 +94,25 @@ def test_external_validation_summary_requires_review_when_delta_exceeds_toleranc
     assert "external validation delta exceeds draft tolerance" in summary.warnings
 
 
+def test_external_validation_strict_fails_when_delta_exceeds_tolerance():
+    row = {**_accepted_row(), "delta_mcrc_percent": "1.25"}
+    summary = build_external_validation_summary((row,), strict_mode=True)
+
+    assert summary.status == "fail"
+    assert summary.tolerance_failed_count == 1
+    assert summary.inconsistent_acceptance_status_count == 1
+
+
+def test_external_validation_strict_detects_inconsistent_acceptance_status():
+    row = {**_accepted_row(), "acceptance_status": "failed"}
+    summary = build_external_validation_summary((row,), strict_mode=True)
+
+    assert summary.status == "fail"
+    assert summary.failed_cases == 1
+    assert summary.inconsistent_acceptance_status_count == 1
+    assert "acceptance_status is inconsistent" in " ".join(summary.warnings)
+
+
 def test_cli_external_validation_template_output(capsys):
     exit_code = main(["external-validation", "--template"])
 
@@ -84,6 +132,46 @@ def test_cli_external_validation_json_output(capsys):
     assert data["status"] == "pass"
     assert data["summary"]["total_cases"] == 1
     assert data["summary"]["accepted_cases"] == 1
+
+
+def test_cli_external_validation_strict_json_output(capsys):
+    exit_code = main(["external-validation", "--csv", str(SAMPLE_PATH), "--strict", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "external-validation"
+    assert data["strict"] is True
+    assert data["status"] == "pass"
+    assert data["summary"]["strict_mode"] is True
+    assert data["summary"]["tolerance_failed_count"] == 0
+    assert data["summary"]["inconsistent_acceptance_status_count"] == 0
+
+
+def test_cli_external_validation_strict_missing_values_review_required(tmp_path, capsys):
+    csv_path = tmp_path / "missing_external.csv"
+    _write_external_rows(csv_path, [_row_with_missing_external_values()])
+
+    exit_code = main(["external-validation", "--csv", str(csv_path), "--strict", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["status"] == "review_required"
+    assert data["summary"]["missing_required_external_values_count"] == 1
+
+
+def test_cli_external_validation_strict_tolerance_failure(tmp_path, capsys):
+    csv_path = tmp_path / "tolerance_fail.csv"
+    _write_external_rows(csv_path, [{**_accepted_row(), "delta_mcrc_percent": "1.25"}])
+
+    exit_code = main(["external-validation", "--csv", str(csv_path), "--strict", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["status"] == "fail"
+    assert data["summary"]["tolerance_failed_count"] == 1
 
 
 def test_external_validation_filled_sample_exists_with_six_cases():
@@ -124,6 +212,13 @@ def test_cli_external_validation_sample_json_output(capsys):
     assert summary["max_mcrc_delta_percent"] <= tolerances.mcrc_delta_percent
     assert summary["max_crack_width_delta_mm"] <= tolerances.crack_width_delta_mm
     assert summary["max_deflection_delta_mm"] <= tolerances.deflection_delta_mm
+
+
+def _write_external_rows(path: Path, rows: list[dict[str, str]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=EXTERNAL_VALIDATION_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def _row_with_missing_external_values() -> dict[str, str]:
