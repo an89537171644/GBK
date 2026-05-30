@@ -95,7 +95,16 @@ Templates:
 CLI:
 
 ```bash
+python -m sp63_core materials-audit --verification-template
+python -m sp63_core materials-audit --verification-csv path/to/material_verification.csv --json
 python -m sp63_core material-verification --json
 python -m sp63_core material-verification --template
 python -m sp63_core material-verification --csv path/to/material_verification.csv --json
 ```
+
+Rows marked `engineer_verified` must include:
+
+- `engineer_value` matching the current catalog value;
+- `engineer_name`;
+- `review_date`;
+- `source_note`.

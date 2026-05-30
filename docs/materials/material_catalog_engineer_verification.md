@@ -19,9 +19,9 @@ been engineer-verified.
 
 ## Concrete Properties
 
-| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | source_note | engineer_comment | requires_engineer_review |
-|---|---|---|---:|---|---|---:|---|---|---|
-| concrete | B25 | Rb | 14.5 | MPa | draft |  |  |  | true |
+| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review |
+|---|---|---|---:|---|---|---:|---|---|---|---|---|
+| concrete | B25 | Rb | 14.5 | MPa | draft |  |  |  |  |  | true |
 
 Concrete properties to verify:
 
@@ -33,9 +33,9 @@ Concrete properties to verify:
 
 ## Reinforcement Properties
 
-| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | source_note | engineer_comment | requires_engineer_review |
-|---|---|---|---:|---|---|---:|---|---|---|
-| rebar | A500 | Rs | 435 | MPa | draft |  |  |  | true |
+| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review |
+|---|---|---|---:|---|---|---:|---|---|---|---|---|
+| rebar | A500 | Rs | 435 | MPa | draft |  |  |  |  |  | true |
 
 Reinforcement properties to verify:
 
@@ -55,7 +55,7 @@ Reinforcement properties to verify:
 - If the engineer value differs from the catalog value, keep
   `verification_status = needs_review` until the difference is resolved.
 - `engineer_verified` requires a filled `engineer_value` matching the current
-  catalog value and a short `source_note`.
+  catalog value plus `engineer_name`, `review_date`, and a short `source_note`.
 
 ## CLI
 

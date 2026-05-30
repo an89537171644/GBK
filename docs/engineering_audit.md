@@ -390,6 +390,11 @@ Verification statuses are:
 The gate covers concrete `Rb`, `Rbt`, `Rbser`, `Rbtser`, `Eb` and reinforcement
 `Rsn`, `Rs`, `Rsser`, `Rsc_short`, `Rsc_long`, `Rsw`, `Es`.
 
+Rows can be accepted as `engineer_verified` only when `engineer_value`,
+`engineer_name`, `review_date`, and `source_note` are filled and the engineer
+value matches the current catalog value. Otherwise the row remains
+`needs_review`.
+
 The CSV and Markdown templates are review aids only. They must not contain full
 SP 63 text, private documents, or personal data. ML remains advisory-only and
 must not treat material values as final unless deterministic checks and

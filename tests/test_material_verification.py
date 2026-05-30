@@ -53,6 +53,23 @@ def test_material_verification_value_mismatch_requires_review():
     assert any("do not match current catalog values" in warning for warning in report.warnings)
 
 
+def test_material_verification_engineer_verified_requires_reviewer_metadata():
+    csv_rows = list(_engineer_verified_rows())
+    csv_rows[0] = {
+        **csv_rows[0],
+        "engineer_name": "",
+        "review_date": "",
+        "source_note": "",
+    }
+
+    report = build_material_verification_report(tuple(csv_rows))
+
+    assert report.status == "review_required"
+    assert report.invalid_rows_count == 3
+    assert report.needs_review_count == 1
+    assert report.rows[0].verification_status == "needs_review"
+
+
 def test_material_verification_missing_rows_require_review():
     csv_rows = _engineer_verified_rows()[1:]
 
@@ -87,6 +104,8 @@ def _engineer_verified_rows() -> tuple[dict[str, str], ...]:
                 "unit": row.unit,
                 "verification_status": "engineer_verified",
                 "engineer_value": str(row.catalog_value),
+                "engineer_name": "Test Engineer",
+                "review_date": "2026-05-30",
                 "source_note": "engineer checked SP 63 table reference; no full text stored",
                 "engineer_comment": "synthetic test row",
                 "requires_engineer_review": "false",

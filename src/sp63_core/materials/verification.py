@@ -20,6 +20,8 @@ MATERIAL_VERIFICATION_REQUIRED_COLUMNS: tuple[str, ...] = (
     "unit",
     "verification_status",
     "engineer_value",
+    "engineer_name",
+    "review_date",
     "source_note",
     "engineer_comment",
     "requires_engineer_review",
@@ -47,6 +49,8 @@ class MaterialVerificationRow:
     verification_status: str
     engineer_value: float | None
     delta: float | None
+    engineer_name: str
+    review_date: str
     source_note: str
     engineer_comment: str
     requires_engineer_review: bool
@@ -141,6 +145,8 @@ def build_material_verification_report(
                 verification_status = "needs_review"
 
             engineer_value = _parse_optional_float(raw_row["engineer_value"])
+            engineer_name = str(raw_row["engineer_name"] or "").strip()
+            review_date = str(raw_row["review_date"] or "").strip()
             source_note = str(raw_row["source_note"] or "").strip()
             engineer_comment = str(raw_row["engineer_comment"] or "").strip()
             if verification_status == "engineer_verified":
@@ -151,6 +157,12 @@ def build_material_verification_report(
                     value_mismatch_count += 1
                     verification_status = "needs_review"
                 if not source_note:
+                    invalid_rows_count += 1
+                    verification_status = "needs_review"
+                if not engineer_name:
+                    invalid_rows_count += 1
+                    verification_status = "needs_review"
+                if not review_date:
                     invalid_rows_count += 1
                     verification_status = "needs_review"
 
@@ -168,6 +180,8 @@ def build_material_verification_report(
                         if engineer_value is None
                         else engineer_value - float(audit_row.value)
                     ),
+                    engineer_name=engineer_name,
+                    review_date=review_date,
                     source_note=source_note,
                     engineer_comment=engineer_comment,
                     requires_engineer_review=verification_status != "engineer_verified",
@@ -237,6 +251,8 @@ def _row_from_audit_row(
         verification_status=verification_status,
         engineer_value=None,
         delta=None,
+        engineer_name="",
+        review_date="",
         source_note="",
         engineer_comment="",
         requires_engineer_review=True,

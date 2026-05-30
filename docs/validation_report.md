@@ -570,6 +570,8 @@ review.
 K34 adds material catalog verification reporting:
 
 ```bash
+python -m sp63_core materials-audit --verification-template
+python -m sp63_core materials-audit --verification-csv path/to/material_verification.csv --json
 python -m sp63_core material-verification --json
 python -m sp63_core material-verification --template
 python -m sp63_core material-verification --csv path/to/material_verification.csv --json
@@ -577,8 +579,9 @@ python -m sp63_core material-verification --csv path/to/material_verification.cs
 
 The default report is `review_required` because current catalog values are
 still draft. An engineer-filled CSV can mark rows as `engineer_verified` only
-when the engineer value matches the current catalog value and a source note is
-provided. Differing values remain `needs_review`.
+when the engineer value matches the current catalog value and `engineer_name`,
+`review_date`, and `source_note` are provided. Differing or incomplete values
+remain `needs_review`.
 
 K34 does not change formulas or material values. It adds an acceptance gate for
 review status only, and does not store full SP 63 text.

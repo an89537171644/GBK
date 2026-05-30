@@ -459,8 +459,13 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Supported statuses are `draft`, `needs_review`, and `engineer_verified`.
 - `material-verification --template` prints the CSV template for engineer
   checking of concrete and reinforcement catalog values.
+- `materials-audit --verification-template` and
+  `materials-audit --verification-csv path/to/material_verification.csv --json`
+  provide the same verification gate through the audit command.
 - `material-verification --csv path/to/material_verification.csv --json`
   checks an engineer-filled CSV without changing material values.
+- `engineer_verified` rows require `engineer_name`, `review_date`, and
+  `source_note`.
 - Concrete verification covers `Rb`, `Rbt`, `Rbser`, `Rbtser`, and `Eb`.
 - Reinforcement verification covers `Rsn`, `Rs`, `Rsser`, `Rsc_short`,
   `Rsc_long`, `Rsw`, and `Es`.
