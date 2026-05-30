@@ -436,6 +436,26 @@ is not a certified design conclusion, keeps `requires_engineer_review = true`,
 and continues to require deterministic SP63 checks, material verification, and
 external engineering validation.
 
+## K37 Input-Driven Design Report
+
+K37 extends the report export so an engineer can provide a rectangular beam
+input JSON file instead of relying only on the K36 smoke example:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --html
+```
+
+The input layer validates required fields and rejects unknown fields. It then
+runs the existing deterministic `design_rectangular_element()` workflow and
+renders the same report structures as K36.
+
+This is still a reporting/input layer only. It does not change deterministic
+formulas, material values, reinforcement selection algorithms, ML behavior, or
+external validation gates. Reports remain draft review artifacts with
+`requires_engineer_review = true`.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
