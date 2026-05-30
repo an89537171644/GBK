@@ -375,6 +375,26 @@ only anonymized numeric comparison rows, not closed model files, private
 documents, or full normative text. ML remains advisory-only and deterministic
 SP63 checks remain mandatory.
 
+## K34 Material Catalog Engineer Verification Gate
+
+K34 adds a verification gate for the material catalog without changing material
+values or calculation formulas. The current catalog values remain draft until
+an engineer fills a verification CSV or records review notes.
+
+Verification statuses are:
+
+- `draft`;
+- `needs_review`;
+- `engineer_verified`.
+
+The gate covers concrete `Rb`, `Rbt`, `Rbser`, `Rbtser`, `Eb` and reinforcement
+`Rsn`, `Rs`, `Rsser`, `Rsc_short`, `Rsc_long`, `Rsw`, `Es`.
+
+The CSV and Markdown templates are review aids only. They must not contain full
+SP 63 text, private documents, or personal data. ML remains advisory-only and
+must not treat material values as final unless deterministic checks and
+engineer verification both support the result.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

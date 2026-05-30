@@ -19,17 +19,31 @@ from sp63_core.materials.rebar import (
     area_by_diameter,
     get_rebar,
 )
+from sp63_core.materials.verification import (
+    MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
+    MATERIAL_VERIFICATION_STATUSES,
+    MaterialVerificationReport,
+    MaterialVerificationRow,
+    build_material_verification_report,
+    build_material_verification_rows,
+)
 
 __all__ = [
     "Concrete",
     "LONGITUDINAL_DIAMETERS",
     "LoadDuration",
     "MaterialAuditRow",
+    "MATERIAL_VERIFICATION_REQUIRED_COLUMNS",
+    "MATERIAL_VERIFICATION_STATUSES",
+    "MaterialVerificationReport",
+    "MaterialVerificationRow",
     "Rebar",
     "STIRRUP_DIAMETERS",
     "area_by_diameter",
     "build_concrete_audit_rows",
     "build_material_audit_rows",
+    "build_material_verification_report",
+    "build_material_verification_rows",
     "build_rebar_audit_rows",
     "get_concrete",
     "get_rebar",

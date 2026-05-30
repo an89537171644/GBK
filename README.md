@@ -452,6 +452,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K33 does not add real SCAD/LIRA files or invent external values. ML remains
   advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K34 material catalog engineer verification gate
+
+- CLI command `material-verification --json` reports current material catalog
+  verification status.
+- Supported statuses are `draft`, `needs_review`, and `engineer_verified`.
+- `material-verification --template` prints the CSV template for engineer
+  checking of concrete and reinforcement catalog values.
+- `material-verification --csv path/to/material_verification.csv --json`
+  checks an engineer-filled CSV without changing material values.
+- Concrete verification covers `Rb`, `Rbt`, `Rbser`, `Rbtser`, and `Eb`.
+- Reinforcement verification covers `Rsn`, `Rs`, `Rsser`, `Rsc_short`,
+  `Rsc_long`, `Rsw`, and `Es`.
+- K34 does not approve material values automatically, does not store full
+  SP 63 text, and does not make ML a calculator.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

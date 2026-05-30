@@ -565,6 +565,24 @@ Missing external values produce `review_required`. Tolerance failures produce
 `fail`. Contradictory `acceptance_status` values are reported for engineer
 review.
 
+## K34 Material Catalog Engineer Verification Gate
+
+K34 adds material catalog verification reporting:
+
+```bash
+python -m sp63_core material-verification --json
+python -m sp63_core material-verification --template
+python -m sp63_core material-verification --csv path/to/material_verification.csv --json
+```
+
+The default report is `review_required` because current catalog values are
+still draft. An engineer-filled CSV can mark rows as `engineer_verified` only
+when the engineer value matches the current catalog value and a source note is
+provided. Differing values remain `needs_review`.
+
+K34 does not change formulas or material values. It adds an acceptance gate for
+review status only, and does not store full SP 63 text.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
