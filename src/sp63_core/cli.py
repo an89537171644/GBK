@@ -35,6 +35,7 @@ from sp63_core.materials import (
     MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
     build_material_audit_rows,
     build_material_verification_report,
+    build_material_verification_report_document,
     get_concrete,
     get_rebar,
 )
@@ -263,6 +264,26 @@ def build_parser() -> ArgumentParser:
     material_verification.add_argument("--csv", help="engineer-filled material verification CSV")
     material_verification.add_argument("--json", action="store_true", help="print JSON output")
     material_verification.set_defaults(handler=_handle_material_verification)
+
+    material_verification_report = subparsers.add_parser(
+        "material-verification-report",
+        help="build Markdown/JSON report for an engineer-filled material verification CSV",
+    )
+    material_verification_report.add_argument(
+        "--csv",
+        required=True,
+        help="engineer-filled material verification CSV",
+    )
+    material_verification_report.add_argument(
+        "--output",
+        help="optional Markdown report output path",
+    )
+    material_verification_report.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    material_verification_report.set_defaults(handler=_handle_material_verification_report)
 
     manual_cases = subparsers.add_parser(
         "manual-cases",
@@ -1178,6 +1199,44 @@ def _handle_material_verification(args: Namespace) -> int:
             f"requires_engineer_review={row.requires_engineer_review}"
         )
     _print_warnings(report.warnings)
+    return 0
+
+
+def _handle_material_verification_report(args: Namespace) -> int:
+    csv_path = Path(args.csv)
+    csv_rows = _load_material_verification_csv(csv_path)
+    document = build_material_verification_report_document(csv_rows)
+    output_path = None if args.output is None else Path(args.output)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(document.markdown, encoding="utf-8")
+
+    payload = {
+        "command": "material-verification-report",
+        "status": document.status,
+        "csv": str(csv_path),
+        "output": None if output_path is None else str(output_path),
+        "summary": {
+            "total_rows": document.total_rows,
+            "engineer_verified_count": document.engineer_verified_count,
+            "needs_review_count": document.needs_review_count,
+            "draft_count": document.draft_count,
+            "missing_required_fields_count": document.missing_required_fields_count,
+            "missing_required_rows_count": document.missing_required_rows_count,
+            "value_mismatch_count": document.value_mismatch_count,
+            "status_counts": document.status_counts,
+            "requires_engineer_review": document.requires_engineer_review,
+        },
+        "needs_review_rows": [asdict(row) for row in document.needs_review_rows],
+        "warnings": list(document.warnings),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(document.markdown, end="")
+    if output_path is not None:
+        print(f"\nreport_output: {output_path}")
     return 0
 
 

@@ -108,3 +108,24 @@ Rows marked `engineer_verified` must include:
 - `engineer_name`;
 - `review_date`;
 - `source_note`.
+
+## K35 Report Integration
+
+K35 adds a Markdown/JSON report command for engineer-filled CSV files:
+
+```bash
+python -m sp63_core material-verification-report --csv path/to/material_verification.csv
+python -m sp63_core material-verification-report --csv path/to/material_verification.csv --json
+python -m sp63_core material-verification-report --csv path/to/material_verification.csv --output reports/material_verification_report.md
+```
+
+The report includes:
+
+- `total_rows`;
+- `engineer_verified_count`;
+- `needs_review_count`;
+- `missing_required_fields_count`;
+- a table of rows that still need review.
+
+The report is read-only. It does not update `materials/concrete.py`,
+`materials/rebar.py`, or any calculation formula.
