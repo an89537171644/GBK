@@ -1,6 +1,8 @@
+import csv
 import json
 
 from sp63_core.cli import main
+from sp63_core.materials import build_material_verification_rows
 from sp63_core.validation import ExternalComparisonRow, export_external_comparison_csv
 
 
@@ -656,6 +658,72 @@ def test_cli_materials_audit_json_output(capsys):
         "require engineer review" in warning
         for warning in data["warnings"]
     )
+
+
+def test_cli_material_verification_text_output(capsys):
+    exit_code = main(["material-verification"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Material verification" in captured.out
+    assert "status: review_required" in captured.out
+    assert "verification_status=draft" in captured.out
+
+
+def test_cli_material_verification_json_output(capsys):
+    exit_code = main(["material-verification", "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "material-verification"
+    assert data["status"] == "review_required"
+    assert data["summary"]["draft_count"] == data["summary"]["required_rows_count"]
+    assert any(row["class_name"] == "B25" for row in data["rows"])
+    assert any(row["class_name"] == "A500" for row in data["rows"])
+
+
+def test_cli_material_verification_template_output(capsys):
+    exit_code = main(["material-verification", "--template"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Material verification template" in captured.out
+    assert "material_catalog_verification_template.csv" in captured.out
+
+
+def test_cli_material_verification_engineer_csv_json(tmp_path, capsys):
+    csv_path = tmp_path / "material_verification.csv"
+    rows = []
+    for row in build_material_verification_rows():
+        rows.append(
+            {
+                "material_type": row.material_type,
+                "class_name": row.class_name,
+                "property_name": row.property_name,
+                "catalog_value": row.catalog_value,
+                "unit": row.unit,
+                "verification_status": "engineer_verified",
+                "engineer_value": row.catalog_value,
+                "source_note": "engineer checked SP 63 table reference; no full text stored",
+                "engineer_comment": "test",
+                "requires_engineer_review": "false",
+            }
+        )
+    with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    exit_code = main(["material-verification", "--csv", str(csv_path), "--json"])
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert exit_code == 0
+    assert data["command"] == "material-verification"
+    assert data["status"] == "pass"
+    assert data["summary"]["engineer_verified_count"] == data["summary"]["required_rows_count"]
+    assert data["summary"]["requires_engineer_review"] is False
 
 
 def test_cli_manual_cases_text_output(capsys):

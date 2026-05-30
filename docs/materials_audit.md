@@ -72,3 +72,30 @@ All listed material values require manual engineering verification:
 Possible discrepancies must be resolved by an engineer before the values are
 used in final design decisions. K19 adds the audit structure only; it does not
 approve or change material values.
+
+## K34 Engineer Verification Gate
+
+K34 adds a separate verification gate for material catalog values.
+
+Allowed verification statuses:
+
+- `draft` - the catalog value is present but not checked yet;
+- `needs_review` - the value or source note needs additional engineering review;
+- `engineer_verified` - an engineer checked the value against SP 63 tables.
+
+The gate does not change material values automatically. If an engineer-filled
+CSV has a value that differs from the current catalog value, the row remains
+`needs_review` until the discrepancy is resolved by an engineer.
+
+Templates:
+
+- `docs/materials/templates/material_catalog_verification_template.csv`;
+- `docs/materials/material_catalog_engineer_verification.md`.
+
+CLI:
+
+```bash
+python -m sp63_core material-verification --json
+python -m sp63_core material-verification --template
+python -m sp63_core material-verification --csv path/to/material_verification.csv --json
+```

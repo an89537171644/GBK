@@ -31,7 +31,13 @@ from sp63_core.dataset import (
     split_diagnostic_dataset_by_group,
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
-from sp63_core.materials import build_material_audit_rows, get_concrete, get_rebar
+from sp63_core.materials import (
+    MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
+    build_material_audit_rows,
+    build_material_verification_report,
+    get_concrete,
+    get_rebar,
+)
 from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
@@ -230,6 +236,24 @@ def build_parser() -> ArgumentParser:
     )
     materials_audit.add_argument("--json", action="store_true", help="print JSON output")
     materials_audit.set_defaults(handler=_handle_materials_audit)
+
+    material_verification = subparsers.add_parser(
+        "material-verification",
+        help="check engineer verification status for material catalog values",
+    )
+    material_verification.add_argument(
+        "--template",
+        action="store_true",
+        help="print the material verification CSV template path",
+    )
+    material_verification.add_argument(
+        "--markdown-template",
+        action="store_true",
+        help="print the material verification Markdown template path",
+    )
+    material_verification.add_argument("--csv", help="engineer-filled material verification CSV")
+    material_verification.add_argument("--json", action="store_true", help="print JSON output")
+    material_verification.set_defaults(handler=_handle_material_verification)
 
     manual_cases = subparsers.add_parser(
         "manual-cases",
@@ -1015,6 +1039,87 @@ def _handle_materials_audit(args: Namespace) -> int:
     return 0
 
 
+def _handle_material_verification(args: Namespace) -> int:
+    template_path = _material_verification_template_path()
+    markdown_template_path = _material_verification_markdown_template_path()
+
+    if args.template and args.csv is None and not args.markdown_template:
+        payload = {
+            "command": "material-verification",
+            "status": "template",
+            "template_path": str(template_path),
+            "columns": list(MATERIAL_VERIFICATION_REQUIRED_COLUMNS),
+            "warnings": [
+                "engineer must fill verification_status and source_note before values are accepted"
+            ],
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("Material verification template")
+        print(f"template_path: {template_path}")
+        _print_warnings(tuple(payload["warnings"]))
+        return 0
+
+    if args.markdown_template and args.csv is None:
+        payload = {
+            "command": "material-verification",
+            "status": "template",
+            "markdown_template_path": str(markdown_template_path),
+            "warnings": [
+                "markdown template is a checklist only and does not approve catalog values"
+            ],
+        }
+        if args.json:
+            print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+
+        print("Material verification Markdown template")
+        print(f"markdown_template_path: {markdown_template_path}")
+        _print_warnings(tuple(payload["warnings"]))
+        return 0
+
+    csv_rows = None if args.csv is None else _load_material_verification_csv(Path(args.csv))
+    report = build_material_verification_report(csv_rows)
+    payload = {
+        "command": "material-verification",
+        "status": report.status,
+        "template_path": str(template_path),
+        "markdown_template_path": str(markdown_template_path),
+        "csv": None if args.csv is None else str(Path(args.csv)),
+        "summary": {
+            key: value
+            for key, value in asdict(report).items()
+            if key != "rows"
+        },
+        "rows": [asdict(row) for row in report.rows],
+        "warnings": list(report.warnings),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Material verification")
+    print(f"status: {report.status}")
+    print(f"total_rows: {report.total_rows}")
+    print(f"engineer_verified_count: {report.engineer_verified_count}")
+    print(f"draft_count: {report.draft_count}")
+    print(f"needs_review_count: {report.needs_review_count}")
+    print(f"missing_required_rows_count: {report.missing_required_rows_count}")
+    print(f"invalid_rows_count: {report.invalid_rows_count}")
+    print(f"value_mismatch_count: {report.value_mismatch_count}")
+    for row in report.rows:
+        print(
+            f"{row.material_type} {row.class_name} {row.property_name}: "
+            f"{row.catalog_value:g} {row.unit}; "
+            f"verification_status={row.verification_status}; "
+            f"requires_engineer_review={row.requires_engineer_review}"
+        )
+    _print_warnings(report.warnings)
+    return 0
+
+
 def _handle_manual_cases(args: Namespace) -> int:
     results = run_manual_verification_cases()
     passed_count = sum(1 for result in results if result.passed)
@@ -1635,6 +1740,25 @@ def _external_validation_sample_path() -> Path:
     )
 
 
+def _material_verification_template_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "materials"
+        / "templates"
+        / "material_catalog_verification_template.csv"
+    )
+
+
+def _material_verification_markdown_template_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "materials"
+        / "material_catalog_engineer_verification.md"
+    )
+
+
 def _load_external_validation_csv(path: Path) -> tuple[dict[str, str], ...]:
     with path.open(encoding="utf-8", newline="") as csv_file:
         reader = csv.DictReader(csv_file)
@@ -1646,6 +1770,23 @@ def _load_external_validation_csv(path: Path) -> tuple[dict[str, str], ...]:
         if missing_columns:
             raise ValueError(
                 "external validation CSV is missing columns: " + ", ".join(missing_columns)
+            )
+        return tuple(dict(row) for row in reader)
+
+
+def _load_material_verification_csv(path: Path) -> tuple[dict[str, str], ...]:
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        if reader.fieldnames is None:
+            raise ValueError("material verification CSV is missing header")
+        missing_columns = [
+            column
+            for column in MATERIAL_VERIFICATION_REQUIRED_COLUMNS
+            if column not in reader.fieldnames
+        ]
+        if missing_columns:
+            raise ValueError(
+                "material verification CSV is missing columns: " + ", ".join(missing_columns)
             )
         return tuple(dict(row) for row in reader)
 
