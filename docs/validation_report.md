@@ -602,6 +602,26 @@ lists rows that remain `needs_review`.
 The report is an integration and review aid only. It does not change material
 catalog values and does not certify values without engineer acceptance.
 
+## K36 Design Calculation Report Export
+
+K36 adds report export smoke coverage for a rectangular design calculation:
+
+```bash
+python -m sp63_core design-report --json
+python -m sp63_core design-report --markdown
+python -m sp63_core design-report --html
+```
+
+The report is generated from the existing deterministic rectangular design
+workflow and includes bending, shear, crack formation, crack width, deflection,
+and separated strength/serviceability/overall statuses for the built-in smoke
+case.
+
+The export is validation/reporting infrastructure only. It does not change
+calculation formulas, material values, reinforcement selection algorithms, ML
+behavior, or external validation gates. The report remains draft material and
+requires engineer review.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
