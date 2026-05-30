@@ -2,6 +2,7 @@
 
 import csv
 import json as jsonlib
+import shutil
 from argparse import ArgumentParser, Namespace
 from dataclasses import asdict
 from pathlib import Path
@@ -835,7 +836,12 @@ def _handle_design_report(args: Namespace) -> int:
     json_payload = _design_report_json_payload(report, source=source)
 
     if args.bundle_output:
-        output_files = _write_design_report_bundle(report, json_payload, Path(args.bundle_output))
+        output_files = _write_design_report_bundle(
+            report,
+            json_payload,
+            Path(args.bundle_output),
+            input_json_path=Path(args.input_json) if args.input_json else None,
+        )
         if args.json:
             json_payload["bundle_output"] = str(Path(args.bundle_output))
             json_payload["output_files"] = output_files
@@ -915,6 +921,8 @@ def _write_design_report_bundle(
     report: Any,
     json_payload: dict[str, Any],
     output_dir: Path,
+    *,
+    input_json_path: Path | None = None,
 ) -> dict[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     markdown_path = output_dir / "report.md"
@@ -925,11 +933,16 @@ def _write_design_report_bundle(
     json_path.write_text(json_text, encoding="utf-8")
     html = report.html if report.html is not None else ""
     html_path.write_text(html, encoding="utf-8")
-    return {
+    output_files = {
         "markdown": str(markdown_path),
         "json": str(json_path),
         "html": str(html_path),
     }
+    if input_json_path is not None:
+        input_copy_path = output_dir / "input.json"
+        shutil.copyfile(input_json_path, input_copy_path)
+        output_files["input"] = str(input_copy_path)
+    return output_files
 
 
 def _handle_generate_dataset(args: Namespace) -> int:

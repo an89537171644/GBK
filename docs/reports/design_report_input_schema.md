@@ -89,4 +89,7 @@ python -m sp63_core design-report --input-json docs/reports/examples/rectangular
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
 ```
 
+The bundle output writes `report.md`, `report.json`, `report.html`, and a copy
+of the source `input.json` for traceability.
+
 Without `--input-json`, the K36 built-in smoke example remains available.

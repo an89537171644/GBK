@@ -630,12 +630,13 @@ K37 adds validation coverage for report generation from JSON input:
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --json
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --html
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
 ```
 
 The tests verify that the example JSON loads into `RectangularDesignInput`, the
 report builds, CLI output works for JSON/Markdown/HTML, output files can be
-written, bundle output creates `report.md`, `report.json`, and `report.html`,
-and missing or unknown fields raise clear errors.
+written, bundle output creates `report.md`, `report.json`, `report.html`, and
+a copied `input.json`, and missing or unknown fields raise clear errors.
 
 K37 preserves the K36 smoke mode and does not change calculation formulas,
 material values, reinforcement selection algorithms, ML behavior, or external

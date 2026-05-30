@@ -35,6 +35,10 @@ The input JSON schema is documented in
 `docs/reports/design_report_input_schema.md`. The built-in K36 smoke mode is
 preserved when `--input-json` is omitted.
 
+For input-driven report bundles, `--bundle-output` writes `report.md`,
+`report.json`, `report.html`, and a copied `input.json` into the target
+directory.
+
 ## Report sections
 
 - input data;

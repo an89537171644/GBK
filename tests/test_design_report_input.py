@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -136,3 +137,7 @@ def test_cli_design_report_bundle_output(tmp_path, capsys):
     assert (output_dir / "report.md").exists()
     assert (output_dir / "report.json").exists()
     assert (output_dir / "report.html").exists()
+    assert (output_dir / "input.json").exists()
+    bundled_input = json.loads((output_dir / "input.json").read_text(encoding="utf-8"))
+    source_input = json.loads(Path(EXAMPLE_INPUT).read_text(encoding="utf-8"))
+    assert bundled_input == source_input

@@ -445,11 +445,13 @@ input JSON file instead of relying only on the K36 smoke example:
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --json
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
 python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --html
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
 ```
 
 The input layer validates required fields and rejects unknown fields. It then
 runs the existing deterministic `design_rectangular_element()` workflow and
-renders the same report structures as K36.
+renders the same report structures as K36. Bundle output stores `report.md`,
+`report.json`, `report.html`, and a copied `input.json` for traceability.
 
 This is still a reporting/input layer only. It does not change deterministic
 formulas, material values, reinforcement selection algorithms, ML behavior, or
