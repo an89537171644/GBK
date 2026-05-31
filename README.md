@@ -497,6 +497,25 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K37 input-driven design report status
+
+- CLI command `design-report --input-json path/to/input.json --json` builds a
+  report from user-provided rectangular beam input.
+- The same input path works with `--markdown`, `--html`, `--output`, and
+  `--bundle-output`; bundle mode writes `report.md`, `report.json`,
+  `report.html`, and a copied `input.json`.
+- The K36 smoke mode without `--input-json` is preserved.
+- The input schema is documented in
+  `docs/reports/design_report_input_schema.md`.
+- Example input is available at
+  `docs/reports/examples/rectangular_design_input_example.json`.
+- Unknown input fields are rejected, and missing required fields raise clear
+  errors.
+- The report is not a certified design conclusion and keeps
+  `requires_engineer_review = true`.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

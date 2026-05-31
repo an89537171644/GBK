@@ -2,6 +2,7 @@
 
 import csv
 import json as jsonlib
+import shutil
 from argparse import ArgumentParser, Namespace
 from dataclasses import asdict
 from pathlib import Path
@@ -52,7 +53,10 @@ from sp63_core.ml import (
     verify_ml_proposal_with_deterministic_core,
 )
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
-from sp63_core.report import build_rectangular_design_report
+from sp63_core.report import (
+    build_rectangular_design_report,
+    load_rectangular_design_input_from_json,
+)
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
     EXTERNAL_VALIDATION_COLUMNS,
@@ -206,7 +210,12 @@ def build_parser() -> ArgumentParser:
     design_report.add_argument("--json", action="store_true", help="print JSON report output")
     design_report.add_argument("--markdown", action="store_true", help="print Markdown report")
     design_report.add_argument("--html", action="store_true", help="print static HTML report")
+    design_report.add_argument("--input-json", help="rectangular design report input JSON")
     design_report.add_argument("--output", help="optional report output path")
+    design_report.add_argument(
+        "--bundle-output",
+        help="optional directory for report.md, report.json, and report.html",
+    )
     design_report.set_defaults(handler=_handle_design_report)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
@@ -821,23 +830,30 @@ def _handle_design_rectangular(args: Namespace) -> int:
 
 
 def _handle_design_report(args: Namespace) -> int:
-    design = _build_design_report_smoke_result()
-    include_html = bool(args.html)
+    design, source = _build_design_report_result(args)
+    include_html = bool(args.html or args.bundle_output)
     report = build_rectangular_design_report(design, include_html=include_html)
+    json_payload = _design_report_json_payload(report, source=source)
+
+    if args.bundle_output:
+        output_files = _write_design_report_bundle(
+            report,
+            json_payload,
+            Path(args.bundle_output),
+            input_json_path=Path(args.input_json) if args.input_json else None,
+        )
+        if args.json:
+            json_payload["bundle_output"] = str(Path(args.bundle_output))
+            json_payload["output_files"] = output_files
+            print(jsonlib.dumps(json_payload, ensure_ascii=False, indent=2))
+            return 0
+        print(f"Design report bundle written: {args.bundle_output}")
+        return 0
 
     if args.html:
         content = report.html if report.html is not None else ""
     elif args.json:
-        content = jsonlib.dumps(
-            {
-                "command": "design-report",
-                "status": report.status,
-                "report": report.json_data,
-                "warnings": list(report.warnings),
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
+        content = jsonlib.dumps(json_payload, ensure_ascii=False, indent=2)
     else:
         content = report.markdown
 
@@ -850,6 +866,13 @@ def _handle_design_report(args: Namespace) -> int:
 
     print(content, end="" if content.endswith("\n") else "\n")
     return 0
+
+
+def _build_design_report_result(args: Namespace) -> tuple[Any, str]:
+    if args.input_json:
+        design_input = load_rectangular_design_input_from_json(args.input_json)
+        return design_rectangular_element(design_input), "input_json"
+    return _build_design_report_smoke_result(), "smoke_example"
 
 
 def _build_design_report_smoke_result() -> Any:
@@ -870,6 +893,56 @@ def _build_design_report_smoke_result() -> Any:
         span=6000,
     )
     return design_rectangular_element(design_input)
+
+
+def _design_report_json_payload(report: Any, *, source: str) -> dict[str, Any]:
+    data = report.json_data
+    return {
+        "command": "design-report",
+        "source": source,
+        "report_type": report.report_type,
+        "status": report.status,
+        "strength_status": report.strength_status,
+        "serviceability_status": report.serviceability_status,
+        "overall_status": report.overall_status,
+        "requires_engineer_review": report.requires_engineer_review,
+        "warnings": list(report.warnings),
+        "input_data": data["input_data"],
+        "materials": data["materials"],
+        "geometry": data["geometry"],
+        "reinforcement": data["reinforcement"],
+        "checks": data["checks"],
+        "limitations": data["limitations"],
+        "report": data,
+    }
+
+
+def _write_design_report_bundle(
+    report: Any,
+    json_payload: dict[str, Any],
+    output_dir: Path,
+    *,
+    input_json_path: Path | None = None,
+) -> dict[str, str]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    markdown_path = output_dir / "report.md"
+    json_path = output_dir / "report.json"
+    html_path = output_dir / "report.html"
+    markdown_path.write_text(report.markdown, encoding="utf-8")
+    json_text = jsonlib.dumps(json_payload, ensure_ascii=False, indent=2)
+    json_path.write_text(json_text, encoding="utf-8")
+    html = report.html if report.html is not None else ""
+    html_path.write_text(html, encoding="utf-8")
+    output_files = {
+        "markdown": str(markdown_path),
+        "json": str(json_path),
+        "html": str(html_path),
+    }
+    if input_json_path is not None:
+        input_copy_path = output_dir / "input.json"
+        shutil.copyfile(input_json_path, input_copy_path)
+        output_files["input"] = str(input_copy_path)
+    return output_files
 
 
 def _handle_generate_dataset(args: Namespace) -> int:

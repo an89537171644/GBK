@@ -622,6 +622,26 @@ calculation formulas, material values, reinforcement selection algorithms, ML
 behavior, or external validation gates. The report remains draft material and
 requires engineer review.
 
+## K37 Input-Driven Design Report Validation
+
+K37 adds validation coverage for report generation from JSON input:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --html
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
+```
+
+The tests verify that the example JSON loads into `RectangularDesignInput`, the
+report builds, CLI output works for JSON/Markdown/HTML, output files can be
+written, bundle output creates `report.md`, `report.json`, `report.html`, and
+a copied `input.json`, and missing or unknown fields raise clear errors.
+
+K37 preserves the K36 smoke mode and does not change calculation formulas,
+material values, reinforcement selection algorithms, ML behavior, or external
+validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
