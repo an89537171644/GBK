@@ -558,6 +558,22 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K41 report archive ZIP export status
+
+- CLI command `report-archive-zip --path reports/smoke_case --output
+  reports/smoke_case.zip --json` exports a single report bundle to ZIP.
+- CLI command `report-archive-zip --path reports/batch_smoke --output
+  reports/batch_smoke.zip --batch --json` exports a batch report archive to
+  ZIP.
+- ZIP export validates the source archive before packaging and validates the
+  ZIP after creation.
+- ZIP entries use relative paths; path traversal entries are rejected.
+- JSON output includes `zip_sha256`, `validation_status`, and
+  `requires_engineer_review = true`.
+- ZIP export is a handoff/archive aid only and does not certify the design.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

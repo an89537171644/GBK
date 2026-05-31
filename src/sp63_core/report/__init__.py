@@ -5,6 +5,12 @@ from sp63_core.report.archive_validation import (
     validate_batch_report_archive,
     validate_report_bundle,
 )
+from sp63_core.report.archive_zip import (
+    ReportArchiveZipResult,
+    compute_zip_sha256,
+    export_report_archive_to_zip,
+    validate_report_zip,
+)
 from sp63_core.report.batch_report import BatchDesignReportResult, build_batch_design_reports
 from sp63_core.report.design_report import (
     DesignCalculationReport,
@@ -36,12 +42,15 @@ __all__ = [
     "OPTIONAL_RECTANGULAR_DESIGN_INPUT_FIELDS",
     "REQUIRED_RECTANGULAR_DESIGN_INPUT_FIELDS",
     "ReportArchiveValidationResult",
+    "ReportArchiveZipResult",
     "ReportArtifactManifest",
     "build_calculation_protocol",
     "build_batch_design_reports",
     "build_report_manifest",
     "build_rectangular_design_report",
     "compute_file_sha256",
+    "compute_zip_sha256",
+    "export_report_archive_to_zip",
     "load_rectangular_design_input_from_json",
     "report_manifest_as_dict",
     "render_rectangular_design_report_html",
@@ -49,5 +58,6 @@ __all__ = [
     "rectangular_design_input_from_mapping",
     "validate_batch_report_archive",
     "validate_report_bundle",
+    "validate_report_zip",
     "write_report_manifest_json",
 ]

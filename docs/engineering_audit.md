@@ -511,6 +511,24 @@ formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates. Passing archive
 validation still requires engineer review.
 
+## K41 Report Archive ZIP Export
+
+K41 adds ZIP export for validated single and batch report archives:
+
+```bash
+python -m sp63_core report-archive-zip --path reports/smoke_case --output reports/smoke_case.zip --json
+python -m sp63_core report-archive-zip --path reports/batch_smoke --output reports/batch_smoke.zip --batch --json
+```
+
+The export validates the source archive, writes a ZIP with relative paths only,
+computes `zip_sha256`, and validates the ZIP for required files and unsafe path
+entries.
+
+K41 is a packaging and handoff layer only. It does not change deterministic
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates. ZIP packages remain
+draft review artifacts and require engineer review.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

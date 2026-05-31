@@ -86,6 +86,14 @@ The command recomputes SHA256 values, reports missing files, and checks batch
 `index.json` consistency with case manifests. Details are documented in
 `docs/reports/report_archive_validation.md`.
 
+K41 adds ZIP export for validated archives:
+
+```bash
+python -m sp63_core report-archive-zip --path reports/smoke_case --output reports/smoke_case.zip --json
+```
+
+The ZIP result includes `zip_sha256` for handoff integrity checks.
+
 ## Limitations
 
 - manifest metadata does not certify the design result;

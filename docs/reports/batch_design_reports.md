@@ -84,6 +84,15 @@ python -m sp63_core report-archive-validate --path reports/batch --batch --json
 The command checks root and case manifests, required case files, SHA256 values,
 and consistency between `index.json` and case-level manifests.
 
+K41 adds ZIP export for batch archives:
+
+```bash
+python -m sp63_core report-archive-zip --path reports/batch --output reports/batch.zip --batch --json
+```
+
+The ZIP contains root index/manifest files and case folders using relative
+paths only.
+
 ## Limitations
 
 - rectangular beam draft-MVP only;
