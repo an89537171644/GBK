@@ -48,6 +48,7 @@
 | `ml/quality.py` | implemented ML sandbox quality gate | yes | yes | review metrics and external validation before any UI |
 | `ml/readiness.py` | implemented deterministic dataset ML readiness gate with diagnostic group diversity and distribution reporting | yes | yes | review unique group counts and leakage before classification ML |
 | `ml/baseline_report.py` | implemented non-neural baseline ML report with group-aware group-diverse diagnostic classification evaluation | yes | yes | review expanded diagnostic metrics and leakage warnings before any model promotion |
+| `ml/report_baseline.py` | implemented baseline ML report for leakage-safe report-derived features | yes | yes | engineer review metrics before any ML promotion |
 | `ml/neural_surrogate.py` | implemented advisory-only neural surrogate smoke MVP | yes | yes | engineer review metrics and deterministic validation before any broader neural-network work |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |

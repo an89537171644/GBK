@@ -116,3 +116,17 @@ warning because those fields may leak design decisions.
 
 K45 still does not train ML. The feature set requires engineer review, ML
 remains advisory-only, and deterministic SP63 checks remain mandatory.
+
+## K46 Baseline ML
+
+After feature set review, report-derived datasets can be evaluated with a
+non-neural baseline:
+
+```bash
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The baseline uses K45 leakage exclusions, reports classification metrics and a
+confusion matrix, and remains review-only. It does not approve ML output, does
+not add neural-network code, and does not replace deterministic SP63 checks.

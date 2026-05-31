@@ -794,6 +794,26 @@ K45 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K46 Baseline ML on Report-Derived Safe Features
+
+K46 adds validation coverage for `report-ml-baseline`:
+
+```bash
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --format csv --json
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --json
+```
+
+The tests verify JSONL and CSV baseline report construction, input-only leakage
+exclusion, deterministic-derived warnings, missing target failure, constant
+target review status, small dataset review status, advisory-only flags, and CLI
+JSON output.
+
+K46 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, neural-network
+code, UI, or external validation gates. ML remains advisory-only, and
+deterministic SP63 checks remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

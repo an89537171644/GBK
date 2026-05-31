@@ -48,6 +48,7 @@ from sp63_core.ml import (
     build_baseline_ml_report,
     build_ml_readiness_report,
     build_neural_surrogate_report,
+    build_report_baseline_ml_result,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
@@ -496,6 +497,26 @@ def build_parser() -> ArgumentParser:
     ml_baseline.add_argument("--seed", type=int, default=42)
     ml_baseline.add_argument("--json", action="store_true", help="print JSON output")
     ml_baseline.set_defaults(handler=_handle_ml_baseline)
+
+    report_ml_baseline = subparsers.add_parser(
+        "report-ml-baseline",
+        help="run non-neural baseline ML on report-derived safe features",
+    )
+    report_ml_baseline.add_argument("--dataset", required=True, help="dataset file path")
+    report_ml_baseline.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    report_ml_baseline.add_argument("--target", default="overall_status")
+    report_ml_baseline.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    report_ml_baseline.add_argument("--random-state", type=int, default=42)
+    report_ml_baseline.add_argument("--json", action="store_true", help="print JSON output")
+    report_ml_baseline.set_defaults(handler=_handle_report_ml_baseline)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -1945,6 +1966,49 @@ def _handle_ml_baseline(args: Namespace) -> int:
             f"logistic_macro_f1={logistic_metrics['macro_f1']:.6g}"
         )
     _print_warnings(report.warnings)
+    return 0
+
+
+def _handle_report_ml_baseline(args: Namespace) -> int:
+    report = build_report_baseline_ml_result(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        target=args.target,
+        feature_mode=args.feature_mode,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "report-ml-baseline",
+        **asdict(report),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report ML baseline")
+    print(f"status: {report.status}")
+    print("ML is advisory-only.")
+    print("Neural network is not used.")
+    print("Deterministic SP63 checks remain mandatory.")
+    print(f"source_dataset: {report.source_dataset}")
+    print(f"row_count: {report.row_count}")
+    print(f"feature_mode: {report.feature_mode}")
+    print(f"target: {report.target}")
+    print(f"model_name: {report.model_name}")
+    print(f"train_count: {report.train_count}")
+    print(f"validation_count: {report.validation_count}")
+    print(f"test_count: {report.test_count}")
+    print(f"target_distribution: {report.target_distribution}")
+    print(f"feature_columns: {', '.join(report.feature_columns)}")
+    print(f"excluded_leakage_columns: {', '.join(report.excluded_leakage_columns)}")
+    print("metrics:")
+    for metric_name, value in report.metrics.items():
+        print(f"  {metric_name}: {value}")
+    _print_warnings(report.warnings)
+    if report.errors:
+        print("errors:")
+        for error in report.errors:
+            print(f"- {error}")
     return 0
 
 

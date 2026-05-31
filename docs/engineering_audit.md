@@ -598,6 +598,27 @@ requires review because it may leak design decisions.
 K45 does not train ML, does not add a neural network, and does not make ML a
 calculator. Deterministic SP63 checks and engineer review remain mandatory.
 
+## K46 Baseline ML on Report-Derived Safe Features
+
+K46 adds `report-ml-baseline` for non-neural classification evaluation on
+K45 leakage-safe report-derived feature sets:
+
+```bash
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The command reports target distribution, split counts, baseline metrics,
+confusion matrix, and excluded leakage columns. The default `input_only` mode
+keeps status/check/result columns out of model inputs. The
+`deterministic_derived` mode is review-only and warns about possible
+design-decision leakage.
+
+K46 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. It does not add a
+neural network and does not make ML a calculator. Deterministic SP63 checks and
+engineer review remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
