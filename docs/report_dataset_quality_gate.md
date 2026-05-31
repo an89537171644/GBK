@@ -116,3 +116,14 @@ python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.json
 It reuses K45 leakage exclusions and reports advisory-only smoke metrics.
 Metrics are not production evidence, and deterministic SP63 checks remain
 mandatory.
+
+## K48 Advisory Prediction
+
+K48 adds deterministic verification to one neural advisory prediction:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The prediction is never accepted on its own. The deterministic SP63 report for
+the same input remains authoritative.

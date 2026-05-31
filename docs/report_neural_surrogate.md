@@ -103,3 +103,15 @@ Metrics are smoke diagnostics only and are not production evidence.
   selection algorithms.
 - K47 does not add PyTorch, TensorFlow, Keras, UI, Streamlit, full SP 63 text,
   personal documents, grant documents, or closed SCAD/LIRA files.
+
+## K48 Advisory Prediction
+
+K48 adds a single-input advisory prediction flow:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The command trains the same review-only neural surrogate style, predicts an
+advisory status, then builds a deterministic SP63 design report for the input
+and compares the statuses. Prediction mismatches require review.

@@ -26,6 +26,10 @@ from sp63_core.ml.report_baseline import (
     ReportBaselineMLResult,
     build_report_baseline_ml_result,
 )
+from sp63_core.ml.report_neural_prediction import (
+    NeuralAdvisoryPredictionResult,
+    build_neural_advisory_prediction,
+)
 from sp63_core.ml.report_neural_surrogate import (
     ReportNeuralSurrogateResult,
     build_report_neural_surrogate_result,
@@ -41,8 +45,10 @@ __all__ = [
     "MLProposal",
     "MLProposalVerificationResult",
     "NeuralSurrogateReport",
+    "NeuralAdvisoryPredictionResult",
     "ReportBaselineMLResult",
     "ReportNeuralSurrogateResult",
+    "build_neural_advisory_prediction",
     "build_feature_matrix",
     "build_baseline_ml_report",
     "build_ml_readiness_report",

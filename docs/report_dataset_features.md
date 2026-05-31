@@ -149,3 +149,14 @@ python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv 
 
 The command uses the same leakage-safe feature set. The neural surrogate is not
 a design checker, and small-dataset metrics are not production evidence.
+
+## K48 Advisory Prediction
+
+K48 uses the same feature set for one-input advisory prediction:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The command also builds a deterministic SP63 design report for the input and
+compares the predicted target with deterministic statuses.

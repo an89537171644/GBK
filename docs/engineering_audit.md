@@ -640,6 +640,25 @@ generation, external validation, or material verification. Neural surrogate is
 not a design checker. Deterministic SP63 checks, K30 safety wrapper, and
 engineer review remain mandatory for any ML proposal.
 
+## K48 Neural Advisory Prediction with Deterministic Verification
+
+K48 adds `report-neural-predict` for one-input advisory neural prediction with
+mandatory deterministic design-report verification:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The command reads a report-derived dataset, trains a review-only neural
+surrogate on K45 leakage-safe features, reads the input JSON, predicts an
+advisory status, builds the deterministic SP63 design report for the same input,
+and compares the statuses.
+
+K48 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. Neural prediction is
+not a design checker. Prediction mismatches require review, and deterministic
+SP63 verification remains authoritative.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

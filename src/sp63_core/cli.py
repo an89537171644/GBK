@@ -47,6 +47,7 @@ from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
     build_ml_readiness_report,
+    build_neural_advisory_prediction,
     build_neural_surrogate_report,
     build_report_baseline_ml_result,
     build_report_neural_surrogate_result,
@@ -540,6 +541,29 @@ def build_parser() -> ArgumentParser:
     report_neural_surrogate.add_argument("--random-state", type=int, default=42)
     report_neural_surrogate.add_argument("--json", action="store_true", help="print JSON output")
     report_neural_surrogate.set_defaults(handler=_handle_report_neural_surrogate)
+
+    report_neural_predict = subparsers.add_parser(
+        "report-neural-predict",
+        help="run advisory neural prediction with deterministic report verification",
+    )
+    report_neural_predict.add_argument("--dataset", required=True, help="dataset file path")
+    report_neural_predict.add_argument("--input-json", required=True, help="design input JSON")
+    report_neural_predict.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    report_neural_predict.add_argument("--target", default="overall_status")
+    report_neural_predict.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    report_neural_predict.add_argument("--hidden-layer-size", type=int, default=16)
+    report_neural_predict.add_argument("--max-iter", type=int, default=500)
+    report_neural_predict.add_argument("--random-state", type=int, default=42)
+    report_neural_predict.add_argument("--json", action="store_true", help="print JSON output")
+    report_neural_predict.set_defaults(handler=_handle_report_neural_predict)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -2076,6 +2100,52 @@ def _handle_report_neural_surrogate(args: Namespace) -> int:
     if report.errors:
         print("errors:")
         for error in report.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_neural_predict(args: Namespace) -> int:
+    result = build_neural_advisory_prediction(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        input_json_path=Path(args.input_json),
+        target=args.target,
+        feature_mode=args.feature_mode,
+        hidden_layer_sizes=(args.hidden_layer_size,),
+        max_iter=args.max_iter,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "report-neural-predict",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report neural advisory prediction")
+    print(f"status: {result.status}")
+    print("Neural prediction is advisory-only and is not a design checker.")
+    print("Deterministic SP63 report verification is mandatory.")
+    print(f"source_dataset: {result.source_dataset}")
+    print(f"input_json_path: {result.input_json_path}")
+    print(f"target: {result.target}")
+    print(f"feature_mode: {result.feature_mode}")
+    print(f"predicted_status: {result.predicted_status}")
+    print(f"prediction_confidence: {result.prediction_confidence}")
+    print(f"class_probabilities: {result.class_probabilities}")
+    print(f"deterministic_strength_status: {result.deterministic_strength_status}")
+    print(
+        "deterministic_serviceability_status: "
+        f"{result.deterministic_serviceability_status}"
+    )
+    print(f"deterministic_overall_status: {result.deterministic_overall_status}")
+    print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
+    print(f"neural_network_used: {result.neural_network_used}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
             print(f"- {error}")
     return 0
 

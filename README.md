@@ -669,6 +669,22 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Neural surrogate is not a design checker. ML remains advisory-only, and
   deterministic SP63 checks remain mandatory.
 
+## K48 neural advisory prediction status
+
+- CLI command `report-neural-predict --dataset reports/batch_dataset.jsonl
+  --input-json docs/reports/examples/rectangular_design_input_example.json
+  --json` runs one advisory prediction and then builds the deterministic SP63
+  design report for the same input.
+- CSV datasets are supported with `--format csv`.
+- The command returns predicted status, class probabilities, deterministic
+  strength/serviceability/overall statuses, and
+  `prediction_matches_deterministic`.
+- Prediction mismatch is reported as `review_required`.
+- Small report-derived example datasets return `review_required`; predictions
+  and metrics are not production evidence.
+- Neural prediction is not a design checker. Deterministic SP63 verification
+  and engineer review remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

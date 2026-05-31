@@ -354,6 +354,18 @@ returns `review_required` for small datasets or constant targets and `fail` for
 missing targets. K47 uses only scikit-learn MLP already available in the
 project; PyTorch, TensorFlow, and Keras are not added.
 
+## K48 Report Neural Prediction
+
+`python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json`
+runs one advisory prediction and then builds the deterministic SP63 design
+report for the same input.
+
+The command returns predicted status, class probabilities, deterministic
+strength/serviceability/overall statuses, and whether the prediction matches
+the deterministic target status. Prediction mismatch returns `review_required`.
+The command uses K45 leakage-safe features and does not treat ML as a design
+checker.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes

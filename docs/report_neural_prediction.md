@@ -1,0 +1,94 @@
+# Neural advisory prediction with deterministic verification
+
+requires_engineer_review = true
+
+## Purpose
+
+K48 adds a safe advisory prediction workflow for one rectangular design input.
+
+The workflow is:
+
+```text
+input.json -> neural advisory prediction -> deterministic SP63 design report -> comparison -> engineer review
+```
+
+The neural prediction is not a calculation result. It is a research signal only.
+The deterministic SP63 report remains authoritative.
+
+## Commands
+
+JSONL dataset:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+CSV dataset:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.csv --format csv --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+Deterministic-derived feature smoke mode:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+## Safety Flow
+
+The command always builds a deterministic design report from `input.json` and
+returns:
+
+- `deterministic_strength_status`;
+- `deterministic_serviceability_status`;
+- `deterministic_overall_status`;
+- `prediction_matches_deterministic`.
+
+If the neural prediction differs from the deterministic status, the command
+returns `review_required` with warning:
+
+```text
+neural advisory prediction differs from deterministic SP63 result
+```
+
+## Leakage Protection
+
+K48 uses K45 leakage-safe feature selection. Status, direct check result,
+utilization, and target columns are not used as input features.
+
+`deterministic_derived` can include selected deterministic outputs, but it
+returns this warning:
+
+```text
+deterministic-derived features may leak design decisions and must not be used for project ML decisions without review
+```
+
+## Required Warnings
+
+Every result includes:
+
+```text
+neural advisory prediction is not a design checker
+deterministic SP63 verification is mandatory
+engineer review is required before any project use
+metrics and predictions are not production evidence
+```
+
+Small datasets with fewer than 100 rows also include:
+
+```text
+dataset is too small for reliable advisory prediction
+```
+
+## Limitations
+
+- ML remains advisory-only.
+- Neural prediction is not a project decision.
+- Deterministic SP63 checks are mandatory.
+- K30 safety-wrapper philosophy remains mandatory for any ML proposal.
+- Engineer review is required before any project use.
+- K48 does not change calculation formulas, material values, or reinforcement
+  selection algorithms.
+- K48 does not add PyTorch, TensorFlow, Keras, UI, Streamlit, full SP 63 text,
+  personal documents, grant documents, or closed SCAD/LIRA files.
