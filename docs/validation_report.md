@@ -739,6 +739,24 @@ K42 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K43 Dataset Export From Report Archives
+
+K43 adds validation coverage for `report-dataset-export`:
+
+```bash
+python -m sp63_core report-dataset-export --path reports/smoke_case --output reports/smoke_dataset.jsonl --json
+python -m sp63_core report-dataset-export --path reports/batch_smoke --batch --output reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-export --path reports/batch_smoke --batch --output reports/batch_dataset.csv --format csv --json
+```
+
+The tests verify single JSONL export, batch JSONL export, batch CSV export,
+required provenance columns, engineer-review and advisory-only flags, archive
+validation use, invalid archive rejection, and CLI JSON output.
+
+K43 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

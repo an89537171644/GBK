@@ -251,6 +251,34 @@ The diagnostic dataset remains an ML-readiness artifact only. It is not a set
 of approved project solutions, every row requires engineer review, and ML
 remains advisory-only.
 
+## K43 Report Archive Dataset
+
+`python -m sp63_core report-dataset-export --path reports/smoke_case --output reports/smoke_dataset.jsonl --json`
+exports ML-ready rows from validated report archives.
+
+Rows use `dataset_source = "validated_report_archive"` and preserve provenance
+columns for `input.json`, `report.json`, `manifest.json`, and their SHA256
+checksums. The command reads generated report artifacts and does not rerun the
+calculation core.
+
+The row schema includes:
+
+- input geometry, material classes, loads, and serviceability switches;
+- selected longitudinal and transverse reinforcement;
+- bending, shear, crack formation, crack width, and deflection statuses and
+  main values;
+- `strength_status`, `serviceability_status`, and `overall_status`;
+- `requires_engineer_review = true`;
+- `ml_is_advisory_only = true`;
+- `deterministic_checks_required = true`.
+
+If material verification or external validation statuses are not present in the
+report archive, they are exported as `not_provided`.
+
+This dataset is a preparation layer for future ML work only. It is not
+automatically certified, does not train a model, and does not authorize using ML
+as a design checker.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes

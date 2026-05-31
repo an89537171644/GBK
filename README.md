@@ -588,6 +588,24 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K43 ML-ready dataset from report archives status
+
+- CLI command `report-dataset-export --path reports/smoke_case --output
+  reports/smoke_dataset.jsonl --json` exports one row from a validated single
+  report bundle.
+- CLI command `report-dataset-export --path reports/batch_smoke --batch
+  --output reports/batch_dataset.jsonl --json` exports rows from a validated
+  batch report archive.
+- `--format csv` and `--format json` are also supported.
+- Export reads `report.json`, `input.json`, and `manifest.json`; it does not
+  recalculate the deterministic core.
+- Rows include provenance, SHA256 checksums, final statuses,
+  `requires_engineer_review = true`, `ml_is_advisory_only = true`, and
+  `deterministic_checks_required = true`.
+- Material verification and external validation statuses are recorded as
+  `not_provided` when they are not embedded in the report archive.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
