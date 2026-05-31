@@ -678,6 +678,26 @@ K39 preserves report behavior and does not change calculation formulas,
 material values, reinforcement selection algorithms, ML behavior, or external
 validation gates.
 
+## K40 Report Archive Validation
+
+K40 adds validation coverage for completed report archives:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke
+python -m sp63_core report-archive-validate --path reports/smoke_case --json
+python -m sp63_core report-archive-validate --path reports/batch_smoke --batch --json
+```
+
+The tests verify that valid single and batch archives pass, missing files fail,
+checksum mismatches fail, missing manifests fail, and CLI JSON output works.
+The batch validator also checks that `index.json` remains consistent with
+case-level manifests.
+
+K40 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

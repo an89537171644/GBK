@@ -58,6 +58,8 @@ from sp63_core.report import (
     build_rectangular_design_report,
     build_report_manifest,
     load_rectangular_design_input_from_json,
+    validate_batch_report_archive,
+    validate_report_bundle,
     write_report_manifest_json,
 )
 from sp63_core.sections import RectangularSection
@@ -247,6 +249,23 @@ def build_parser() -> ArgumentParser:
     )
     design_report_batch.add_argument("--json", action="store_true", help="print JSON summary")
     design_report_batch.set_defaults(handler=_handle_design_report_batch)
+
+    report_archive_validate = subparsers.add_parser(
+        "report-archive-validate",
+        help="validate integrity of generated report bundle archives",
+    )
+    report_archive_validate.add_argument(
+        "--path",
+        required=True,
+        help="single report bundle or batch report archive directory",
+    )
+    report_archive_validate.add_argument(
+        "--batch",
+        action="store_true",
+        help="treat the path as a batch report archive",
+    )
+    report_archive_validate.add_argument("--json", action="store_true", help="print JSON output")
+    report_archive_validate.set_defaults(handler=_handle_report_archive_validate)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -930,6 +949,38 @@ def _handle_design_report_batch(args: Namespace) -> int:
     print(f"index.md: {Path(result.output_dir) / 'index.md'}")
     print(f"index.json: {Path(result.output_dir) / 'index.json'}")
     _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_report_archive_validate(args: Namespace) -> int:
+    archive_path = Path(args.path)
+    is_batch = bool(args.batch or (archive_path / "index.json").exists())
+    result = (
+        validate_batch_report_archive(archive_path)
+        if is_batch
+        else validate_report_bundle(archive_path)
+    )
+    payload = {
+        "command": "report-archive-validate",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report archive validation")
+    print(f"status: {result.status}")
+    print(f"archive_path: {result.archive_path}")
+    print(f"manifest_count: {result.manifest_count}")
+    print(f"checked_file_count: {result.checked_file_count}")
+    print(f"missing_file_count: {result.missing_file_count}")
+    print(f"checksum_mismatch_count: {result.checksum_mismatch_count}")
+    print(f"index_consistency_status: {result.index_consistency_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     return 0
 
 

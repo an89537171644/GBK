@@ -73,6 +73,17 @@ The Markdown and JSON indexes include:
 Invalid input JSON files are reported as `input_error` without stopping the
 remaining batch cases.
 
+## Archive Validation
+
+K40 adds a validation command for completed batch archives:
+
+```bash
+python -m sp63_core report-archive-validate --path reports/batch --batch --json
+```
+
+The command checks root and case manifests, required case files, SHA256 values,
+and consistency between `index.json` and case-level manifests.
+
 ## Limitations
 
 - rectangular beam draft-MVP only;

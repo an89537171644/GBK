@@ -73,6 +73,19 @@ The batch output contains:
 The batch `index.json` also stores each case manifest path and checksums for
 the copied input and report outputs.
 
+## Archive Validation
+
+K40 adds a validation command for archives that already contain K39 manifests:
+
+```bash
+python -m sp63_core report-archive-validate --path reports/smoke_case --json
+python -m sp63_core report-archive-validate --path reports/batch_smoke --batch --json
+```
+
+The command recomputes SHA256 values, reports missing files, and checks batch
+`index.json` consistency with case manifests. Details are documented in
+`docs/reports/report_archive_validation.md`.
+
 ## Limitations
 
 - manifest metadata does not certify the design result;

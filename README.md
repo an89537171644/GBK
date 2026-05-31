@@ -544,6 +544,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K40 report archive validation status
+
+- CLI command `report-archive-validate --path reports/smoke_case --json`
+  validates a single report bundle.
+- CLI command `report-archive-validate --path reports/batch_smoke --batch
+  --json` validates a batch report archive.
+- The check verifies `manifest.json`, required report files, SHA256 checksums,
+  and batch `index.json` consistency with case manifests.
+- Missing files or checksum mismatches return `status = fail`.
+- Archive validation is an integrity check only and still requires engineer
+  review.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
