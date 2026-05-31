@@ -11,12 +11,13 @@ from sp63_core.report.manifest import compute_file_sha256
 
 SINGLE_BUNDLE_REQUIRED_FILES = (
     "manifest.json",
+    "README_REVIEW.md",
     "report.md",
     "report.json",
     "report.html",
     "input.json",
 )
-BATCH_ARCHIVE_REQUIRED_FILES = ("manifest.json", "index.md", "index.json")
+BATCH_ARCHIVE_REQUIRED_FILES = ("manifest.json", "README_REVIEW.md", "index.md", "index.json")
 CASE_REQUIRED_FILES = ("manifest.json", "report.md", "report.json", "report.html", "input.json")
 INDEX_CHECKSUM_FIELDS = {
     "input_sha256": "input.json",

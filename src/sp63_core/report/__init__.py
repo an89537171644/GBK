@@ -33,6 +33,11 @@ from sp63_core.report.manifest import (
     write_report_manifest_json,
 )
 from sp63_core.report.protocol import CalculationProtocol, build_calculation_protocol
+from sp63_core.report.review_package import (
+    REVIEW_README_FILENAME,
+    build_review_readme_for_batch_archive,
+    build_review_readme_for_single_bundle,
+)
 
 __all__ = [
     "ALLOWED_RECTANGULAR_DESIGN_INPUT_FIELDS",
@@ -44,10 +49,13 @@ __all__ = [
     "ReportArchiveValidationResult",
     "ReportArchiveZipResult",
     "ReportArtifactManifest",
+    "REVIEW_README_FILENAME",
     "build_calculation_protocol",
     "build_batch_design_reports",
     "build_report_manifest",
     "build_rectangular_design_report",
+    "build_review_readme_for_batch_archive",
+    "build_review_readme_for_single_bundle",
     "compute_file_sha256",
     "compute_zip_sha256",
     "export_report_archive_to_zip",

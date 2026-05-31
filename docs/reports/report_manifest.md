@@ -55,6 +55,7 @@ The output directory contains:
 - `report.json`;
 - `report.html`;
 - `input.json`;
+- `README_REVIEW.md`;
 - `manifest.json`.
 
 ## Batch Bundle
@@ -66,6 +67,7 @@ python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch 
 The batch output contains:
 
 - root `manifest.json`;
+- root `README_REVIEW.md`;
 - `index.md`;
 - `index.json`;
 - case directories with their own `manifest.json`.
@@ -93,6 +95,10 @@ python -m sp63_core report-archive-zip --path reports/smoke_case --output report
 ```
 
 The ZIP result includes `zip_sha256` for handoff integrity checks.
+
+K42 adds `README_REVIEW.md` to single bundles and batch archive roots. The
+README is included in manifest `output_files` with SHA256 metadata and provides
+human-readable validation and review instructions.
 
 ## Limitations
 

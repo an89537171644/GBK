@@ -24,6 +24,7 @@ python -m sp63_core report-archive-validate --path reports/smoke_case --json
 The command checks:
 
 - `manifest.json` exists;
+- `README_REVIEW.md` exists;
 - `report.md`, `report.json`, `report.html`, and `input.json` exist;
 - manifest `input_files` and `output_files` exist;
 - SHA256 values match the files on disk;
@@ -37,7 +38,7 @@ python -m sp63_core report-archive-validate --path reports/batch_smoke --batch -
 
 The command checks:
 
-- root `manifest.json`, `index.md`, and `index.json` exist;
+- root `manifest.json`, `README_REVIEW.md`, `index.md`, and `index.json` exist;
 - every indexed case folder exists inside the archive directory;
 - every case folder has `manifest.json`, `report.md`, `report.json`,
   `report.html`, and `input.json`;
@@ -89,7 +90,8 @@ python -m sp63_core report-archive-zip --path reports/batch_smoke --output repor
 ```
 
 The ZIP command validates the source archive before packaging and validates the
-ZIP after creation. Details are documented in
+ZIP after creation. K42 requires `README_REVIEW.md` in single bundles and batch
+roots so the ZIP package carries human-readable review guidance. Details are documented in
 `docs/reports/report_archive_zip.md`.
 
 ## Limitations

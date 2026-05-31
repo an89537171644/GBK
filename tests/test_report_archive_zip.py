@@ -52,7 +52,13 @@ def test_single_report_bundle_exports_to_zip(tmp_path):
     with zipfile.ZipFile(zip_path) as archive:
         names = set(archive.namelist())
     assert "manifest.json" in names
-    assert {"report.md", "report.json", "report.html", "input.json"}.issubset(names)
+    assert {
+        "README_REVIEW.md",
+        "report.md",
+        "report.json",
+        "report.html",
+        "input.json",
+    }.issubset(names)
 
 
 def test_batch_report_archive_exports_to_zip(tmp_path):
@@ -68,7 +74,7 @@ def test_batch_report_archive_exports_to_zip(tmp_path):
     assert result.zip_sha256
     with zipfile.ZipFile(zip_path) as archive:
         names = set(archive.namelist())
-    assert {"manifest.json", "index.md", "index.json"}.issubset(names)
+    assert {"manifest.json", "README_REVIEW.md", "index.md", "index.json"}.issubset(names)
     assert "case_001/manifest.json" in names
     assert "case_001/report.md" in names
     assert "case_001/report.json" in names

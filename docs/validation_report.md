@@ -717,6 +717,28 @@ K41 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K42 Engineering Review Package README
+
+K42 adds validation coverage for the human-readable `README_REVIEW.md` package
+guide:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke
+python -m sp63_core report-archive-validate --path reports/smoke_case --json
+python -m sp63_core report-archive-validate --path reports/batch_smoke --batch --json
+python -m sp63_core report-archive-zip --path reports/smoke_case --output reports/smoke_case.zip --json
+python -m sp63_core report-archive-zip --path reports/batch_smoke --output reports/batch_smoke.zip --batch --json
+```
+
+The tests verify that single bundles and batch roots contain
+`README_REVIEW.md`, manifests include the README checksum, ZIP packages include
+the README, and archive validation fails if the README is missing.
+
+K42 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

@@ -16,6 +16,7 @@ from sp63_core.report.manifest import (
     compute_file_sha256,
     write_report_manifest_json,
 )
+from sp63_core.report.review_package import build_review_readme_for_batch_archive
 
 BATCH_REPORT_TYPE = "batch_design_report_index"
 BATCH_REPORT_WARNING = (
@@ -174,6 +175,41 @@ def build_batch_design_reports(
         command="design-report-batch",
         input_paths=paths,
         output_paths=(index_markdown_path, index_json_path, *case_manifest_paths),
+        status=status,
+        strength_status=None,
+        serviceability_status=None,
+        overall_status=status,
+        warnings_count=len(warnings),
+        metadata={
+            "case_count": len(cases),
+            "passed_count": passed_count,
+            "review_count": review_count,
+            "failed_count": failed_count,
+            "input_error_count": sum(
+                1 for case in cases if case["overall_status"] == "input_error"
+            ),
+        },
+    )
+    write_report_manifest_json(batch_manifest, batch_manifest_path)
+    review_readme_path = output_dir / "README_REVIEW.md"
+    review_readme_path.write_text(
+        build_review_readme_for_batch_archive(
+            archive_path=output_dir,
+            manifest_path=batch_manifest_path,
+            index_json_path=index_json_path,
+        ),
+        encoding="utf-8",
+    )
+    batch_manifest = build_report_manifest(
+        report_type=BATCH_REPORT_TYPE,
+        command="design-report-batch",
+        input_paths=paths,
+        output_paths=(
+            index_markdown_path,
+            index_json_path,
+            review_readme_path,
+            *case_manifest_paths,
+        ),
         status=status,
         strength_status=None,
         serviceability_status=None,

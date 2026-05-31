@@ -34,6 +34,18 @@ def test_single_bundle_archive_validation_passes(tmp_path):
     assert result.requires_engineer_review is True
 
 
+def test_single_bundle_archive_validation_fails_for_missing_review_readme(tmp_path):
+    output_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(output_dir) == 0
+    (output_dir / "README_REVIEW.md").unlink()
+
+    result = validate_report_bundle(output_dir)
+
+    assert result.status == "fail"
+    assert result.missing_file_count >= 1
+    assert any("README_REVIEW.md" in error for error in result.errors)
+
+
 def test_batch_archive_validation_passes(tmp_path):
     output_dir = tmp_path / "batch_bundle"
     assert main(
@@ -55,6 +67,26 @@ def test_batch_archive_validation_passes(tmp_path):
     assert result.checksum_mismatch_count == 0
     assert result.index_consistency_status == "pass"
     assert result.requires_engineer_review is True
+
+
+def test_batch_archive_validation_fails_for_missing_root_review_readme(tmp_path):
+    output_dir = tmp_path / "batch_bundle"
+    assert main(
+        [
+            "design-report-batch",
+            "--input-dir",
+            BATCH_EXAMPLES_DIR,
+            "--output-dir",
+            str(output_dir),
+        ]
+    ) == 0
+    (output_dir / "README_REVIEW.md").unlink()
+
+    result = validate_batch_report_archive(output_dir)
+
+    assert result.status == "fail"
+    assert result.missing_file_count >= 1
+    assert any("README_REVIEW.md" in error for error in result.errors)
 
 
 def test_report_archive_validation_fails_for_missing_file(tmp_path):

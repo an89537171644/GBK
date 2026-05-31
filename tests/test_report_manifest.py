@@ -42,7 +42,7 @@ def test_single_design_report_bundle_writes_manifest(tmp_path):
     input_files = {item["path"]: item["sha256"] for item in manifest["input_files"]}
     output_files = {item["path"]: item["sha256"] for item in manifest["output_files"]}
     assert str(Path(EXAMPLE_INPUT)) in input_files
-    for name in ("report.md", "report.json", "report.html", "input.json"):
+    for name in ("report.md", "report.json", "report.html", "input.json", "README_REVIEW.md"):
         path = output_dir / name
         assert str(path) in output_files
         assert output_files[str(path)] == compute_file_sha256(path)
@@ -68,6 +68,10 @@ def test_batch_design_report_writes_root_and_case_manifests(tmp_path):
     assert root_manifest["report_type"] == "batch_design_report_index"
     assert root_manifest["metadata"]["case_count"] == 3
     assert root_manifest["requires_engineer_review"] is True
+    root_output_files = {item["path"]: item["sha256"] for item in root_manifest["output_files"]}
+    readme_path = output_dir / "README_REVIEW.md"
+    assert str(readme_path) in root_output_files
+    assert root_output_files[str(readme_path)] == compute_file_sha256(readme_path)
 
     index = json.loads((output_dir / "index.json").read_text(encoding="utf-8"))
     assert index["manifest_path"] == str(root_manifest_path)

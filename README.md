@@ -574,6 +574,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K42 engineering review package README status
+
+- Single `design-report --bundle-output` folders now include
+  `README_REVIEW.md`.
+- Batch `design-report-batch` output now includes one root `README_REVIEW.md`.
+- The README explains archive purpose, contents, validation commands, ZIP
+  export commands, reproduction commands, file locations, final statuses, and
+  review warnings.
+- `README_REVIEW.md` is included in `manifest.json` checksums and ZIP export.
+- Archive validation fails if the expected README is missing.
+- The README is a handoff/review guide only and does not certify the design.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
