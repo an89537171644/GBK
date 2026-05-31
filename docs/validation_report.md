@@ -757,6 +757,24 @@ K43 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K44 Report-Derived Dataset Quality Gate
+
+K44 adds validation coverage for `report-dataset-quality`:
+
+```bash
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The tests verify JSONL and CSV quality checks, missing required columns, empty
+critical values, small dataset review status, leakage-like status/check column
+warnings, missing advisory flags, non-passing archive validation status, and
+CLI JSON output.
+
+K44 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

@@ -606,6 +606,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   `not_provided` when they are not embedded in the report archive.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K44 report-derived dataset quality gate status
+
+- CLI command `report-dataset-quality --dataset reports/batch_dataset.jsonl
+  --json` checks report-derived dataset rows before ML use.
+- CSV output from `report-dataset-export --format csv` is supported with
+  `--format csv`.
+- The gate checks required columns, empty critical values, archive validation
+  status, provenance, advisory-only flags, `overall_status` distribution, and
+  leakage-like status/check columns.
+- Small synthetic datasets and rows without embedded material or external
+  validation statuses return `review_required`.
+- K44 does not train ML and does not add neural-network code.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

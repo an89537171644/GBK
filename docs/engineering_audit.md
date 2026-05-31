@@ -561,6 +561,25 @@ does not change formulas, does not train ML, and does not add neural networks.
 K43 rows preserve provenance and require engineer review. ML remains
 advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K44 Report-Derived Dataset Quality Gate
+
+K44 adds `report-dataset-quality` for checking rows exported by
+`report-dataset-export` before any future ML use:
+
+```bash
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The gate checks required columns, empty critical values, archive validation
+status, provenance, advisory flags, status distribution, and leakage-like
+status/check columns. It does not train ML, does not add a neural network, and
+does not make ML a calculator.
+
+Rows with `material_verification_status = not_provided` or
+`external_validation_status = not_provided` remain review-only. Deterministic
+SP63 checks and engineer review remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

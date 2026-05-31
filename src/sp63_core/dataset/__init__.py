@@ -25,6 +25,13 @@ from sp63_core.dataset.generator import (
     export_dataset_csv,
     generate_dataset_cases,
 )
+from sp63_core.dataset.quality_gate import (
+    REQUIRED_REPORT_DATASET_COLUMNS,
+    SUPPORTED_REPORT_QUALITY_FORMATS,
+    DatasetQualityGateResult,
+    load_report_dataset_rows,
+    run_report_dataset_quality_gate,
+)
 from sp63_core.dataset.report import build_dataset_report, export_dataset_report_json
 from sp63_core.dataset.split import (
     DatasetSplit,
@@ -37,11 +44,14 @@ __all__ = [
     "DATASET_VERSION",
     "DIAGNOSTIC_DATASET_SOURCE",
     "DatasetCase",
+    "DatasetQualityGateResult",
     "DatasetSplit",
     "DiagnosticDatasetCase",
     "DiagnosticDatasetSplit",
     "REPORT_DATASET_SOURCE",
+    "REQUIRED_REPORT_DATASET_COLUMNS",
     "SUPPORTED_REPORT_DATASET_FORMATS",
+    "SUPPORTED_REPORT_QUALITY_FORMATS",
     "ReportDatasetExportResult",
     "build_dataset_report",
     "diagnostic_dataset_warnings",
@@ -55,6 +65,8 @@ __all__ = [
     "extract_dataset_row_from_report_json",
     "generate_diagnostic_dataset_cases",
     "generate_dataset_cases",
+    "load_report_dataset_rows",
+    "run_report_dataset_quality_gate",
     "split_diagnostic_dataset_by_group",
     "split_dataset_cases",
 ]
