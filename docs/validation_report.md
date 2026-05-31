@@ -775,6 +775,25 @@ K44 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K45 Leakage-Safe Report Dataset Features
+
+K45 adds validation coverage for `report-dataset-features`:
+
+```bash
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.csv --format csv --json
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --json
+```
+
+The tests verify JSONL and CSV feature set construction, input-only leakage
+exclusion, deterministic-derived warnings, target recognition, constant target
+review status, missing target failure, small dataset review status,
+train/validation/test split counts, and CLI JSON output.
+
+K45 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

@@ -580,6 +580,24 @@ Rows with `material_verification_status = not_provided` or
 `external_validation_status = not_provided` remain review-only. Deterministic
 SP63 checks and engineer review remain mandatory.
 
+## K45 Leakage-Safe Report Dataset Features
+
+K45 adds `report-dataset-features` for preparing report-derived feature and
+target metadata:
+
+```bash
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The command separates input-only features from target/status/check columns,
+reports excluded leakage columns, calculates target distribution, and returns
+train/validation/test split counts. The deterministic-derived feature mode
+requires review because it may leak design decisions.
+
+K45 does not train ML, does not add a neural network, and does not make ML a
+calculator. Deterministic SP63 checks and engineer review remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
