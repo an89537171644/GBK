@@ -40,6 +40,7 @@ The output directory contains:
 
 - `index.md`;
 - `index.json`;
+- `README_REVIEW.md`;
 - one subdirectory per input, such as `case_001`, `case_002`, `case_003`.
 
 Each valid case directory contains:
@@ -50,7 +51,9 @@ Each valid case directory contains:
 - copied `input.json`;
 - `manifest.json`.
 
-The batch root directory also contains `manifest.json`.
+The batch root directory also contains `manifest.json`. K42 adds the root
+`README_REVIEW.md` engineering review guide; case-level README files are not
+required.
 
 ## Index
 
@@ -90,8 +93,8 @@ K41 adds ZIP export for batch archives:
 python -m sp63_core report-archive-zip --path reports/batch --output reports/batch.zip --batch --json
 ```
 
-The ZIP contains root index/manifest files and case folders using relative
-paths only.
+The ZIP contains the root README/index/manifest files and case folders using
+relative paths only.
 
 ## Limitations
 

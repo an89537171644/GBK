@@ -15,12 +15,13 @@ from sp63_core.report.manifest import compute_file_sha256
 ZIP_SKIP_FILENAMES = {"Thumbs.db", ".DS_Store", "desktop.ini"}
 SINGLE_ZIP_REQUIRED_FILES = (
     "manifest.json",
+    "README_REVIEW.md",
     "report.md",
     "report.json",
     "report.html",
     "input.json",
 )
-BATCH_ZIP_REQUIRED_FILES = ("manifest.json", "index.md", "index.json")
+BATCH_ZIP_REQUIRED_FILES = ("manifest.json", "README_REVIEW.md", "index.md", "index.json")
 CASE_ZIP_REQUIRED_FILES = ("manifest.json", "report.md", "report.json", "report.html", "input.json")
 
 

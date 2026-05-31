@@ -529,6 +529,21 @@ formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates. ZIP packages remain
 draft review artifacts and require engineer review.
 
+## K42 Engineering Review Package README
+
+K42 adds `README_REVIEW.md` to single report bundles and to batch archive
+roots. The README explains archive contents, validation commands, ZIP export
+commands, reproduction commands, file locations, final statuses, and review
+warnings.
+
+The README is included in `manifest.json` checksums and ZIP packages. Archive
+validation fails if the expected README is missing.
+
+K42 is a documentation and handoff layer only. It does not change deterministic
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates. ZIP packages and
+manifests still do not certify calculations; engineer review remains required.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

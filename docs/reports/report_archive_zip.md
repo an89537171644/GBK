@@ -22,6 +22,7 @@ python -m sp63_core report-archive-zip --path reports/smoke_case --output report
 The ZIP includes the archive files with relative paths:
 
 - `manifest.json`;
+- `README_REVIEW.md`;
 - `report.md`;
 - `report.json`;
 - `report.html`;
@@ -37,6 +38,7 @@ python -m sp63_core report-archive-zip --path reports/batch_smoke --output repor
 The ZIP includes:
 
 - root `manifest.json`;
+- root `README_REVIEW.md`;
 - `index.md`;
 - `index.json`;
 - case folders with `manifest.json`, `report.md`, `report.json`,
@@ -59,7 +61,7 @@ validates the ZIP after creation. ZIP validation checks that:
 - entries are relative paths;
 - entries do not contain `..`;
 - single bundles contain the expected report files;
-- batch archives contain root index/manifest files and case folders;
+- batch archives contain root README/index/manifest files and case folders;
 - `requires_engineer_review = true` is preserved in the result.
 
 ## Security

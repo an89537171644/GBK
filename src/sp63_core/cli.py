@@ -57,6 +57,7 @@ from sp63_core.report import (
     build_batch_design_reports,
     build_rectangular_design_report,
     build_report_manifest,
+    build_review_readme_for_single_bundle,
     export_report_archive_to_zip,
     load_rectangular_design_input_from_json,
     validate_batch_report_archive,
@@ -1118,6 +1119,27 @@ def _write_design_report_bundle(
         output_files["input"] = str(input_copy_path)
     if create_manifest:
         manifest_path = output_dir / "manifest.json"
+        manifest = build_report_manifest(
+            report_type=report.report_type,
+            command="design-report",
+            input_paths=() if input_json_path is None else (input_json_path,),
+            output_paths=tuple(Path(path) for path in output_files.values()),
+            status=report.status,
+            strength_status=report.strength_status,
+            serviceability_status=report.serviceability_status,
+            overall_status=report.overall_status,
+            warnings_count=len(report.warnings),
+        )
+        write_report_manifest_json(manifest, manifest_path)
+        readme_path = output_dir / "README_REVIEW.md"
+        readme_path.write_text(
+            build_review_readme_for_single_bundle(
+                bundle_path=output_dir,
+                manifest_path=manifest_path,
+            ),
+            encoding="utf-8",
+        )
+        output_files["review_readme"] = str(readme_path)
         manifest = build_report_manifest(
             report_type=report.report_type,
             command="design-report",
