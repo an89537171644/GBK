@@ -642,6 +642,24 @@ K37 preserves the K36 smoke mode and does not change calculation formulas,
 material values, reinforcement selection algorithms, ML behavior, or external
 validation gates.
 
+## K38 Batch Design Report Validation
+
+K38 adds validation coverage for batch report generation:
+
+```bash
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke_json --json
+```
+
+The tests verify that batch examples create `index.md`, `index.json`, and a
+case directory per input with `report.md`, `report.json`, `report.html`, and a
+copied `input.json`. Invalid JSON input is represented as `input_error` in the
+index without stopping valid cases.
+
+K38 preserves the K36/K37 single-report behavior and does not change
+calculation formulas, material values, reinforcement selection algorithms, ML
+behavior, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

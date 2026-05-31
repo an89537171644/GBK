@@ -39,6 +39,17 @@ For input-driven report bundles, `--bundle-output` writes `report.md`,
 `report.json`, `report.html`, and a copied `input.json` into the target
 directory.
 
+K38 adds batch report generation:
+
+```bash
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch --json
+```
+
+Batch output writes `index.md`, `index.json`, and one case directory per input
+with `report.md`, `report.json`, `report.html`, and a copied `input.json`.
+Details are documented in `docs/reports/batch_design_reports.md`.
+
 ## Report sections
 
 - input data;

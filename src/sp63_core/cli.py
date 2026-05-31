@@ -54,6 +54,7 @@ from sp63_core.ml import (
 )
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.report import (
+    build_batch_design_reports,
     build_rectangular_design_report,
     load_rectangular_design_input_from_json,
 )
@@ -217,6 +218,28 @@ def build_parser() -> ArgumentParser:
         help="optional directory for report.md, report.json, and report.html",
     )
     design_report.set_defaults(handler=_handle_design_report)
+
+    design_report_batch = subparsers.add_parser(
+        "design-report-batch",
+        help="export draft rectangular design calculation reports for multiple JSON inputs",
+    )
+    design_report_batch.add_argument(
+        "--input-dir",
+        help="directory containing rectangular design report JSON inputs",
+    )
+    design_report_batch.add_argument(
+        "--input-json",
+        action="append",
+        default=[],
+        help="rectangular design report input JSON; may be repeated",
+    )
+    design_report_batch.add_argument(
+        "--output-dir",
+        required=True,
+        help="directory for batch case report bundles and index files",
+    )
+    design_report_batch.add_argument("--json", action="store_true", help="print JSON summary")
+    design_report_batch.set_defaults(handler=_handle_design_report_batch)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -866,6 +889,50 @@ def _handle_design_report(args: Namespace) -> int:
 
     print(content, end="" if content.endswith("\n") else "\n")
     return 0
+
+
+def _handle_design_report_batch(args: Namespace) -> int:
+    input_paths = _collect_batch_design_report_inputs(args)
+    result = build_batch_design_reports(
+        input_paths=input_paths,
+        output_dir=Path(args.output_dir),
+        include_html=True,
+    )
+    if args.json:
+        payload = {
+            "command": "design-report-batch",
+            "status": result.status,
+            "input_count": result.input_count,
+            "report_count": result.report_count,
+            "passed_count": result.passed_count,
+            "review_count": result.review_count,
+            "failed_count": result.failed_count,
+            "output_dir": result.output_dir,
+            "warnings": list(result.warnings),
+            "requires_engineer_review": result.requires_engineer_review,
+            "index": result.index_json,
+        }
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(f"Batch design reports written: {result.output_dir}")
+    print(f"status: {result.status}")
+    print(f"input_count: {result.input_count}")
+    print(f"report_count: {result.report_count}")
+    print(f"index.md: {Path(result.output_dir) / 'index.md'}")
+    print(f"index.json: {Path(result.output_dir) / 'index.json'}")
+    _print_warnings(result.warnings)
+    return 0
+
+
+def _collect_batch_design_report_inputs(args: Namespace) -> tuple[Path, ...]:
+    input_paths: list[Path] = [Path(path) for path in args.input_json]
+    if args.input_dir:
+        input_dir = Path(args.input_dir)
+        input_paths.extend(sorted(input_dir.glob("*.json")))
+    if not input_paths:
+        raise ValueError("design-report-batch requires --input-dir or at least one --input-json")
+    return tuple(dict.fromkeys(input_paths))
 
 
 def _build_design_report_result(args: Namespace) -> tuple[Any, str]:

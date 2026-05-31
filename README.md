@@ -516,6 +516,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K38 batch design reports status
+
+- CLI command `design-report-batch --input-dir docs/reports/examples/batch
+  --output-dir reports/batch` builds report bundles for multiple JSON inputs.
+- Repeated `--input-json` arguments are also supported for explicit input lists.
+- Batch output writes `index.md`, `index.json`, and one `case_###` directory per
+  input with `report.md`, `report.json`, `report.html`, and copied `input.json`.
+- Invalid input JSON is reported as `input_error` in the index without stopping
+  the remaining cases.
+- Public synthetic batch examples are stored in `docs/reports/examples/batch`.
+- Batch reports are draft review artifacts with `requires_engineer_review = true`.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

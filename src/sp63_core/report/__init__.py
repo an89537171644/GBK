@@ -1,5 +1,6 @@
 """Calculation report helpers for the SP 63 MVP."""
 
+from sp63_core.report.batch_report import BatchDesignReportResult, build_batch_design_reports
 from sp63_core.report.design_report import (
     DesignCalculationReport,
     build_rectangular_design_report,
@@ -17,11 +18,13 @@ from sp63_core.report.protocol import CalculationProtocol, build_calculation_pro
 
 __all__ = [
     "ALLOWED_RECTANGULAR_DESIGN_INPUT_FIELDS",
+    "BatchDesignReportResult",
     "CalculationProtocol",
     "DesignCalculationReport",
     "OPTIONAL_RECTANGULAR_DESIGN_INPUT_FIELDS",
     "REQUIRED_RECTANGULAR_DESIGN_INPUT_FIELDS",
     "build_calculation_protocol",
+    "build_batch_design_reports",
     "build_rectangular_design_report",
     "load_rectangular_design_input_from_json",
     "render_rectangular_design_report_html",

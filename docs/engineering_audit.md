@@ -458,6 +458,25 @@ formulas, material values, reinforcement selection algorithms, ML behavior, or
 external validation gates. Reports remain draft review artifacts with
 `requires_engineer_review = true`.
 
+## K38 Batch Design Reports
+
+K38 adds a batch reporting layer for several rectangular beam input JSON files:
+
+```bash
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch --json
+```
+
+The command writes `index.md`, `index.json`, and one report bundle per input.
+Each valid case bundle contains `report.md`, `report.json`, `report.html`, and
+a copied `input.json`. Invalid input files are reported as `input_error` in the
+index without stopping the remaining cases.
+
+K38 is a reporting layer only. It does not change deterministic formulas,
+material values, reinforcement selection algorithms, ML behavior, or external
+validation gates. Batch reports remain draft review artifacts with
+`requires_engineer_review = true`.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
