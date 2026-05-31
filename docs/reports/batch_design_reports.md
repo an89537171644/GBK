@@ -47,7 +47,10 @@ Each valid case directory contains:
 - `report.md`;
 - `report.json`;
 - `report.html`;
-- copied `input.json`.
+- copied `input.json`;
+- `manifest.json`.
+
+The batch root directory also contains `manifest.json`.
 
 ## Index
 
@@ -60,6 +63,11 @@ The Markdown and JSON indexes include:
 - `overall_status`;
 - `warnings_count`;
 - `report_path`;
+- `manifest_path`;
+- `input_sha256`;
+- `report_json_sha256`;
+- `report_markdown_sha256`;
+- `report_html_sha256`;
 - `requires_engineer_review`.
 
 Invalid input JSON files are reported as `input_error` without stopping the

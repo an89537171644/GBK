@@ -660,6 +660,24 @@ K38 preserves the K36/K37 single-report behavior and does not change
 calculation formulas, material values, reinforcement selection algorithms, ML
 behavior, or external validation gates.
 
+## K39 Report Manifest Validation
+
+K39 adds validation coverage for report bundle manifests:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke_json --json
+```
+
+The tests verify stable SHA256 checksum calculation, single bundle
+`manifest.json`, batch root and case-level manifests, and batch `index.json`
+fields for manifest paths and report/input checksums.
+
+K39 preserves report behavior and does not change calculation formulas,
+material values, reinforcement selection algorithms, ML behavior, or external
+validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

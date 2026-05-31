@@ -56,7 +56,9 @@ from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.report import (
     build_batch_design_reports,
     build_rectangular_design_report,
+    build_report_manifest,
     load_rectangular_design_input_from_json,
+    write_report_manifest_json,
 )
 from sp63_core.sections import RectangularSection
 from sp63_core.validation import (
@@ -216,6 +218,11 @@ def build_parser() -> ArgumentParser:
     design_report.add_argument(
         "--bundle-output",
         help="optional directory for report.md, report.json, and report.html",
+    )
+    design_report.add_argument(
+        "--no-manifest",
+        action="store_true",
+        help="do not write manifest.json for bundle output",
     )
     design_report.set_defaults(handler=_handle_design_report)
 
@@ -864,6 +871,7 @@ def _handle_design_report(args: Namespace) -> int:
             json_payload,
             Path(args.bundle_output),
             input_json_path=Path(args.input_json) if args.input_json else None,
+            create_manifest=not args.no_manifest,
         )
         if args.json:
             json_payload["bundle_output"] = str(Path(args.bundle_output))
@@ -990,6 +998,7 @@ def _write_design_report_bundle(
     output_dir: Path,
     *,
     input_json_path: Path | None = None,
+    create_manifest: bool = True,
 ) -> dict[str, str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     markdown_path = output_dir / "report.md"
@@ -1009,6 +1018,21 @@ def _write_design_report_bundle(
         input_copy_path = output_dir / "input.json"
         shutil.copyfile(input_json_path, input_copy_path)
         output_files["input"] = str(input_copy_path)
+    if create_manifest:
+        manifest_path = output_dir / "manifest.json"
+        manifest = build_report_manifest(
+            report_type=report.report_type,
+            command="design-report",
+            input_paths=() if input_json_path is None else (input_json_path,),
+            output_paths=tuple(Path(path) for path in output_files.values()),
+            status=report.status,
+            strength_status=report.strength_status,
+            serviceability_status=report.serviceability_status,
+            overall_status=report.overall_status,
+            warnings_count=len(report.warnings),
+        )
+        write_report_manifest_json(manifest, manifest_path)
+        output_files["manifest"] = str(manifest_path)
     return output_files
 
 

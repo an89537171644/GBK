@@ -50,6 +50,11 @@ Batch output writes `index.md`, `index.json`, and one case directory per input
 with `report.md`, `report.json`, `report.html`, and a copied `input.json`.
 Details are documented in `docs/reports/batch_design_reports.md`.
 
+K39 adds report bundle manifests. Single bundle output and batch output write
+`manifest.json` files with input/output artifact paths, SHA256 checksums,
+generation time, statuses, warnings count, and `requires_engineer_review =
+true`. Details are documented in `docs/reports/report_manifest.md`.
+
 ## Report sections
 
 - input data;

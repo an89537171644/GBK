@@ -22,6 +22,7 @@
 | `report/design_report.py` | implemented draft rectangular design calculation report export in Markdown/HTML/JSON | yes | yes | engineer review report output before project use |
 | `report/design_report_input.py` | implemented JSON input loader and traceable report bundle for rectangular design reports | yes | yes | keep input schema explicit and reject unknown critical fields |
 | `report/batch_report.py` | implemented batch rectangular design report bundles and shared indexes | yes | yes | engineer review batch report output before project use |
+| `report/manifest.py` | implemented report bundle manifest and SHA256 reproducibility metadata | yes | yes | engineer review archived report bundles before project use |
 | `dataset/generator.py` | implemented draft with beam-only MVP, expanded deterministic strength/serviceability output columns and status fields | yes | yes | engineer review enriched dataset ranges before ML readiness gate |
 | `dataset/diagnostic.py` | implemented group-diverse scalable deterministic diagnostic dataset with group_key and leakage-safe split | yes | yes | engineer review group diversity before neural-network consideration |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
