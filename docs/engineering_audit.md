@@ -659,6 +659,28 @@ generation, external validation, or material verification. Neural prediction is
 not a design checker. Prediction mismatches require review, and deterministic
 SP63 verification remains authoritative.
 
+## K49 Neural Advisory Safety Audit
+
+K49 adds `neural-safety-audit` as a safety-report layer around K48 advisory
+prediction. It reuses the K48 prediction and deterministic verification output
+instead of adding a parallel ML core.
+
+The audit records predicted status, prediction confidence, class
+probabilities, deterministic strength/serviceability/overall statuses,
+`prediction_matches_deterministic`, `advisory_signal_usable`, `audit_status`,
+warnings, errors, and rejection reasons. Markdown output is available for
+engineer review.
+
+A mismatch between neural advisory output and deterministic SP63 status, or a
+deterministic `fail` / `review_or_fail`, blocks advisory signal use. Small
+datasets, deterministic-derived features, and missing material/external
+verification context remain review items.
+
+K49 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. Neural prediction is
+not a project decision, K30 safety-wrapper philosophy remains mandatory, and
+deterministic SP63 verification remains authoritative.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

@@ -160,3 +160,16 @@ python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl 
 
 The command also builds a deterministic SP63 design report for the input and
 compares the predicted target with deterministic statuses.
+
+## K49 Safety Audit
+
+K49 uses the same K45 feature metadata through K48 and then builds a safety
+audit:
+
+```bash
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The audit preserves the input-only leakage exclusions and warns when
+`deterministic_derived` features are used. It is a review report, not a design
+calculation.

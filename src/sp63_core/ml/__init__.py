@@ -30,6 +30,10 @@ from sp63_core.ml.report_neural_prediction import (
     NeuralAdvisoryPredictionResult,
     build_neural_advisory_prediction,
 )
+from sp63_core.ml.report_neural_safety_audit import (
+    NeuralAdvisorySafetyAuditResult,
+    build_neural_advisory_safety_audit,
+)
 from sp63_core.ml.report_neural_surrogate import (
     ReportNeuralSurrogateResult,
     build_report_neural_surrogate_result,
@@ -44,11 +48,13 @@ __all__ = [
     "MLReinforcementProposal",
     "MLProposal",
     "MLProposalVerificationResult",
+    "NeuralAdvisorySafetyAuditResult",
     "NeuralSurrogateReport",
     "NeuralAdvisoryPredictionResult",
     "ReportBaselineMLResult",
     "ReportNeuralSurrogateResult",
     "build_neural_advisory_prediction",
+    "build_neural_advisory_safety_audit",
     "build_feature_matrix",
     "build_baseline_ml_report",
     "build_ml_readiness_report",

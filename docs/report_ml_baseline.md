@@ -117,3 +117,15 @@ python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl 
 
 The neural prediction is compared with deterministic SP63 statuses. Mismatches
 return `review_required`.
+
+## K49 Safety Audit
+
+K49 adds the next safety layer for the K48 command:
+
+```bash
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The audit is intended for engineer review of predicted status, deterministic
+status, match result, warnings, and rejection reasons. It keeps ML
+advisory-only and does not change the baseline feature or training policy.

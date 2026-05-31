@@ -48,6 +48,7 @@ from sp63_core.ml import (
     build_baseline_ml_report,
     build_ml_readiness_report,
     build_neural_advisory_prediction,
+    build_neural_advisory_safety_audit,
     build_neural_surrogate_report,
     build_report_baseline_ml_result,
     build_report_neural_surrogate_result,
@@ -564,6 +565,36 @@ def build_parser() -> ArgumentParser:
     report_neural_predict.add_argument("--random-state", type=int, default=42)
     report_neural_predict.add_argument("--json", action="store_true", help="print JSON output")
     report_neural_predict.set_defaults(handler=_handle_report_neural_predict)
+
+    neural_safety_audit = subparsers.add_parser(
+        "neural-safety-audit",
+        help="build an engineer-facing safety audit for a neural advisory prediction",
+    )
+    neural_safety_audit.add_argument("--dataset", required=True, help="dataset file path")
+    neural_safety_audit.add_argument("--input-json", required=True, help="design input JSON")
+    neural_safety_audit.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    neural_safety_audit.add_argument("--target", default="overall_status")
+    neural_safety_audit.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    neural_safety_audit.add_argument("--random-state", type=int, default=42)
+    neural_safety_audit.add_argument("--json", action="store_true", help="print JSON output")
+    neural_safety_audit.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown audit report",
+    )
+    neural_safety_audit.add_argument(
+        "--output",
+        help="write JSON or Markdown audit report to a file",
+    )
+    neural_safety_audit.set_defaults(handler=_handle_neural_safety_audit)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -2142,6 +2173,69 @@ def _handle_report_neural_predict(args: Namespace) -> int:
     print(f"deterministic_overall_status: {result.deterministic_overall_status}")
     print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
     print(f"neural_network_used: {result.neural_network_used}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_neural_safety_audit(args: Namespace) -> int:
+    result = build_neural_advisory_safety_audit(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        input_json_path=Path(args.input_json),
+        target=args.target,
+        feature_mode=args.feature_mode,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "neural-safety-audit",
+        **result.json_data,
+    }
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if args.markdown:
+            output_path.write_text(result.markdown, encoding="utf-8")
+        else:
+            output_path.write_text(
+                jsonlib.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown)
+        return 0
+
+    print("Neural advisory safety audit")
+    print(f"status: {result.status}")
+    print(f"audit_status: {result.audit_status}")
+    print("This audit is advisory-only and is not a design calculation.")
+    print("Deterministic SP63 verification and engineer review are mandatory.")
+    print(f"source_dataset: {result.source_dataset}")
+    print(f"input_json_path: {result.input_json_path}")
+    print(f"target: {result.target}")
+    print(f"feature_mode: {result.feature_mode}")
+    print(f"predicted_status: {result.predicted_status}")
+    print(f"prediction_confidence: {result.prediction_confidence}")
+    print(f"deterministic_strength_status: {result.deterministic_strength_status}")
+    print(
+        "deterministic_serviceability_status: "
+        f"{result.deterministic_serviceability_status}"
+    )
+    print(f"deterministic_overall_status: {result.deterministic_overall_status}")
+    print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
+    print(f"advisory_signal_usable: {result.advisory_signal_usable}")
+    print(f"neural_network_used: {result.neural_network_used}")
+    if result.rejection_reasons:
+        print("rejection_reasons:")
+        for reason in result.rejection_reasons:
+            print(f"- {reason}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -685,6 +685,24 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Neural prediction is not a design checker. Deterministic SP63 verification
   and engineer review remain mandatory.
 
+## K49 neural advisory safety audit status
+
+- CLI command `neural-safety-audit --dataset reports/batch_dataset.jsonl
+  --input-json docs/reports/examples/rectangular_design_input_example.json
+  --json` builds an engineer-facing safety audit around K48 advisory
+  prediction output.
+- CSV datasets are supported with `--format csv`.
+- Markdown output is supported with `--markdown`, and `--output` can write the
+  audit report to disk.
+- The audit records predicted status, deterministic strength/serviceability/
+  overall statuses, `prediction_matches_deterministic`,
+  `advisory_signal_usable`, `audit_status`, rejection reasons, warnings, and
+  errors.
+- Prediction mismatch, deterministic `fail`, or deterministic
+  `review_or_fail` prevents advisory signal use.
+- Neural prediction remains advisory-only and is not a project decision.
+  Deterministic SP63 verification and engineer review remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
