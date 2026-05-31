@@ -492,6 +492,25 @@ material values, reinforcement selection algorithms, ML behavior, or external
 validation gates. Manifests remain draft review artifacts and do not certify a
 project design.
 
+## K40 Report Archive Validation
+
+K40 adds a report archive integrity check for K39 single and batch report
+bundles:
+
+```bash
+python -m sp63_core report-archive-validate --path reports/smoke_case --json
+python -m sp63_core report-archive-validate --path reports/batch_smoke --batch --json
+```
+
+The check verifies required files, manifest file records, SHA256 checksums, and
+batch `index.json` consistency with case manifests. Missing files and checksum
+mismatches return `status = fail`.
+
+K40 is an archive validation layer only. It does not change deterministic
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates. Passing archive
+validation still requires engineer review.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
