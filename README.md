@@ -635,6 +635,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K45 does not train ML and does not add neural-network code.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K46 baseline ML on report-derived safe features status
+
+- CLI command `report-ml-baseline --dataset reports/batch_dataset.jsonl --json`
+  runs a non-neural baseline classifier on K45 leakage-safe features.
+- CSV datasets are supported with `--format csv`.
+- `input_only` is the default feature mode and excludes status, direct check
+  result, utilization, and target columns from model inputs.
+- `deterministic_derived` is available only as a review-only smoke mode and
+  warns about possible design-decision leakage.
+- The report includes target distribution, train/validation/test counts,
+  metrics, confusion matrix, and excluded leakage columns.
+- Small report-derived example datasets return `review_required`.
+- K46 does not add a neural network and does not make ML a design checker.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

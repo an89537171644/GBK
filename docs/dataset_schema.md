@@ -320,6 +320,22 @@ design decisions.
 K45 reports target distribution and train/validation/test split counts. It does
 not train ML and does not add neural-network code.
 
+## K46 Report Dataset Baseline ML
+
+`python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json`
+runs a non-neural baseline classifier on the K45 feature set.
+
+The baseline supports JSONL and CSV report-derived datasets, supported status
+targets, and the `input_only` and `deterministic_derived` feature modes.
+Leakage columns remain excluded from model inputs. Deterministic-derived mode
+returns a warning because those fields may leak design decisions.
+
+The command reports target distribution, split counts, metrics, confusion
+matrix, feature columns, and excluded leakage columns. It returns
+`review_required` for small datasets or constant targets and `fail` for missing
+targets. K46 does not add neural-network code and does not make ML a design
+checker.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes

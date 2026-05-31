@@ -90,3 +90,16 @@ python -m sp63_core report-dataset-features --dataset reports/batch_dataset.json
 This command prepares feature and target metadata without training ML. It keeps
 input-only features separate from status/check/result columns and reports which
 columns were excluded as leakage risks.
+
+## K46 Baseline ML
+
+After feature preparation, run:
+
+```bash
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json
+```
+
+The baseline command reuses the K45 leakage-safe feature selection and returns
+non-neural classification metrics. `review_required` is expected for small
+synthetic report datasets. The command does not change the dataset, does not
+train a neural network, and does not make ML a design checker.

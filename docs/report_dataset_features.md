@@ -123,3 +123,17 @@ dataset is too small for reliable ML training
 - K45 does not train a model.
 - K45 does not add PyTorch, TensorFlow, Keras, or neural network code.
 - Material verification and external validation remain separate gates.
+
+## K46 Baseline ML
+
+After reviewing K45 feature metadata, a non-neural baseline can be run with:
+
+```bash
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --format csv --json
+```
+
+`report-ml-baseline` uses the same leakage exclusions as this feature set. It
+reports model metrics and a confusion matrix, but it does not approve ML for
+engineering use. Small datasets and deterministic-derived feature mode require
+engineer review.
