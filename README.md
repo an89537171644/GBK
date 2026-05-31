@@ -620,6 +620,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K44 does not train ML and does not add neural-network code.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K45 leakage-safe report dataset features status
+
+- CLI command `report-dataset-features --dataset reports/batch_dataset.jsonl
+  --json` prepares feature, target, and split metadata for report-derived rows.
+- CSV datasets are supported with `--format csv`.
+- `input_only` keeps source geometry, material, load, and serviceability switch
+  fields separate from target/status/check columns.
+- `deterministic_derived` can include selected deterministic outputs, but it
+  always warns that these features may leak design decisions.
+- Targets such as `overall_status`, `strength_status`, `serviceability_status`,
+  `bending_status`, `shear_status`, `crack_width_status`, and
+  `deflection_status` are supported.
+- K45 does not train ML and does not add neural-network code.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

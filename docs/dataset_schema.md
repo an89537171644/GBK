@@ -302,6 +302,24 @@ K44 does not rewrite the dataset and does not train ML. The result can be
 `review_required` for small synthetic datasets or when material/external
 validation statuses are still `not_provided`.
 
+## K45 Report Dataset Feature Set
+
+`python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --json`
+prepares feature, target, and split metadata for report-derived rows.
+
+`input_only` feature mode is limited to source inputs such as geometry,
+material classes, loads, service moment/span, and check switches. Status,
+check-result, resistance, utilization, and direct target columns are excluded
+from input features.
+
+`deterministic_derived` adds selected deterministic outputs such as `h0`,
+selected reinforcement areas, bar counts, bar diameters, and stirrup spacing.
+This mode always requires review because deterministic-derived fields may leak
+design decisions.
+
+K45 reports target distribution and train/validation/test split counts. It does
+not train ML and does not add neural-network code.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes

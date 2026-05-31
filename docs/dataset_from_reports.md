@@ -99,3 +99,20 @@ leakage-like status/check columns. It does not remove columns or train a model.
 `review_required` is expected for small synthetic examples or rows where
 material verification and external validation are still recorded as
 `not_provided`.
+
+## K45 Feature Set
+
+After quality review, report-derived rows can be summarized into leakage-safe
+feature/target metadata:
+
+```bash
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.csv --format csv --json
+```
+
+`input_only` features exclude status/check/result columns. The
+`deterministic_derived` mode adds selected deterministic outputs but returns a
+warning because those fields may leak design decisions.
+
+K45 still does not train ML. The feature set requires engineer review, ML
+remains advisory-only, and deterministic SP63 checks remain mandatory.

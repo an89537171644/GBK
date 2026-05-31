@@ -78,3 +78,15 @@ small and do not include real material or external validation statuses.
 - Material verification and external validation are separate gates.
 - Full SP 63 text, personal data, grant files, and closed SCAD/LIRA files are
   not part of this workflow.
+
+## K45 Feature Preparation
+
+When the quality gate has been reviewed, use:
+
+```bash
+python -m sp63_core report-dataset-features --dataset reports/batch_dataset.jsonl --json
+```
+
+This command prepares feature and target metadata without training ML. It keeps
+input-only features separate from status/check/result columns and reports which
+columns were excluded as leakage risks.

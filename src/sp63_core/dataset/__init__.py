@@ -25,6 +25,14 @@ from sp63_core.dataset.generator import (
     export_dataset_csv,
     generate_dataset_cases,
 )
+from sp63_core.dataset.ml_features import (
+    INPUT_ONLY_FEATURE_COLUMNS,
+    SUPPORTED_REPORT_DATASET_TARGETS,
+    MLFeatureSetResult,
+    build_report_dataset_feature_set,
+    detect_leakage_columns,
+    select_input_only_features,
+)
 from sp63_core.dataset.quality_gate import (
     REQUIRED_REPORT_DATASET_COLUMNS,
     SUPPORTED_REPORT_QUALITY_FORMATS,
@@ -48,12 +56,17 @@ __all__ = [
     "DatasetSplit",
     "DiagnosticDatasetCase",
     "DiagnosticDatasetSplit",
+    "INPUT_ONLY_FEATURE_COLUMNS",
+    "MLFeatureSetResult",
     "REPORT_DATASET_SOURCE",
     "REQUIRED_REPORT_DATASET_COLUMNS",
+    "SUPPORTED_REPORT_DATASET_TARGETS",
     "SUPPORTED_REPORT_DATASET_FORMATS",
     "SUPPORTED_REPORT_QUALITY_FORMATS",
     "ReportDatasetExportResult",
     "build_dataset_report",
+    "build_report_dataset_feature_set",
+    "detect_leakage_columns",
     "diagnostic_dataset_warnings",
     "diagnostic_group_leakage_count",
     "diagnostic_status_counts",
@@ -67,6 +80,7 @@ __all__ = [
     "generate_dataset_cases",
     "load_report_dataset_rows",
     "run_report_dataset_quality_gate",
+    "select_input_only_features",
     "split_diagnostic_dataset_by_group",
     "split_dataset_cases",
 ]

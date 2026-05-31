@@ -20,6 +20,7 @@ from sp63_core.dataset import (
     DATASET_VERSION,
     DatasetCase,
     build_dataset_report,
+    build_report_dataset_feature_set,
     diagnostic_dataset_warnings,
     diagnostic_status_counts,
     diagnostic_unique_group_count,
@@ -342,6 +343,34 @@ def build_parser() -> ArgumentParser:
     )
     report_dataset_quality.add_argument("--json", action="store_true", help="print JSON output")
     report_dataset_quality.set_defaults(handler=_handle_report_dataset_quality)
+
+    report_dataset_features = subparsers.add_parser(
+        "report-dataset-features",
+        help="prepare leakage-safe feature metadata for report-derived datasets",
+    )
+    report_dataset_features.add_argument("--dataset", required=True, help="dataset file path")
+    report_dataset_features.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    report_dataset_features.add_argument("--target", default="overall_status")
+    report_dataset_features.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    report_dataset_features.add_argument("--train-ratio", type=float, default=0.7)
+    report_dataset_features.add_argument("--validation-ratio", type=float, default=0.15)
+    report_dataset_features.add_argument("--test-ratio", type=float, default=0.15)
+    report_dataset_features.add_argument("--random-state", type=int, default=42)
+    report_dataset_features.add_argument(
+        "--no-split",
+        action="store_true",
+        help="do not compute train/validation/test split counts",
+    )
+    report_dataset_features.add_argument("--json", action="store_true", help="print JSON output")
+    report_dataset_features.set_defaults(handler=_handle_report_dataset_features)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1148,6 +1177,53 @@ def _handle_report_dataset_quality(args: Namespace) -> int:
     if result.leakage_columns_detected:
         print("leakage_columns_detected:")
         for column in result.leakage_columns_detected:
+            print(f"- {column}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_dataset_features(args: Namespace) -> int:
+    result = build_report_dataset_feature_set(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        target=args.target,
+        feature_mode=args.feature_mode,
+        split=not args.no_split,
+        train_ratio=args.train_ratio,
+        validation_ratio=args.validation_ratio,
+        test_ratio=args.test_ratio,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "report-dataset-features",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report dataset feature set")
+    print(f"status: {result.status}")
+    print(f"source_path: {result.source_path}")
+    print(f"row_count: {result.row_count}")
+    print(f"feature_count: {result.feature_count}")
+    print(f"target: {result.target}")
+    print(f"target_distribution: {result.target_distribution}")
+    print(f"split_strategy: {result.split_strategy}")
+    print(f"train_count: {result.train_count}")
+    print(f"validation_count: {result.validation_count}")
+    print(f"test_count: {result.test_count}")
+    if result.feature_columns:
+        print("feature_columns:")
+        for column in result.feature_columns:
+            print(f"- {column}")
+    if result.excluded_leakage_columns:
+        print("excluded_leakage_columns:")
+        for column in result.excluded_leakage_columns:
             print(f"- {column}")
     _print_warnings(result.warnings)
     if result.errors:
