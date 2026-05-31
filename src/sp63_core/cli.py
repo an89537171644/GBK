@@ -29,6 +29,7 @@ from sp63_core.dataset import (
     export_dataset_split_csv,
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
+    run_report_dataset_quality_gate,
     split_dataset_cases,
     split_diagnostic_dataset_by_group,
 )
@@ -316,6 +317,31 @@ def build_parser() -> ArgumentParser:
     )
     report_dataset_export.add_argument("--json", action="store_true", help="print JSON output")
     report_dataset_export.set_defaults(handler=_handle_report_dataset_export)
+
+    report_dataset_quality = subparsers.add_parser(
+        "report-dataset-quality",
+        help="run quality gate for report-derived ML dataset rows",
+    )
+    report_dataset_quality.add_argument("--dataset", required=True, help="dataset file path")
+    report_dataset_quality.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    report_dataset_quality.add_argument(
+        "--task",
+        choices=("classification", "regression"),
+        default="classification",
+        help="future ML task type for leakage/status-diversity checks",
+    )
+    report_dataset_quality.add_argument("--min-rows", type=int, default=100)
+    report_dataset_quality.add_argument(
+        "--no-require-status-diversity",
+        action="store_true",
+        help="do not require pass/fail/review_or_fail diversity",
+    )
+    report_dataset_quality.add_argument("--json", action="store_true", help="print JSON output")
+    report_dataset_quality.set_defaults(handler=_handle_report_dataset_quality)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1085,6 +1111,44 @@ def _handle_report_dataset_export(args: Namespace) -> int:
     print(f"skipped_count: {result.skipped_count}")
     print(f"input_error_count: {result.input_error_count}")
     print(f"archive_validation_status: {result.archive_validation_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_dataset_quality(args: Namespace) -> int:
+    result = run_report_dataset_quality_gate(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        task=args.task,
+        min_rows=args.min_rows,
+        require_status_diversity=not args.no_require_status_diversity,
+    )
+    payload = {
+        "command": "report-dataset-quality",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report dataset quality gate")
+    print(f"status: {result.status}")
+    print(f"source_path: {result.source_path}")
+    print(f"row_count: {result.row_count}")
+    print(f"column_count: {result.column_count}")
+    print(f"required_columns_present: {result.required_columns_present}")
+    print(f"empty_critical_values_count: {result.empty_critical_values_count}")
+    print(f"provenance_columns_present: {result.provenance_columns_present}")
+    print(f"advisory_flags_present: {result.advisory_flags_present}")
+    print(f"status_distribution: {result.status_distribution}")
+    if result.leakage_columns_detected:
+        print("leakage_columns_detected:")
+        for column in result.leakage_columns_detected:
+            print(f"- {column}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

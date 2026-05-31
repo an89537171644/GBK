@@ -279,6 +279,29 @@ This dataset is a preparation layer for future ML work only. It is not
 automatically certified, does not train a model, and does not authorize using ML
 as a design checker.
 
+## K44 Report Dataset Quality Gate
+
+`python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.jsonl --json`
+checks report-derived dataset rows before ML use.
+
+The gate verifies:
+
+- provenance columns and SHA256 fields from report archives;
+- input feature columns such as geometry, material classes, `M`, and `Q`;
+- target/status candidate columns such as `strength_status`,
+  `serviceability_status`, `overall_status`, and `warnings_count`;
+- advisory flags `requires_engineer_review`, `ml_is_advisory_only`, and
+  `deterministic_checks_required`;
+- empty critical values;
+- `archive_validation_status = pass`;
+- `overall_status` distribution for classification readiness;
+- leakage-like status/check columns that must not be used as input features
+  without explicit review.
+
+K44 does not rewrite the dataset and does not train ML. The result can be
+`review_required` for small synthetic datasets or when material/external
+validation statuses are still `not_provided`.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes

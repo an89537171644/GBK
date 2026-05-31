@@ -29,6 +29,7 @@
 | `dataset/generator.py` | implemented draft with beam-only MVP, expanded deterministic strength/serviceability output columns and status fields | yes | yes | engineer review enriched dataset ranges before ML readiness gate |
 | `dataset/diagnostic.py` | implemented group-diverse scalable deterministic diagnostic dataset with group_key and leakage-safe split | yes | yes | engineer review group diversity before neural-network consideration |
 | `dataset/from_reports.py` | implemented ML-ready dataset export from validated report archives | yes | yes | engineer review exported rows before future ML use |
+| `dataset/quality_gate.py` | implemented report-derived dataset quality gate for ML readiness | yes | yes | engineer review quality warnings before any ML training |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K21 report counters for deterministic statuses and serviceability output ranges | yes | no | compare enriched report ranges during dataset review |
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |

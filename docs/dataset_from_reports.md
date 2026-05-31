@@ -82,3 +82,20 @@ report, the export sets:
 - ML remains advisory-only;
 - deterministic SP63 checks remain mandatory;
 - no neural network is trained or added in K43.
+
+## K44 Quality Gate
+
+Before using report-derived rows for future ML work, run:
+
+```bash
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-dataset-quality --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The gate checks required provenance, input, status, and advisory flag columns,
+empty critical values, `archive_validation_status`, status distribution, and
+leakage-like status/check columns. It does not remove columns or train a model.
+
+`review_required` is expected for small synthetic examples or rows where
+material verification and external validation are still recorded as
+`not_provided`.
