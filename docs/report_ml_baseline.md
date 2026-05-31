@@ -92,3 +92,16 @@ that metrics are not reliable.
 - K46 does not change calculation formulas, material values, or reinforcement
   selection algorithms.
 - Material verification and external validation remain separate gates.
+
+## K47 Neural Surrogate
+
+After baseline review, the advisory neural surrogate smoke report can be run
+with:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+```
+
+The neural surrogate reuses the same K45 leakage exclusions. It is not a design
+checker, metrics are not production evidence, and deterministic SP63
+verification remains mandatory for any ML proposal.

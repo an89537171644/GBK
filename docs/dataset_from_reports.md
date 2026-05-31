@@ -130,3 +130,16 @@ python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --for
 The baseline uses K45 leakage exclusions, reports classification metrics and a
 confusion matrix, and remains review-only. It does not approve ML output, does
 not add neural-network code, and does not replace deterministic SP63 checks.
+
+## K47 Neural Surrogate
+
+The report-derived neural surrogate can be evaluated with:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv --format csv --json
+```
+
+It uses the same leakage-safe report-derived feature set. It is advisory-only,
+is not a design checker, and does not replace deterministic SP63 verification.
+Small-dataset metrics are review-only smoke diagnostics.

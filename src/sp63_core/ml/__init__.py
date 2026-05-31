@@ -26,6 +26,10 @@ from sp63_core.ml.report_baseline import (
     ReportBaselineMLResult,
     build_report_baseline_ml_result,
 )
+from sp63_core.ml.report_neural_surrogate import (
+    ReportNeuralSurrogateResult,
+    build_report_neural_surrogate_result,
+)
 from sp63_core.ml.safety import check_ml_prediction_safety, check_ml_proposal_safety
 
 __all__ = [
@@ -38,11 +42,13 @@ __all__ = [
     "MLProposalVerificationResult",
     "NeuralSurrogateReport",
     "ReportBaselineMLResult",
+    "ReportNeuralSurrogateResult",
     "build_feature_matrix",
     "build_baseline_ml_report",
     "build_ml_readiness_report",
     "build_neural_surrogate_report",
     "build_report_baseline_ml_result",
+    "build_report_neural_surrogate_result",
     "check_ml_prediction_safety",
     "check_ml_proposal_safety",
     "evaluate_baseline_models",

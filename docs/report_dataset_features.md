@@ -137,3 +137,15 @@ python -m sp63_core report-ml-baseline --dataset reports/batch_dataset.csv --for
 reports model metrics and a confusion matrix, but it does not approve ML for
 engineering use. Small datasets and deterministic-derived feature mode require
 engineer review.
+
+## K47 Neural Surrogate
+
+K47 adds an advisory neural surrogate smoke report:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The command uses the same leakage-safe feature set. The neural surrogate is not
+a design checker, and small-dataset metrics are not production evidence.

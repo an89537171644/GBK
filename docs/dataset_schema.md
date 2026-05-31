@@ -336,6 +336,24 @@ matrix, feature columns, and excluded leakage columns. It returns
 targets. K46 does not add neural-network code and does not make ML a design
 checker.
 
+## K47 Report Dataset Neural Surrogate
+
+`python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json`
+runs an advisory neural surrogate smoke report on K45 leakage-safe
+report-derived features.
+
+The command supports JSONL and CSV report-derived datasets, supported status
+targets, and the `input_only` and `deterministic_derived` feature modes.
+Leakage columns remain excluded from neural surrogate inputs.
+Deterministic-derived mode returns a warning because those fields may leak
+design decisions.
+
+The command reports target distribution, split counts, `neural_network_used`,
+metrics, confusion matrix, feature columns, and excluded leakage columns. It
+returns `review_required` for small datasets or constant targets and `fail` for
+missing targets. K47 uses only scikit-learn MLP already available in the
+project; PyTorch, TensorFlow, and Keras are not added.
+
 ## K29 Neural Surrogate Smoke Dataset Use
 
 `python -m sp63_core neural-surrogate --diagnostic-limit 1000 --json` consumes
