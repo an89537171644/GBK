@@ -6,7 +6,7 @@ import hashlib
 import json
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +58,7 @@ def build_report_manifest(
     return ReportArtifactManifest(
         manifest_version=MANIFEST_VERSION,
         report_type=report_type,
-        generated_at_utc=datetime.now(UTC).replace(microsecond=0).isoformat(),
+        generated_at_utc=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         command=command,
         input_files=tuple(_file_record(path) for path in input_paths),
         output_files=tuple(_file_record(path) for path in output_paths),
