@@ -58,6 +58,18 @@ python -m sp63_core report-archive-zip --path reports/batch_smoke --output repor
 Archive validation treats a missing `README_REVIEW.md` as an incomplete package.
 ZIP validation also expects the README in single and batch root entries.
 
+## Dataset Export
+
+K43 can export ML-ready rows from a validated report archive:
+
+```bash
+python -m sp63_core report-dataset-export --path reports/smoke_case --output reports/smoke_dataset.jsonl --json
+python -m sp63_core report-dataset-export --path reports/batch_smoke --batch --output reports/batch_dataset.jsonl --json
+```
+
+The export reads existing `report.json`, `input.json`, and `manifest.json`
+files. It does not recalculate the design and does not train an ML model.
+
 ## Limitations
 
 - `README_REVIEW.md` is documentation and does not certify the calculation;

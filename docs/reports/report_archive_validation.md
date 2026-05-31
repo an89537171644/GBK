@@ -94,6 +94,18 @@ ZIP after creation. K42 requires `README_REVIEW.md` in single bundles and batch
 roots so the ZIP package carries human-readable review guidance. Details are documented in
 `docs/reports/report_archive_zip.md`.
 
+## Dataset Export
+
+K43 adds dataset export from archives that pass this validation layer:
+
+```bash
+python -m sp63_core report-dataset-export --path reports/smoke_case --output reports/smoke_dataset.jsonl --json
+python -m sp63_core report-dataset-export --path reports/batch_smoke --batch --output reports/batch_dataset.jsonl --json
+```
+
+The export reads existing `report.json`, `input.json`, and `manifest.json`
+files. It does not recalculate formulas and does not train ML.
+
 ## Limitations
 
 - archive validation does not certify the design result;

@@ -24,6 +24,7 @@ from sp63_core.dataset import (
     diagnostic_status_counts,
     diagnostic_unique_group_count,
     export_dataset_csv,
+    export_dataset_from_report_archive,
     export_dataset_report_json,
     export_dataset_split_csv,
     generate_dataset_cases,
@@ -286,6 +287,35 @@ def build_parser() -> ArgumentParser:
     )
     report_archive_zip.add_argument("--json", action="store_true", help="print JSON output")
     report_archive_zip.set_defaults(handler=_handle_report_archive_zip)
+
+    report_dataset_export = subparsers.add_parser(
+        "report-dataset-export",
+        help="export ML-ready dataset rows from validated report archives",
+    )
+    report_dataset_export.add_argument(
+        "--path",
+        required=True,
+        help="single report bundle or batch report archive directory",
+    )
+    report_dataset_export.add_argument("--output", help="dataset output path")
+    report_dataset_export.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        default="jsonl",
+        help="dataset output format",
+    )
+    report_dataset_export.add_argument(
+        "--batch",
+        action="store_true",
+        help="source path is a batch archive; auto-detected when index.json exists",
+    )
+    report_dataset_export.add_argument(
+        "--no-archive-validation",
+        action="store_true",
+        help="skip archive validation before dataset extraction",
+    )
+    report_dataset_export.add_argument("--json", action="store_true", help="print JSON output")
+    report_dataset_export.set_defaults(handler=_handle_report_dataset_export)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1024,6 +1054,37 @@ def _handle_report_archive_zip(args: Namespace) -> int:
     print(f"file_count: {result.file_count}")
     print(f"zip_sha256: {result.zip_sha256}")
     print(f"validation_status: {result.validation_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_dataset_export(args: Namespace) -> int:
+    result = export_dataset_from_report_archive(
+        source_path=Path(args.path),
+        output_path=Path(args.output) if args.output else None,
+        output_format=args.format,
+        require_archive_validation=not args.no_archive_validation,
+    )
+    payload = {
+        "command": "report-dataset-export",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report dataset export")
+    print(f"status: {result.status}")
+    print(f"source_path: {result.source_path}")
+    print(f"output_path: {result.output_path}")
+    print(f"row_count: {result.row_count}")
+    print(f"skipped_count: {result.skipped_count}")
+    print(f"input_error_count: {result.input_error_count}")
+    print(f"archive_validation_status: {result.archive_validation_status}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

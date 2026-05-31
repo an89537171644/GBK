@@ -544,6 +544,23 @@ formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates. ZIP packages and
 manifests still do not certify calculations; engineer review remains required.
 
+## K43 Dataset Export From Report Archives
+
+K43 adds `report-dataset-export` for converting validated single and batch
+report archives into flat ML-ready rows:
+
+```bash
+python -m sp63_core report-dataset-export --path reports/smoke_case --output reports/smoke_dataset.jsonl --json
+python -m sp63_core report-dataset-export --path reports/batch_smoke --batch --output reports/batch_dataset.jsonl --json
+```
+
+The export reads `report.json`, `input.json`, and `manifest.json` and requires
+archive validation by default. It does not rerun deterministic calculations,
+does not change formulas, does not train ML, and does not add neural networks.
+
+K43 rows preserve provenance and require engineer review. ML remains
+advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

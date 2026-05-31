@@ -11,6 +11,13 @@ from sp63_core.dataset.diagnostic import (
     generate_diagnostic_dataset_cases,
     split_diagnostic_dataset_by_group,
 )
+from sp63_core.dataset.from_reports import (
+    REPORT_DATASET_SOURCE,
+    SUPPORTED_REPORT_DATASET_FORMATS,
+    ReportDatasetExportResult,
+    export_dataset_from_report_archive,
+    extract_dataset_row_from_report_json,
+)
 from sp63_core.dataset.generator import (
     DATASET_COLUMNS,
     DATASET_VERSION,
@@ -33,14 +40,19 @@ __all__ = [
     "DatasetSplit",
     "DiagnosticDatasetCase",
     "DiagnosticDatasetSplit",
+    "REPORT_DATASET_SOURCE",
+    "SUPPORTED_REPORT_DATASET_FORMATS",
+    "ReportDatasetExportResult",
     "build_dataset_report",
     "diagnostic_dataset_warnings",
     "diagnostic_group_leakage_count",
     "diagnostic_status_counts",
     "diagnostic_unique_group_count",
     "export_dataset_csv",
+    "export_dataset_from_report_archive",
     "export_dataset_report_json",
     "export_dataset_split_csv",
+    "extract_dataset_row_from_report_json",
     "generate_diagnostic_dataset_cases",
     "generate_dataset_cases",
     "split_diagnostic_dataset_by_group",
