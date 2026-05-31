@@ -115,3 +115,15 @@ python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl 
 The command trains the same review-only neural surrogate style, predicts an
 advisory status, then builds a deterministic SP63 design report for the input
 and compares the statuses. Prediction mismatches require review.
+
+## K49 Safety Audit
+
+K49 wraps the K48 prediction/comparison result in an engineer-facing safety
+audit:
+
+```bash
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The audit records `audit_status`, rejection reasons, warnings, and
+`advisory_signal_usable`. It does not make neural output a design checker.

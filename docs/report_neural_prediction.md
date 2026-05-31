@@ -92,3 +92,19 @@ dataset is too small for reliable advisory prediction
   selection algorithms.
 - K48 does not add PyTorch, TensorFlow, Keras, UI, Streamlit, full SP 63 text,
   personal documents, grant documents, or closed SCAD/LIRA files.
+
+## K49 Safety Audit
+
+K49 adds `neural-safety-audit` as an engineer-facing report layer on top of this
+K48 command. It does not train another model and does not replace the
+deterministic report.
+
+```bash
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+```
+
+The audit records the prediction, deterministic statuses, match flag,
+`advisory_signal_usable`, `audit_status`, warnings, and rejection reasons. A
+prediction mismatch or deterministic fail/review status blocks advisory signal
+use and requires engineer review.

@@ -854,6 +854,28 @@ formulas, material values, reinforcement selection algorithms, UI, or external
 validation gates. Neural prediction remains advisory-only and is not a design
 checker. Deterministic SP63 checks and engineer review remain mandatory.
 
+## K49 Neural Advisory Safety Audit
+
+K49 adds validation coverage for `neural-safety-audit`:
+
+```bash
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.csv --format csv --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+```
+
+The tests verify JSONL and CSV safety audits, deterministic status reporting,
+predicted status reporting, `prediction_matches_deterministic`,
+`advisory_signal_usable`, mandatory advisory-only flags, small dataset review
+status, deterministic-derived warnings, mismatch rejection, Markdown output,
+and `--output` file creation.
+
+K49 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, UI, or external
+validation gates. Neural prediction remains advisory-only and is not a design
+checker. Deterministic SP63 checks and engineer review remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled
