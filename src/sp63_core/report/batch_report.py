@@ -11,6 +11,11 @@ from typing import Any
 
 from sp63_core.report.design_report import DesignCalculationReport, build_rectangular_design_report
 from sp63_core.report.design_report_input import load_rectangular_design_input_from_json
+from sp63_core.report.manifest import (
+    build_report_manifest,
+    compute_file_sha256,
+    write_report_manifest_json,
+)
 
 BATCH_REPORT_TYPE = "batch_design_report_index"
 BATCH_REPORT_WARNING = (
@@ -49,6 +54,7 @@ def build_batch_design_reports(
     cases: list[dict[str, Any]] = []
     warnings: list[str] = [BATCH_REPORT_WARNING]
     report_count = 0
+    case_manifest_paths: list[Path] = []
 
     for index, input_path in enumerate(paths, start=1):
         case_id = f"case_{index:03d}"
@@ -62,21 +68,53 @@ def build_batch_design_reports(
                 input_path=input_path,
                 case_dir=case_dir,
             )
+            manifest_path = case_dir / "manifest.json"
+            manifest = build_report_manifest(
+                report_type=report.report_type,
+                command="design-report-batch",
+                input_paths=(input_path,),
+                output_paths=tuple(Path(path) for path in output_files.values()),
+                status=report.status,
+                strength_status=report.strength_status,
+                serviceability_status=report.serviceability_status,
+                overall_status=report.overall_status,
+                warnings_count=len(report.warnings),
+            )
+            write_report_manifest_json(manifest, manifest_path)
+            case_manifest_paths.append(manifest_path)
+            output_files["manifest"] = str(manifest_path)
             report_count += 1
             cases.append(
                 _case_index_row(
                     case_id=case_id,
                     input_path=input_path,
                     report=report,
-                    report_path=output_files["markdown"],
+                    output_files=output_files,
                 )
             )
         except Exception as exc:  # noqa: BLE001 - batch must report per-input failures.
             warning = f"{case_id}: input_error: {exc}"
             warnings.append(warning)
             case_dir.mkdir(parents=True, exist_ok=True)
+            output_paths: list[Path] = []
             if input_path.exists():
-                shutil.copyfile(input_path, case_dir / "input.json")
+                input_copy_path = case_dir / "input.json"
+                shutil.copyfile(input_path, input_copy_path)
+                output_paths.append(input_copy_path)
+            manifest_path = case_dir / "manifest.json"
+            manifest = build_report_manifest(
+                report_type="batch_design_report_case",
+                command="design-report-batch",
+                input_paths=(input_path,) if input_path.exists() else (),
+                output_paths=tuple(output_paths),
+                status="input_error",
+                strength_status="input_error",
+                serviceability_status="input_error",
+                overall_status="input_error",
+                warnings_count=1,
+            )
+            write_report_manifest_json(manifest, manifest_path)
+            case_manifest_paths.append(manifest_path)
             cases.append(
                 {
                     "case_id": case_id,
@@ -86,6 +124,13 @@ def build_batch_design_reports(
                     "overall_status": "input_error",
                     "warnings_count": 1,
                     "report_path": "",
+                    "manifest_path": str(manifest_path),
+                    "input_sha256": (
+                        compute_file_sha256(input_path) if input_path.exists() else None
+                    ),
+                    "report_json_sha256": None,
+                    "report_markdown_sha256": None,
+                    "report_html_sha256": None,
                     "requires_engineer_review": True,
                     "error": str(exc),
                 }
@@ -114,12 +159,37 @@ def build_batch_design_reports(
         "requires_engineer_review": True,
         "cases": cases,
     }
+    batch_manifest_path = output_dir / "manifest.json"
+    index_json["manifest_path"] = str(batch_manifest_path)
     index_markdown = _render_index_markdown(index_json)
-    (output_dir / "index.md").write_text(index_markdown, encoding="utf-8")
-    (output_dir / "index.json").write_text(
+    index_markdown_path = output_dir / "index.md"
+    index_json_path = output_dir / "index.json"
+    index_markdown_path.write_text(index_markdown, encoding="utf-8")
+    index_json_path.write_text(
         json.dumps(index_json, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    batch_manifest = build_report_manifest(
+        report_type=BATCH_REPORT_TYPE,
+        command="design-report-batch",
+        input_paths=paths,
+        output_paths=(index_markdown_path, index_json_path, *case_manifest_paths),
+        status=status,
+        strength_status=None,
+        serviceability_status=None,
+        overall_status=status,
+        warnings_count=len(warnings),
+        metadata={
+            "case_count": len(cases),
+            "passed_count": passed_count,
+            "review_count": review_count,
+            "failed_count": failed_count,
+            "input_error_count": sum(
+                1 for case in cases if case["overall_status"] == "input_error"
+            ),
+        },
+    )
+    write_report_manifest_json(batch_manifest, batch_manifest_path)
 
     return BatchDesignReportResult(
         status=status,
@@ -191,7 +261,7 @@ def _case_index_row(
     case_id: str,
     input_path: Path,
     report: DesignCalculationReport,
-    report_path: str,
+    output_files: dict[str, str],
 ) -> dict[str, Any]:
     return {
         "case_id": case_id,
@@ -200,7 +270,12 @@ def _case_index_row(
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
         "warnings_count": len(report.warnings),
-        "report_path": report_path,
+        "report_path": output_files["markdown"],
+        "manifest_path": output_files["manifest"],
+        "input_sha256": compute_file_sha256(Path(output_files["input"])),
+        "report_json_sha256": compute_file_sha256(Path(output_files["json"])),
+        "report_markdown_sha256": compute_file_sha256(Path(output_files["markdown"])),
+        "report_html_sha256": compute_file_sha256(Path(output_files["html"])),
         "requires_engineer_review": report.requires_engineer_review,
     }
 

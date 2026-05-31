@@ -21,6 +21,7 @@ def test_batch_design_reports_from_example_directory(tmp_path):
     assert result.review_count >= 1
     assert (output_dir / "index.md").exists()
     assert (output_dir / "index.json").exists()
+    assert (output_dir / "manifest.json").exists()
     index = json.loads((output_dir / "index.json").read_text(encoding="utf-8"))
     assert index["report_type"] == "batch_design_report_index"
     assert {"case_id", "strength_status", "serviceability_status", "overall_status"}.issubset(
@@ -32,6 +33,7 @@ def test_batch_design_reports_from_example_directory(tmp_path):
         assert (case_dir / "report.json").exists()
         assert (case_dir / "report.html").exists()
         assert (case_dir / "input.json").exists()
+        assert (case_dir / "manifest.json").exists()
 
 
 def test_batch_design_reports_invalid_input_does_not_stop_other_cases(tmp_path):
@@ -88,9 +90,12 @@ def test_cli_design_report_batch_json_output(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "design-report-batch"
     assert payload["index"]["report_type"] == "batch_design_report_index"
+    assert "manifest_path" in payload["index"]
     assert payload["index"]["input_count"] == 3
     assert payload["index"]["report_count"] == 3
     assert payload["index"]["cases"][0]["requires_engineer_review"] is True
+    assert "manifest_path" in payload["index"]["cases"][0]
+    assert "report_json_sha256" in payload["index"]["cases"][0]
 
 
 def test_cli_design_report_batch_repeated_input_json(tmp_path, capsys):

@@ -530,6 +530,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Material verification and external validation remain separate gates.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K39 report bundle manifest status
+
+- Single `design-report --bundle-output` bundles now write `manifest.json` by
+  default.
+- Batch `design-report-batch` output writes a root `manifest.json` and one
+  case-level `manifest.json` per case.
+- Manifests include input/output artifact paths, SHA256 checksums, generation
+  time, command name, statuses, warnings count, and
+  `requires_engineer_review = true`.
+- Batch `index.json` includes manifest paths and checksums for each valid case.
+- Manifest metadata is for traceability only and does not certify the design.
+- Material verification and external validation remain separate gates.
+- ML remains advisory-only, and deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

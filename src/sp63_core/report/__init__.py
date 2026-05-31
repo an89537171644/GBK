@@ -14,6 +14,13 @@ from sp63_core.report.design_report_input import (
     load_rectangular_design_input_from_json,
     rectangular_design_input_from_mapping,
 )
+from sp63_core.report.manifest import (
+    ReportArtifactManifest,
+    build_report_manifest,
+    compute_file_sha256,
+    report_manifest_as_dict,
+    write_report_manifest_json,
+)
 from sp63_core.report.protocol import CalculationProtocol, build_calculation_protocol
 
 __all__ = [
@@ -23,11 +30,16 @@ __all__ = [
     "DesignCalculationReport",
     "OPTIONAL_RECTANGULAR_DESIGN_INPUT_FIELDS",
     "REQUIRED_RECTANGULAR_DESIGN_INPUT_FIELDS",
+    "ReportArtifactManifest",
     "build_calculation_protocol",
     "build_batch_design_reports",
+    "build_report_manifest",
     "build_rectangular_design_report",
+    "compute_file_sha256",
     "load_rectangular_design_input_from_json",
+    "report_manifest_as_dict",
     "render_rectangular_design_report_html",
     "render_rectangular_design_report_markdown",
     "rectangular_design_input_from_mapping",
+    "write_report_manifest_json",
 ]

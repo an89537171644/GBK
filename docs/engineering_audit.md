@@ -477,6 +477,21 @@ material values, reinforcement selection algorithms, ML behavior, or external
 validation gates. Batch reports remain draft review artifacts with
 `requires_engineer_review = true`.
 
+## K39 Report Bundle Manifest
+
+K39 adds `manifest.json` metadata to single and batch report bundles. The
+manifest records generated-at time, command name, input and output artifact
+paths, SHA256 checksums, statuses, warnings count, and
+`requires_engineer_review = true`.
+
+Batch output includes both a root manifest and case-level manifests. Batch
+`index.json` includes manifest paths and checksums for each valid case.
+
+K39 is a traceability layer only. It does not change deterministic formulas,
+material values, reinforcement selection algorithms, ML behavior, or external
+validation gates. Manifests remain draft review artifacts and do not certify a
+project design.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.
