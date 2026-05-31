@@ -834,6 +834,26 @@ formulas, material values, reinforcement selection algorithms, UI, or external
 validation gates. The neural surrogate remains advisory-only and is not a
 design checker. Deterministic SP63 checks and engineer review remain mandatory.
 
+## K48 Neural Advisory Prediction with Deterministic Verification
+
+K48 adds validation coverage for `report-neural-predict`:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.csv --format csv --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The tests verify JSONL and CSV advisory prediction, deterministic status
+reporting, advisory-only flags, mandatory deterministic report flag,
+input-only leakage exclusion, small dataset review status, missing target
+failure, deterministic-derived warning, mismatch warning, and CLI JSON output.
+
+K48 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, UI, or external
+validation gates. Neural prediction remains advisory-only and is not a design
+checker. Deterministic SP63 checks and engineer review remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

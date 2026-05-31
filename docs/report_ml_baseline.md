@@ -105,3 +105,15 @@ python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.json
 The neural surrogate reuses the same K45 leakage exclusions. It is not a design
 checker, metrics are not production evidence, and deterministic SP63
 verification remains mandatory for any ML proposal.
+
+## K48 Advisory Prediction
+
+The advisory prediction command runs one input through neural prediction and
+deterministic verification:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The neural prediction is compared with deterministic SP63 statuses. Mismatches
+return `review_required`.

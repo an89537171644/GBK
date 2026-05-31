@@ -143,3 +143,15 @@ python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv 
 It uses the same leakage-safe report-derived feature set. It is advisory-only,
 is not a design checker, and does not replace deterministic SP63 verification.
 Small-dataset metrics are review-only smoke diagnostics.
+
+## K48 Advisory Prediction
+
+One-input advisory prediction is available with:
+
+```bash
+python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The command compares the advisory prediction with a deterministic SP63 design
+report generated from the same input. Mismatches require review, and the
+deterministic report remains authoritative.
