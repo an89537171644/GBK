@@ -79,6 +79,19 @@ Missing files mean the archive is incomplete. The archive should not be used as
 a reproducible engineering evidence bundle until the missing files are restored
 or the report is regenerated.
 
+## ZIP Export
+
+K41 adds ZIP packaging for archives that pass this validation layer:
+
+```bash
+python -m sp63_core report-archive-zip --path reports/smoke_case --output reports/smoke_case.zip --json
+python -m sp63_core report-archive-zip --path reports/batch_smoke --output reports/batch_smoke.zip --batch --json
+```
+
+The ZIP command validates the source archive before packaging and validates the
+ZIP after creation. Details are documented in
+`docs/reports/report_archive_zip.md`.
+
 ## Limitations
 
 - archive validation does not certify the design result;

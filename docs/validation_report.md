@@ -698,6 +698,25 @@ K40 preserves report generation behavior and does not change calculation
 formulas, material values, reinforcement selection algorithms, ML behavior,
 neural-network code, UI, or external validation gates.
 
+## K41 Report Archive ZIP Export
+
+K41 adds validation coverage for ZIP handoff packages:
+
+```bash
+python -m sp63_core design-report --input-json docs/reports/examples/rectangular_design_input_example.json --bundle-output reports/smoke_case
+python -m sp63_core design-report-batch --input-dir docs/reports/examples/batch --output-dir reports/batch_smoke
+python -m sp63_core report-archive-zip --path reports/smoke_case --output reports/smoke_case.zip --json
+python -m sp63_core report-archive-zip --path reports/batch_smoke --output reports/batch_smoke.zip --batch --json
+```
+
+The tests verify single and batch ZIP export, expected ZIP contents,
+`zip_sha256`, CLI JSON output, and path traversal rejection for synthetic unsafe
+ZIP entries.
+
+K41 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, ML behavior,
+neural-network code, UI, or external validation gates.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

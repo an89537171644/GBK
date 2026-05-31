@@ -57,6 +57,7 @@ from sp63_core.report import (
     build_batch_design_reports,
     build_rectangular_design_report,
     build_report_manifest,
+    export_report_archive_to_zip,
     load_rectangular_design_input_from_json,
     validate_batch_report_archive,
     validate_report_bundle,
@@ -266,6 +267,24 @@ def build_parser() -> ArgumentParser:
     )
     report_archive_validate.add_argument("--json", action="store_true", help="print JSON output")
     report_archive_validate.set_defaults(handler=_handle_report_archive_validate)
+
+    report_archive_zip = subparsers.add_parser(
+        "report-archive-zip",
+        help="export a generated report archive directory to a validated ZIP file",
+    )
+    report_archive_zip.add_argument(
+        "--path",
+        required=True,
+        help="single report bundle or batch report archive directory",
+    )
+    report_archive_zip.add_argument("--output", required=True, help="output ZIP path")
+    report_archive_zip.add_argument(
+        "--batch",
+        action="store_true",
+        help="source path is a batch archive; auto-detected when index.json exists",
+    )
+    report_archive_zip.add_argument("--json", action="store_true", help="print JSON output")
+    report_archive_zip.set_defaults(handler=_handle_report_archive_zip)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -976,6 +995,34 @@ def _handle_report_archive_validate(args: Namespace) -> int:
     print(f"missing_file_count: {result.missing_file_count}")
     print(f"checksum_mismatch_count: {result.checksum_mismatch_count}")
     print(f"index_consistency_status: {result.index_consistency_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_archive_zip(args: Namespace) -> int:
+    result = export_report_archive_to_zip(
+        source_path=Path(args.path),
+        zip_path=Path(args.output),
+    )
+    payload = {
+        "command": "report-archive-zip",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report archive ZIP export")
+    print(f"status: {result.status}")
+    print(f"source_path: {result.source_path}")
+    print(f"zip_path: {result.zip_path}")
+    print(f"file_count: {result.file_count}")
+    print(f"zip_sha256: {result.zip_sha256}")
+    print(f"validation_status: {result.validation_status}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
