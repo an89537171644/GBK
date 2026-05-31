@@ -650,6 +650,25 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K46 does not add a neural network and does not make ML a design checker.
 - ML remains advisory-only, and deterministic SP63 checks remain mandatory.
 
+## K47 neural surrogate v2 on report-derived safe features status
+
+- CLI command `report-neural-surrogate --dataset reports/batch_dataset.jsonl
+  --json` runs an advisory-only neural surrogate smoke report on K45
+  leakage-safe features.
+- CSV datasets are supported with `--format csv`.
+- `input_only` remains the default and excludes status, direct check result,
+  utilization, and target columns from neural surrogate inputs.
+- `deterministic_derived` is review-only and warns about possible
+  design-decision leakage.
+- The report includes target distribution, train/validation/test counts,
+  `neural_network_used`, metrics, confusion matrix, and excluded leakage
+  columns.
+- Small report-derived example datasets return `review_required`; metrics are
+  smoke diagnostics and not production evidence.
+- K47 uses scikit-learn MLP only; PyTorch, TensorFlow, and Keras are not added.
+- Neural surrogate is not a design checker. ML remains advisory-only, and
+  deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

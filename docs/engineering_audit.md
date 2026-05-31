@@ -619,6 +619,27 @@ generation, external validation, or material verification. It does not add a
 neural network and does not make ML a calculator. Deterministic SP63 checks and
 engineer review remain mandatory.
 
+## K47 Neural Surrogate v2 on Report-Derived Safe Features
+
+K47 adds `report-neural-surrogate` for advisory-only neural surrogate smoke
+evaluation on K45 leakage-safe report-derived feature sets:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv --format csv --json
+```
+
+The command uses scikit-learn MLPClassifier only because scikit-learn is
+already used by the project. It does not add PyTorch, TensorFlow, or Keras.
+The default `input_only` mode keeps status/check/result columns out of model
+inputs. The `deterministic_derived` mode is review-only and warns about
+possible design-decision leakage.
+
+K47 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. Neural surrogate is
+not a design checker. Deterministic SP63 checks, K30 safety wrapper, and
+engineer review remain mandatory for any ML proposal.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

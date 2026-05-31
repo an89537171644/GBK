@@ -814,6 +814,26 @@ formulas, material values, reinforcement selection algorithms, neural-network
 code, UI, or external validation gates. ML remains advisory-only, and
 deterministic SP63 checks remain mandatory.
 
+## K47 Neural Surrogate v2 on Report-Derived Safe Features
+
+K47 adds validation coverage for `report-neural-surrogate`:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.csv --format csv --json
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --json
+```
+
+The tests verify JSONL and CSV neural surrogate report construction,
+input-only leakage exclusion, deterministic-derived warnings, missing target
+failure, constant target review status, small dataset review status,
+advisory-only flags, MLP training when possible, and CLI JSON output.
+
+K47 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, UI, or external
+validation gates. The neural surrogate remains advisory-only and is not a
+design checker. Deterministic SP63 checks and engineer review remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

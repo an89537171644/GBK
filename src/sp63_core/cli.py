@@ -49,6 +49,7 @@ from sp63_core.ml import (
     build_ml_readiness_report,
     build_neural_surrogate_report,
     build_report_baseline_ml_result,
+    build_report_neural_surrogate_result,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
@@ -517,6 +518,28 @@ def build_parser() -> ArgumentParser:
     report_ml_baseline.add_argument("--random-state", type=int, default=42)
     report_ml_baseline.add_argument("--json", action="store_true", help="print JSON output")
     report_ml_baseline.set_defaults(handler=_handle_report_ml_baseline)
+
+    report_neural_surrogate = subparsers.add_parser(
+        "report-neural-surrogate",
+        help="run advisory neural surrogate on leakage-safe report-derived features",
+    )
+    report_neural_surrogate.add_argument("--dataset", required=True, help="dataset file path")
+    report_neural_surrogate.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    report_neural_surrogate.add_argument("--target", default="overall_status")
+    report_neural_surrogate.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    report_neural_surrogate.add_argument("--hidden-layer-size", type=int, default=16)
+    report_neural_surrogate.add_argument("--max-iter", type=int, default=500)
+    report_neural_surrogate.add_argument("--random-state", type=int, default=42)
+    report_neural_surrogate.add_argument("--json", action="store_true", help="print JSON output")
+    report_neural_surrogate.set_defaults(handler=_handle_report_neural_surrogate)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -1995,6 +2018,51 @@ def _handle_report_ml_baseline(args: Namespace) -> int:
     print(f"feature_mode: {report.feature_mode}")
     print(f"target: {report.target}")
     print(f"model_name: {report.model_name}")
+    print(f"train_count: {report.train_count}")
+    print(f"validation_count: {report.validation_count}")
+    print(f"test_count: {report.test_count}")
+    print(f"target_distribution: {report.target_distribution}")
+    print(f"feature_columns: {', '.join(report.feature_columns)}")
+    print(f"excluded_leakage_columns: {', '.join(report.excluded_leakage_columns)}")
+    print("metrics:")
+    for metric_name, value in report.metrics.items():
+        print(f"  {metric_name}: {value}")
+    _print_warnings(report.warnings)
+    if report.errors:
+        print("errors:")
+        for error in report.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_report_neural_surrogate(args: Namespace) -> int:
+    report = build_report_neural_surrogate_result(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        target=args.target,
+        feature_mode=args.feature_mode,
+        hidden_layer_sizes=(args.hidden_layer_size,),
+        max_iter=args.max_iter,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "report-neural-surrogate",
+        **asdict(report),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Report neural surrogate")
+    print(f"status: {report.status}")
+    print("Neural surrogate is advisory-only and is not a design checker.")
+    print("Deterministic SP63 checks remain mandatory.")
+    print(f"source_dataset: {report.source_dataset}")
+    print(f"row_count: {report.row_count}")
+    print(f"feature_mode: {report.feature_mode}")
+    print(f"target: {report.target}")
+    print(f"model_name: {report.model_name}")
+    print(f"neural_network_used: {report.neural_network_used}")
     print(f"train_count: {report.train_count}")
     print(f"validation_count: {report.validation_count}")
     print(f"test_count: {report.test_count}")

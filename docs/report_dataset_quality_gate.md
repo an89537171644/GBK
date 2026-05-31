@@ -103,3 +103,16 @@ The baseline command reuses the K45 leakage-safe feature selection and returns
 non-neural classification metrics. `review_required` is expected for small
 synthetic report datasets. The command does not change the dataset, does not
 train a neural network, and does not make ML a design checker.
+
+## K47 Neural Surrogate
+
+The report-derived neural surrogate can be run after quality, feature, and
+baseline review:
+
+```bash
+python -m sp63_core report-neural-surrogate --dataset reports/batch_dataset.jsonl --json
+```
+
+It reuses K45 leakage exclusions and reports advisory-only smoke metrics.
+Metrics are not production evidence, and deterministic SP63 checks remain
+mandatory.
