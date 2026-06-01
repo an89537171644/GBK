@@ -81,3 +81,18 @@ ML remains advisory-only. Deterministic SP63 checks remain mandatory. Material
 verification and external validation remain separate engineering gates.
 
 Large generated report archives should not be committed to the repository.
+
+## K53 Balance Gate
+
+After exporting JSONL or CSV rows, check target balance and stratified split
+readiness with:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.csv --format csv --json
+```
+
+The balance gate reports target distribution, required `overall_status`
+classes, class imbalance, split counts, leakage-like audit columns, warnings,
+and generation recommendations. It is still synthetic-only and requires
+engineer review.

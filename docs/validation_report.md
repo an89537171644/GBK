@@ -944,3 +944,21 @@ The generator writes `README_SYNTHETIC.md` and `synthetic_manifest.json` with
 per-case SHA256 checksums. Synthetic cases are not external validation and do
 not certify the calculation core. ML remains advisory-only and deterministic
 SP63 checks remain mandatory.
+
+## K53 Synthetic Dataset Balance Readiness
+
+K53 adds validation coverage for `synthetic-dataset-balance`:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_dataset_smoke.jsonl --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_dataset_smoke.csv --format csv --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_dataset_smoke.jsonl --split-index-output reports/synthetic_split_index.json --json
+```
+
+The tests verify balanced JSONL rows, CSV loading, missing class warnings and
+recommendations, archive validation failure, stratified split class
+preservation, CLI JSON output, and split-index output.
+
+K53 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The balance report is a
+review gate for synthetic ML experiments only.

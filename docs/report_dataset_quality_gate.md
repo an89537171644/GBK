@@ -140,3 +140,16 @@ The generated cases can be converted to report-derived rows through
 `design-report-batch` and `report-dataset-export` before running this quality
 gate. A larger synthetic set should reduce smoke-only small-dataset warnings,
 but it is still synthetic data and still requires engineer review.
+
+## K53 Synthetic Balance Readiness
+
+K53 adds a focused balance/readiness gate for synthetic report-derived rows:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+This complements the structural quality gate by checking target distribution,
+required `overall_status` classes, class imbalance, and whether a stratified
+train/validation/test split can preserve all target classes. The command
+reports recommendations instead of changing dataset rows.

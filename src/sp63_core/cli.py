@@ -18,9 +18,12 @@ from sp63_core.checks import (
 from sp63_core.dataset import (
     DATASET_COLUMNS,
     DATASET_VERSION,
+    SUPPORTED_REPORT_DATASET_TARGETS,
     DatasetCase,
+    analyze_synthetic_dataset_balance,
     build_dataset_report,
     build_report_dataset_feature_set,
+    build_stratified_split_summary,
     diagnostic_dataset_warnings,
     diagnostic_status_counts,
     diagnostic_unique_group_count,
@@ -31,6 +34,7 @@ from sp63_core.dataset import (
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
     generate_synthetic_report_inputs,
+    load_report_dataset_rows,
     run_report_dataset_quality_gate,
     split_dataset_cases,
     split_diagnostic_dataset_by_group,
@@ -397,6 +401,35 @@ def build_parser() -> ArgumentParser:
     )
     report_dataset_features.add_argument("--json", action="store_true", help="print JSON output")
     report_dataset_features.set_defaults(handler=_handle_report_dataset_features)
+
+    synthetic_dataset_balance = subparsers.add_parser(
+        "synthetic-dataset-balance",
+        help="analyze balance and stratified readiness for synthetic report-derived datasets",
+    )
+    synthetic_dataset_balance.add_argument("--dataset", required=True, help="dataset file path")
+    synthetic_dataset_balance.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    synthetic_dataset_balance.add_argument(
+        "--target",
+        choices=SUPPORTED_REPORT_DATASET_TARGETS,
+        default="overall_status",
+    )
+    synthetic_dataset_balance.add_argument("--min-rows", type=int, default=100)
+    synthetic_dataset_balance.add_argument("--min-class-count", type=int, default=20)
+    synthetic_dataset_balance.add_argument("--max-imbalance-ratio", type=float, default=3.0)
+    synthetic_dataset_balance.add_argument("--train-ratio", type=float, default=0.7)
+    synthetic_dataset_balance.add_argument("--validation-ratio", type=float, default=0.15)
+    synthetic_dataset_balance.add_argument("--test-ratio", type=float, default=0.15)
+    synthetic_dataset_balance.add_argument("--random-state", type=int, default=42)
+    synthetic_dataset_balance.add_argument(
+        "--split-index-output",
+        help="optional output path for stratified split row ids",
+    )
+    synthetic_dataset_balance.add_argument("--json", action="store_true", help="print JSON output")
+    synthetic_dataset_balance.set_defaults(handler=_handle_synthetic_dataset_balance)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1453,6 +1486,94 @@ def _handle_report_dataset_features(args: Namespace) -> int:
         print("excluded_leakage_columns:")
         for column in result.excluded_leakage_columns:
             print(f"- {column}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_synthetic_dataset_balance(args: Namespace) -> int:
+    dataset_path = Path(args.dataset)
+    result = analyze_synthetic_dataset_balance(
+        dataset_path=dataset_path,
+        dataset_format=args.format,
+        target=args.target,
+        min_rows=args.min_rows,
+        min_class_count=args.min_class_count,
+        max_imbalance_ratio=args.max_imbalance_ratio,
+        train_ratio=args.train_ratio,
+        validation_ratio=args.validation_ratio,
+        test_ratio=args.test_ratio,
+        random_state=args.random_state,
+    )
+    split_index_output = None
+    if args.split_index_output:
+        rows = load_report_dataset_rows(dataset_path, args.format)
+        split_summary = build_stratified_split_summary(
+            rows=rows,
+            target=args.target,
+            train_ratio=args.train_ratio,
+            validation_ratio=args.validation_ratio,
+            test_ratio=args.test_ratio,
+            random_state=args.random_state,
+        )
+        split_index_path = Path(args.split_index_output)
+        split_index_path.parent.mkdir(parents=True, exist_ok=True)
+        split_payload = {
+            "command": "synthetic-dataset-balance",
+            "source_dataset": str(dataset_path),
+            "target": args.target,
+            **split_summary,
+            "synthetic_data_only": result.synthetic_data_only,
+            "requires_engineer_review": result.requires_engineer_review,
+            "ml_is_advisory_only": result.ml_is_advisory_only,
+            "deterministic_checks_required": result.deterministic_checks_required,
+        }
+        split_index_path.write_text(
+            jsonlib.dumps(split_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        split_index_output = str(split_index_path)
+
+    payload = {
+        "command": "synthetic-dataset-balance",
+        **asdict(result),
+        "split_index_output": split_index_output,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Synthetic dataset balance")
+    print(f"status: {result.status}")
+    print(f"source_dataset: {result.source_dataset}")
+    print(f"row_count: {result.row_count}")
+    print(f"target: {result.target}")
+    print(f"target_distribution: {result.target_distribution}")
+    print(f"min_class_count: {result.min_class_count}")
+    print(f"max_class_count: {result.max_class_count}")
+    print(f"imbalance_ratio: {result.imbalance_ratio}")
+    print(f"required_classes_present: {result.required_classes_present}")
+    print(f"stratified_split_ready: {result.stratified_split_ready}")
+    print(f"train_count: {result.train_count}")
+    print(f"validation_count: {result.validation_count}")
+    print(f"test_count: {result.test_count}")
+    if split_index_output:
+        print(f"split_index_output: {split_index_output}")
+    if result.missing_required_classes:
+        print("missing_required_classes:")
+        for class_name in result.missing_required_classes:
+            print(f"- {class_name}")
+    if result.leakage_columns_detected:
+        print("leakage_columns_detected:")
+        for column in result.leakage_columns_detected:
+            print(f"- {column}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

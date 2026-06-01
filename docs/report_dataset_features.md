@@ -185,3 +185,16 @@ python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_input
 
 Feature preparation remains leakage-aware. Synthetic data is not external
 validation and does not make ML a design checker.
+
+## K53 Synthetic Balance Before Feature Use
+
+Before using synthetic report-derived rows for broader ML experiments, run:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The balance gate checks whether the selected target has enough class diversity
+for stratified train/validation/test review. It also reports leakage-like
+status/check columns so feature selection can keep them out of input-only ML
+features.
