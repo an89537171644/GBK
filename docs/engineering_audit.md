@@ -899,3 +899,20 @@ readiness bundle when a dataset is supplied.
 K61 does not certify a design and does not approve ML for project use.
 `ml_ready_for_project_use` remains false. Material verification, external
 validation, deterministic SP63 checks, and engineer review remain mandatory.
+
+## K62 Engineering Workflow Self-Check
+
+K62 adds `engineering-workflow-self-check` as a user-facing readiness check:
+
+```bash
+python -m sp63_core engineering-workflow-self-check --output-dir reports/workflow_self_check --json
+```
+
+The self-check verifies that the K61 workflow can create the deterministic
+report bundle, archive validation output, ZIP package, workflow summaries, and
+review README files. It can optionally include advisory ML readiness, but
+`ml_ready_for_project_use` remains false.
+
+K62 is a technical workflow check only. It does not certify calculations,
+change formulas, change material values, change reinforcement selection, or
+approve ML for project use.

@@ -1115,3 +1115,20 @@ readiness output, missing-dataset review warnings, and CLI JSON/Markdown modes.
 K61 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The workflow is
 orchestration only and does not certify project use.
+
+## K62 Engineering Workflow Self-Check Validation
+
+K62 adds validation coverage for `engineering-workflow-self-check`:
+
+```bash
+python -m sp63_core engineering-workflow-self-check --output-dir reports/workflow_self_check_smoke --json
+python -m sp63_core engineering-workflow-self-check --output-dir reports/workflow_self_check_markdown_smoke --markdown
+```
+
+The tests verify deterministic workflow output creation, archive validation,
+ZIP status, self-check Markdown/JSON output, optional ML readiness behavior,
+missing-dataset review warnings, cleanup mode, and CLI JSON/Markdown modes.
+
+K62 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The self-check is a
+technical readiness check only and does not certify project use.

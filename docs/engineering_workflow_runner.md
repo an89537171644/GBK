@@ -94,3 +94,17 @@ dataset path.
 - Synthetic data is not external validation.
 - UI/Streamlit is not added.
 - Full SP 63 text is not stored in the repository.
+
+## K62 Self-Check
+
+Use the K62 self-check before relying on workflow outputs:
+
+```bash
+python -m sp63_core engineering-workflow-self-check \
+  --output-dir reports/workflow_self_check \
+  --json
+```
+
+The self-check verifies that the deterministic workflow creates the expected
+report, manifest, review README, ZIP, and summary files. It does not certify the
+calculation and does not replace engineer review.
