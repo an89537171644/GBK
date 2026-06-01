@@ -30,6 +30,7 @@ from sp63_core.dataset import (
     export_dataset_split_csv,
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
+    generate_synthetic_report_inputs,
     run_report_dataset_quality_gate,
     split_dataset_cases,
     split_diagnostic_dataset_by_group,
@@ -260,6 +261,25 @@ def build_parser() -> ArgumentParser:
     )
     design_report_batch.add_argument("--json", action="store_true", help="print JSON summary")
     design_report_batch.set_defaults(handler=_handle_design_report_batch)
+
+    synthetic_report_inputs = subparsers.add_parser(
+        "synthetic-report-inputs",
+        help="generate reproducible synthetic design-report input JSON cases",
+    )
+    synthetic_report_inputs.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for synthetic input JSON cases",
+    )
+    synthetic_report_inputs.add_argument("--case-count", type=int, default=300)
+    synthetic_report_inputs.add_argument("--seed", type=int, default=42)
+    synthetic_report_inputs.add_argument(
+        "--no-serviceability",
+        action="store_true",
+        help="omit serviceability fields and checks from generated cases",
+    )
+    synthetic_report_inputs.add_argument("--json", action="store_true", help="print JSON output")
+    synthetic_report_inputs.set_defaults(handler=_handle_synthetic_report_inputs)
 
     report_archive_validate = subparsers.add_parser(
         "report-archive-validate",
@@ -1231,6 +1251,40 @@ def _handle_design_report_batch(args: Namespace) -> int:
     return 0
 
 
+def _handle_synthetic_report_inputs(args: Namespace) -> int:
+    result = generate_synthetic_report_inputs(
+        output_dir=Path(args.output_dir),
+        case_count=args.case_count,
+        seed=args.seed,
+        include_serviceability=not args.no_serviceability,
+    )
+    payload = {
+        "command": "synthetic-report-inputs",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Synthetic report input generation")
+    print(f"status: {result.status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"case_count: {result.case_count}")
+    print(f"generated_count: {result.generated_count}")
+    print(f"skipped_count: {result.skipped_count}")
+    print(f"seed: {result.seed}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"requires_engineer_review: {result.requires_engineer_review}")
+    print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
+    print(f"deterministic_checks_required: {result.deterministic_checks_required}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_report_archive_validate(args: Namespace) -> int:
     archive_path = Path(args.path)
     is_batch = bool(args.batch or (archive_path / "index.json").exists())
@@ -1411,7 +1465,11 @@ def _collect_batch_design_report_inputs(args: Namespace) -> tuple[Path, ...]:
     input_paths: list[Path] = [Path(path) for path in args.input_json]
     if args.input_dir:
         input_dir = Path(args.input_dir)
-        input_paths.extend(sorted(input_dir.glob("*.json")))
+        input_paths.extend(
+            path
+            for path in sorted(input_dir.glob("*.json"))
+            if path.name not in {"index.json", "manifest.json", "synthetic_manifest.json"}
+        )
     if not input_paths:
         raise ValueError("design-report-batch requires --input-dir or at least one --input-json")
     return tuple(dict.fromkeys(input_paths))

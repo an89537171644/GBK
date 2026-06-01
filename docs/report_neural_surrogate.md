@@ -140,3 +140,18 @@ The package records predicted status, class probabilities, deterministic SP63
 statuses, K49 safety audit status, `proposal_status`, rejection/review reasons,
 warnings, and optional Markdown output. It remains advisory-only and does not
 turn the neural surrogate into a project design checker.
+
+## K52 Synthetic Report Inputs
+
+K52 provides a reproducible synthetic input generator for larger neural
+surrogate smoke checks:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+python -m sp63_core design-report-batch --input-dir reports/synthetic_inputs --output-dir reports/synthetic_batch_reports --json
+python -m sp63_core report-dataset-export --path reports/synthetic_batch_reports --batch --output reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The neural surrogate remains advisory-only and is not a design checker.
+Synthetic data is not external validation and metrics are not certification.

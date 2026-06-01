@@ -173,3 +173,15 @@ python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --
 The audit preserves the input-only leakage exclusions and warns when
 `deterministic_derived` features are used. It is a review report, not a design
 calculation.
+
+## K52 Synthetic Report Inputs
+
+Use `synthetic-report-inputs` to create reproducible input cases before feature
+preparation:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+```
+
+Feature preparation remains leakage-aware. Synthetic data is not external
+validation and does not make ML a design checker.

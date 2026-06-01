@@ -155,3 +155,21 @@ python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl 
 The command compares the advisory prediction with a deterministic SP63 design
 report generated from the same input. Mismatches require review, and the
 deterministic report remains authoritative.
+
+## K52 Synthetic Input Generation
+
+Synthetic report input cases can be generated before running the report-derived
+pipeline:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+python -m sp63_core design-report-batch --input-dir reports/synthetic_inputs --output-dir reports/synthetic_batch_reports --json
+python -m sp63_core report-dataset-export --path reports/synthetic_batch_reports --batch --output reports/synthetic_report_dataset.jsonl --json
+```
+
+The generator writes `README_SYNTHETIC.md` and `synthetic_manifest.json` next to
+the input cases. Batch input discovery ignores the synthetic manifest so the
+folder can be passed directly to `design-report-batch`.
+
+Synthetic inputs are only for ML smoke experiments and pipeline checks. They do
+not replace material verification, manual checks, or external validation.

@@ -740,6 +740,23 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   advisory-only, deterministic SP63 verification remains mandatory, and
   engineer review is required.
 
+## K52 synthetic report dataset generation status
+
+- CLI command `synthetic-report-inputs --output-dir reports/synthetic_inputs
+  --case-count 300 --seed 42 --json` generates reproducible synthetic
+  design-report input JSON cases.
+- Generated folders include `case_*.json`, `README_SYNTHETIC.md`, and
+  `synthetic_manifest.json` with per-case SHA256 checksums.
+- The generated inputs can feed `design-report-batch`,
+  `report-dataset-export`, `report-dataset-quality`,
+  `report-dataset-features`, `report-ml-baseline`, and
+  `report-neural-surrogate`.
+- `docs/reports/examples/synthetic_batch_smoke/` contains a small committed
+  10-case smoke example only. Large generated report outputs should stay local.
+- Synthetic data is not external validation and is not project design data.
+  ML remains advisory-only, deterministic SP63 checks remain mandatory, and
+  engineer review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

@@ -925,3 +925,22 @@ review remains required.
 The core is a draft-MVP calculation kernel. It is suitable for controlled
 engineering review and small validation datasets, but it is not a final
 project-design calculation tool.
+## K52 Synthetic Report Dataset Generation
+
+K52 adds a reproducible synthetic input generator:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+python -m sp63_core design-report-batch --input-dir reports/synthetic_inputs --output-dir reports/synthetic_batch_reports --json
+python -m sp63_core report-archive-validate --path reports/synthetic_batch_reports --batch --json
+python -m sp63_core report-dataset-export --path reports/synthetic_batch_reports --batch --output reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-dataset-quality --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-dataset-features --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-neural-surrogate --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The generator writes `README_SYNTHETIC.md` and `synthetic_manifest.json` with
+per-case SHA256 checksums. Synthetic cases are not external validation and do
+not certify the calculation core. ML remains advisory-only and deterministic
+SP63 checks remain mandatory.

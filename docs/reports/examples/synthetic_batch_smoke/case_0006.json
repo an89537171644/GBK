@@ -1,0 +1,19 @@
+{
+  "M": 125000000,
+  "Mser": 81363769.591,
+  "Q": 75000,
+  "acrc_limit": 0.3,
+  "b": 200,
+  "check_crack_width": false,
+  "check_cracks": true,
+  "check_deflection": false,
+  "concrete_class": "B30",
+  "cover": 32,
+  "deflection_limit_ratio": 250,
+  "h": 600,
+  "load_duration": "short",
+  "longitudinal_rebar_class": "A400",
+  "span": 8000,
+  "stirrup_diameter_for_geometry": 12,
+  "stirrup_rebar_class": "A400"
+}
