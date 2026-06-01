@@ -24,6 +24,11 @@ from sp63_core.ml.external_readiness import (
     render_ml_external_readiness_markdown,
 )
 from sp63_core.ml.features import build_feature_matrix
+from sp63_core.ml.material_readiness import (
+    MLMaterialVerificationReadinessResult,
+    evaluate_ml_material_verification_readiness,
+    render_ml_material_readiness_markdown,
+)
 from sp63_core.ml.neural_surrogate import (
     NeuralSurrogateReport,
     build_neural_surrogate_report,
@@ -79,6 +84,7 @@ __all__ = [
     "MLProposalPackageResult",
     "MLProposalReviewPackageResult",
     "MLExternalValidationReadinessResult",
+    "MLMaterialVerificationReadinessResult",
     "NeuralAdvisorySafetyAuditResult",
     "NeuralSurrogateReport",
     "NeuralAdvisoryPredictionResult",
@@ -102,6 +108,7 @@ __all__ = [
     "discover_benchmark_reports",
     "evaluate_baseline_models",
     "evaluate_ml_external_validation_readiness",
+    "evaluate_ml_material_verification_readiness",
     "evaluate_ml_quality_gate",
     "evaluate_ml_safety",
     "load_baseline_model_bundle",
@@ -111,5 +118,6 @@ __all__ = [
     "train_baseline_models",
     "run_synthetic_ml_benchmark",
     "render_ml_external_readiness_markdown",
+    "render_ml_material_readiness_markdown",
     "verify_ml_proposal_with_deterministic_core",
 ]

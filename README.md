@@ -858,6 +858,23 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - `ml_ready_for_project_use` remains false. ML remains advisory-only,
   deterministic SP63 checks remain mandatory, and engineer review is required.
 
+## K59 material verification ML readiness status
+
+- CLI command `ml-material-readiness --dataset <dataset.jsonl> --json` checks
+  whether report-derived ML rows have engineer-filled material verification
+  coverage for every concrete and reinforcement class used by the dataset.
+- `--material-verification-csv` reuses the K34/K35 material verification CSV
+  schema and reports required, verified, missing, rejected, and review-required
+  material keys.
+- JSONL and CSV report-derived datasets are supported with `--format csv`.
+- `--markdown --output reports/ml_material_readiness.md` writes the review
+  report `ML Material Verification Readiness - Advisory Only`.
+- `ml-external-readiness` now includes material verification coverage when
+  `--material-verification-csv` is supplied.
+- `material_ready_for_project_use` and `ml_ready_for_project_use` remain false.
+  ML remains advisory-only, material values are not changed automatically, and
+  deterministic SP63 checks remain mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

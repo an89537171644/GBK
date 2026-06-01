@@ -1055,3 +1055,24 @@ K58 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. Synthetic data is not
 external validation, `ml_ready_for_project_use` remains false, and engineer
 review remains mandatory.
+
+## K59 Material Verification ML Readiness Validation
+
+K59 adds validation coverage for `ml-material-readiness`:
+
+```bash
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.csv --format csv --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --markdown
+```
+
+The tests verify missing-CSV review status, complete synthetic material
+verification coverage, missing material keys, rejected material keys,
+review-required material keys, JSONL and CSV dataset loading, CLI JSON output,
+Markdown output, and integration with `ml-external-readiness`.
+
+K59 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. Material verification
+readiness does not approve catalog values, does not certify ML, and keeps
+`material_ready_for_project_use` and `ml_ready_for_project_use` false.

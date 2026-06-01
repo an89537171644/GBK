@@ -192,3 +192,17 @@ The quality gate checks structural dataset readiness. The external-readiness
 gate checks whether external validation and material verification evidence are
 present. Synthetic data alone remains review-only, and ML remains
 advisory-only.
+
+## K59 Material Verification Coverage
+
+K59 adds a focused material verification gate for report-derived ML datasets:
+
+```bash
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_report_dataset.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+```
+
+This gate checks whether all concrete and reinforcement classes appearing in
+the dataset have complete engineer-filled verification CSV coverage. Missing,
+rejected, or review-required material keys keep the dataset in review status.
+Project-use readiness remains false.

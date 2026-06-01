@@ -30,6 +30,16 @@ python -m sp63_core ml-external-readiness \
   --json
 ```
 
+With external validation and material verification:
+
+```bash
+python -m sp63_core ml-external-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --external-validation-csv tests/fixtures/external_validation_sample.csv \
+  --material-verification-csv tests/fixtures/material_verification_sample.csv \
+  --json
+```
+
 Markdown report:
 
 ```bash
@@ -44,9 +54,20 @@ python -m sp63_core ml-external-readiness \
 
 - `ml_ready_for_research` can be true for readable deterministic
   report-derived datasets with deterministic provenance.
-- `ml_ready_for_engineering_review` requires external validation support and
-  material verification support.
+- `ml_ready_for_engineering_review` requires external validation support,
+  complete material verification coverage, and no failed external cases.
 - `ml_ready_for_project_use` is always false in K58.
+
+K59 adds material verification coverage fields:
+
+- `required_material_keys`;
+- `verified_material_keys`;
+- `missing_material_keys`;
+- `rejected_material_keys`;
+- `review_required_material_keys`;
+- `material_coverage_ratio`;
+- `material_ready_for_engineering_review`;
+- `material_ready_for_project_use`.
 
 ## Limitations
 

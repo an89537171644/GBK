@@ -62,6 +62,7 @@
 | `ml/benchmark_comparison.py` | implemented benchmark model comparison export for baseline and neural synthetic metrics | yes | yes | review model_comparison reports before interpreting synthetic benchmark trends |
 | `ml/benchmark_trend.py` | implemented multi-seed synthetic benchmark trend report export | yes | yes | review trend stability across seeds before interpreting benchmark metrics |
 | `ml/external_readiness.py` | implemented external validation awareness for ML readiness | yes | yes | provide external validation and material verification CSVs before engineering ML review |
+| `ml/material_readiness.py` | implemented material verification coverage readiness for report-derived ML datasets | yes | yes | provide complete engineer-filled material verification CSV before engineering ML review |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

@@ -841,3 +841,25 @@ reports research, engineering-review, and project-use readiness flags.
 `ml_ready_for_project_use` remains false in K58. Synthetic benchmark data is
 not external validation, ML remains advisory-only, deterministic SP63 checks
 remain mandatory, and engineer review remains required.
+
+## K59 Material Verification ML Readiness
+
+K59 adds `ml-material-readiness` as a focused review layer for material
+verification coverage in report-derived ML datasets:
+
+```bash
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+```
+
+The command extracts concrete, longitudinal rebar, and stirrup rebar classes
+from dataset rows and checks that every required material key has complete
+engineer-filled verification CSV coverage. Missing, rejected, or
+review-required material keys keep the dataset out of engineering-review
+readiness.
+
+K59 also connects this coverage to `ml-external-readiness`; ML engineering
+review readiness now requires accepted external validation and complete
+material verification coverage. Project-use readiness remains false. K59 does
+not change formulas, material values, reinforcement selection, report
+generation, external validation, or ML safety rules.
