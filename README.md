@@ -844,6 +844,20 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   evidence. ML remains advisory-only, deterministic SP63 checks remain
   mandatory, and engineer review is required.
 
+## K58 external validation ML readiness status
+
+- CLI command `ml-external-readiness --dataset <dataset.jsonl> --json` checks
+  whether an ML dataset is synthetic/report-derived only or has external
+  validation and material verification support.
+- `--external-validation-csv` reuses engineer-filled external validation CSV
+  files; `--material-verification-csv` reuses engineer material verification
+  CSV files.
+- `--markdown --output reports/ml_external_readiness.md` writes the review
+  report `ML External Validation Readiness Report`.
+- Synthetic benchmark data is explicitly not external validation.
+- `ml_ready_for_project_use` remains false. ML remains advisory-only,
+  deterministic SP63 checks remain mandatory, and engineer review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

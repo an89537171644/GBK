@@ -112,3 +112,13 @@ Smoke runs with two 6-row benchmark reports are expected to return
   decisions.
 - For engineering conclusions, use external validation cases and
   engineer-verified materials.
+
+## K58 External Validation Awareness
+
+K58 adds `ml-external-readiness` after the synthetic trend layer. The command
+does not reinterpret K57 metrics; it checks whether a report-derived ML dataset
+has external validation and material verification support.
+
+Synthetic benchmark trends remain synthetic-only evidence. External validation
+CSV files and material verification CSV files must be supplied separately
+before any engineering ML review.

@@ -202,3 +202,16 @@ python -m sp63_core report-dataset-export --path reports/guided_synthetic_report
 
 The guided manifest is ignored by batch input discovery. Accepted cases are
 selected by deterministic `overall_status`, not ML.
+
+## K58 External Validation Readiness
+
+After exporting report-derived rows, run:
+
+```bash
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+This checks whether the dataset is synthetic/report-derived only or has
+external validation and material verification support. A synthetic-only dataset
+is suitable for research smoke checks but remains `review_required` for
+engineering ML readiness.

@@ -64,8 +64,10 @@ from sp63_core.ml import (
     build_report_neural_surrogate_result,
     discover_benchmark_reports,
     evaluate_baseline_models,
+    evaluate_ml_external_validation_readiness,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
+    render_ml_external_readiness_markdown,
     run_synthetic_ml_benchmark,
     save_baseline_model_bundle,
     train_baseline_models,
@@ -683,6 +685,32 @@ def build_parser() -> ArgumentParser:
     )
     ml_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_readiness.set_defaults(handler=_handle_ml_readiness)
+
+    ml_external_readiness = subparsers.add_parser(
+        "ml-external-readiness",
+        help="check ML readiness with external validation and material verification context",
+    )
+    ml_external_readiness.add_argument(
+        "--dataset",
+        required=True,
+        help="report-derived dataset path (jsonl, json, or csv)",
+    )
+    ml_external_readiness.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV",
+    )
+    ml_external_readiness.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV",
+    )
+    ml_external_readiness.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown readiness report",
+    )
+    ml_external_readiness.add_argument("--output", help="optional Markdown output path")
+    ml_external_readiness.add_argument("--json", action="store_true", help="print JSON output")
+    ml_external_readiness.set_defaults(handler=_handle_ml_external_readiness)
 
     ml_baseline = subparsers.add_parser(
         "ml-baseline",
@@ -2609,6 +2637,72 @@ def _handle_ml_readiness(args: Namespace) -> int:
         f"{', '.join(report.constant_target_columns) if report.constant_target_columns else '-'}"
     )
     _print_warnings(report.warnings)
+    return 0
+
+
+def _handle_ml_external_readiness(args: Namespace) -> int:
+    result = evaluate_ml_external_validation_readiness(
+        dataset_path=Path(args.dataset),
+        external_validation_csv=(
+            None
+            if args.external_validation_csv is None
+            else Path(args.external_validation_csv)
+        ),
+        material_verification_csv=(
+            None
+            if args.material_verification_csv is None
+            else Path(args.material_verification_csv)
+        ),
+    )
+    markdown = render_ml_external_readiness_markdown(result)
+    output_path = None if args.output is None else Path(args.output)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(markdown, encoding="utf-8")
+
+    payload = {
+        "command": "ml-external-readiness",
+        **asdict(result),
+    }
+    if output_path is not None:
+        payload["output"] = str(output_path)
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.markdown:
+        print(markdown, end="")
+        if output_path is not None:
+            print(f"\noutput: {output_path}")
+        return 0
+
+    print("ML external validation readiness")
+    print(f"status: {result.status}")
+    print(f"readiness_status: {result.readiness_status}")
+    print(f"dataset_path: {result.dataset_path}")
+    print(f"row_count: {result.row_count}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"external_validation_present: {result.external_validation_present}")
+    print(f"external_case_count: {result.external_case_count}")
+    print(f"accepted_external_case_count: {result.accepted_external_case_count}")
+    print(f"failed_external_case_count: {result.failed_external_case_count}")
+    print(f"external_match_rate: {result.external_match_rate}")
+    print(f"material_verification_present: {result.material_verification_present}")
+    print(f"ml_ready_for_research: {result.ml_ready_for_research}")
+    print(f"ml_ready_for_engineering_review: {result.ml_ready_for_engineering_review}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
+    if output_path is not None:
+        print(f"output: {output_path}")
     return 0
 
 

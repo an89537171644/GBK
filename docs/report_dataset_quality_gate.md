@@ -179,3 +179,16 @@ python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_ben
 The benchmark status remains `review_required` when the dataset is synthetic,
 too small, or missing production evidence. It remains a review artifact, not a
 design approval.
+
+## K58 External Validation Awareness
+
+K58 adds an external-validation readiness layer after dataset quality checks:
+
+```bash
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The quality gate checks structural dataset readiness. The external-readiness
+gate checks whether external validation and material verification evidence are
+present. Synthetic data alone remains review-only, and ML remains
+advisory-only.

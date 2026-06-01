@@ -825,3 +825,19 @@ It is not external validation and is not production evidence.
 
 Engineer review remains mandatory before drawing conclusions from benchmark
 trends. Material verification and external validation remain separate gates.
+
+## K58 External Validation ML Readiness
+
+K58 adds `ml-external-readiness` as a review layer for ML datasets:
+
+```bash
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+```
+
+The command distinguishes synthetic/report-derived data from datasets with
+engineer-filled external validation CSVs and material verification CSVs. It
+reports research, engineering-review, and project-use readiness flags.
+
+`ml_ready_for_project_use` remains false in K58. Synthetic benchmark data is
+not external validation, ML remains advisory-only, deterministic SP63 checks
+remain mandatory, and engineer review remains required.

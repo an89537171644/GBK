@@ -1035,3 +1035,23 @@ warnings, and partial input-error handling.
 K57 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The trend report is a
 synthetic benchmark diagnostic only; trends are not production evidence.
+
+## K58 External Validation ML Readiness Validation
+
+K58 adds validation coverage for `ml-external-readiness`:
+
+```bash
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --json
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --markdown
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --markdown --output reports/ml_external_readiness.md
+```
+
+The tests verify dataset-only review status, missing external/material
+verification warnings, external validation case counts, bad CSV failure
+handling, Markdown output, and CLI JSON output.
+
+K58 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. Synthetic data is not
+external validation, `ml_ready_for_project_use` remains false, and engineer
+review remains mandatory.

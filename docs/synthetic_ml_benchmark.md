@@ -160,3 +160,16 @@ python -m sp63_core benchmark-trend-report \
 The trend report summarizes row counts, class distributions, metric
 mean/min/max/std values, per-metric winner counts, recommendations, and
 warnings. It reads existing benchmark reports and does not rerun K55.
+
+## K58 External Validation Readiness
+
+K58 adds a separate command for checking whether synthetic/report-derived ML
+datasets have external validation support:
+
+```bash
+python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+```
+
+Synthetic benchmark data is not external validation. External validation CSVs
+and material verification CSVs must be supplied separately, and
+`ml_ready_for_project_use` remains false.
