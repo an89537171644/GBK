@@ -106,3 +106,16 @@ For `--input-json`, the CLI JSON output also includes:
 - deterministic SP63 checks remain mandatory.
 - input-driven reports still require engineer review and do not certify a
   project design.
+
+## K61 Engineering Workflow
+
+K61 can generate this deterministic report as part of an end-to-end review
+workflow:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_smoke --json
+```
+
+The workflow writes the report under `deterministic_report/`, validates the
+archive, creates a ZIP by default, and writes workflow summary files. It does
+not change report calculations and does not certify project use.

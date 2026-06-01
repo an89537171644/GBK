@@ -86,3 +86,21 @@ When `--output-dir` is supplied, the command writes:
 - Material verification does not certify ML output.
 - Advisory ML proposal packages are not design calculations.
 - Engineer review remains mandatory.
+
+## K61 Workflow Integration
+
+K61 can call this bundle from the end-to-end engineering workflow:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_ml_smoke \
+  --include-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --external-validation-csv tests/fixtures/external_validation_sample.csv \
+  --material-verification-csv tests/fixtures/material_verification_sample.csv \
+  --json
+```
+
+The workflow stores the readiness output under `ml_readiness/`. It remains
+advisory-only and keeps `ml_ready_for_project_use = false`.

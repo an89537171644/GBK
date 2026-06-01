@@ -110,6 +110,7 @@ from sp63_core.validation import (
     run_shear_golden_cases,
     validate_dataset_cases,
 )
+from sp63_core.workflows import run_engineering_workflow
 
 
 def build_parser() -> ArgumentParser:
@@ -352,6 +353,52 @@ def build_parser() -> ArgumentParser:
     )
     report_archive_zip.add_argument("--json", action="store_true", help="print JSON output")
     report_archive_zip.set_defaults(handler=_handle_report_archive_zip)
+
+    engineering_workflow = subparsers.add_parser(
+        "engineering-workflow",
+        help="run deterministic report, archive, ZIP, and optional ML readiness workflow",
+    )
+    engineering_workflow.add_argument(
+        "--input-json",
+        required=True,
+        help="rectangular design report input JSON",
+    )
+    engineering_workflow.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for workflow files",
+    )
+    engineering_workflow.add_argument(
+        "--include-ml-readiness",
+        action="store_true",
+        help="include advisory engineering ML readiness bundle",
+    )
+    engineering_workflow.add_argument("--dataset", help="report-derived ML dataset path")
+    engineering_workflow.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format for ML readiness; inferred when omitted",
+    )
+    engineering_workflow.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV for ML readiness",
+    )
+    engineering_workflow.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV for ML readiness",
+    )
+    engineering_workflow.add_argument(
+        "--no-zip",
+        action="store_true",
+        help="skip deterministic report ZIP creation",
+    )
+    engineering_workflow.add_argument("--json", action="store_true", help="print JSON output")
+    engineering_workflow.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown workflow summary",
+    )
+    engineering_workflow.set_defaults(handler=_handle_engineering_workflow)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1671,6 +1718,49 @@ def _handle_report_archive_zip(args: Namespace) -> int:
     print(f"file_count: {result.file_count}")
     print(f"zip_sha256: {result.zip_sha256}")
     print(f"validation_status: {result.validation_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_workflow(args: Namespace) -> int:
+    result = run_engineering_workflow(
+        input_json_path=Path(args.input_json),
+        output_dir=Path(args.output_dir),
+        dataset_path=Path(args.dataset) if args.dataset else None,
+        dataset_format=args.format,
+        external_validation_csv=(
+            Path(args.external_validation_csv) if args.external_validation_csv else None
+        ),
+        material_verification_csv=(
+            Path(args.material_verification_csv) if args.material_verification_csv else None
+        ),
+        include_ml_readiness=args.include_ml_readiness,
+        create_zip=not args.no_zip,
+    )
+    payload = {
+        "command": "engineering-workflow",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        summary_path = Path(result.output_dir) / "workflow_summary.md"
+        print(summary_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Engineering workflow")
+    print(f"status: {result.status}")
+    print(f"workflow_status: {result.workflow_status}")
+    print(f"deterministic_report_status: {result.deterministic_report_status}")
+    print(f"archive_validation_status: {result.archive_validation_status}")
+    print(f"zip_status: {result.zip_status}")
+    print(f"ml_readiness_status: {result.ml_readiness_status}")
+    print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -882,3 +882,20 @@ accepted cases without failures and material verification coverage is complete.
 K60 keeps `ml_ready_for_project_use = false`. It does not change deterministic
 formulas, material values, reinforcement selection, external validation logic,
 or ML safety rules.
+
+## K61 Engineering Workflow Runner
+
+K61 adds `engineering-workflow` as an orchestration layer for existing review
+steps:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_smoke --json
+```
+
+The workflow creates a deterministic report bundle, validates the archive,
+creates a ZIP package by default, and can optionally run the K60 advisory ML
+readiness bundle when a dataset is supplied.
+
+K61 does not certify a design and does not approve ML for project use.
+`ml_ready_for_project_use` remains false. Material verification, external
+validation, deterministic SP63 checks, and engineer review remain mandatory.

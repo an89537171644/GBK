@@ -115,3 +115,16 @@ files. It does not recalculate formulas and does not train ML.
 - full SP 63 text is not stored in the repository;
 - ML remains advisory-only;
 - deterministic SP63 checks remain mandatory.
+
+## K61 Engineering Workflow
+
+K61 runs archive validation automatically after creating the deterministic
+report bundle:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_smoke --json
+```
+
+The validation result is stored in `workflow_summary.json` as
+`archive_validation_status`. Validation remains an integrity check and does not
+certify the design.

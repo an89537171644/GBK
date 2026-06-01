@@ -890,6 +890,19 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - The bundle is advisory-only and does not change formulas, material values,
   reinforcement selection, or deterministic SP63 checks.
 
+## K61 engineering workflow runner status
+
+- CLI command `engineering-workflow --input-json <input.json> --output-dir <dir>
+  --json` runs the deterministic design report, report archive validation, and
+  ZIP packaging in one reproducible review workflow.
+- `--include-ml-readiness --dataset <dataset.jsonl>` can add the K60 advisory ML
+  readiness bundle under `ml_readiness/`.
+- The workflow writes `workflow_summary.json`, `workflow_summary.md`, and
+  `README_WORKFLOW.md`.
+- `ml_ready_for_project_use` remains false. The workflow does not certify a
+  design, does not change formulas or material values, and requires engineer
+  review.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

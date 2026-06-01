@@ -78,3 +78,16 @@ absolute paths. K41 does not extract ZIP files into arbitrary directories.
 - full SP 63 text is not stored in the repository;
 - ML remains advisory-only;
 - deterministic SP63 checks remain mandatory.
+
+## K61 Engineering Workflow
+
+K61 creates `deterministic_report.zip` by default after the deterministic
+report archive passes validation:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_smoke --json
+```
+
+Use `--no-zip` when only the unpacked deterministic report bundle and workflow
+summary are needed. ZIP packaging remains a reproducibility handoff aid, not a
+calculation approval.
