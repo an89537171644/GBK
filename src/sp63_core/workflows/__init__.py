@@ -17,14 +17,20 @@ from sp63_core.workflows.self_check import (
     render_self_check_markdown,
     run_engineering_workflow_self_check,
 )
+from sp63_core.workflows.static_report_index import (
+    StaticWorkflowReportIndexResult,
+    build_static_workflow_report_index,
+)
 
 __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
+    "StaticWorkflowReportIndexResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
+    "build_static_workflow_report_index",
     "render_self_check_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_self_check",

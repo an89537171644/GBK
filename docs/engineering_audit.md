@@ -946,3 +946,19 @@ K64 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, external validation, material verification, and archive
 validation gates. It is planning work only; engineer review remains mandatory
 and `ml_ready_for_project_use` remains false.
+
+## K65 Static Workflow Report Index
+
+K65 adds `engineering-report-index` and optional
+`engineering-workflow --with-index` to generate a static `index.html` for an
+existing workflow output folder.
+
+The index links to deterministic report files, manifests, ZIP packages,
+workflow summaries, review README files, and optional ML-readiness artifacts. It
+does not execute calculations, start a web server, implement a GUI framework,
+or approve a design.
+
+K65 preserves calculation formulas, material values, material catalog gates,
+reinforcement selection, external validation, and ML safety policy. HTML output
+does not make ML a calculator; engineer review remains mandatory and
+`ml_ready_for_project_use` remains false.

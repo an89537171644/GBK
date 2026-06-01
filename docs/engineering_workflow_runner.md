@@ -132,3 +132,24 @@ CLI/workflow layer as the authority, organize existing static HTML/Markdown/JSON
 outputs, and postpone heavy UI dependencies. A future interface must still show
 deterministic SP63 statuses, archive validation, material verification, external
 validation, engineer-review warnings, and `ml_ready_for_project_use = false`.
+
+## Static Workflow Report Index
+
+K65 adds a static index generator for workflow output folders:
+
+```bash
+python -m sp63_core engineering-report-index --workflow-dir reports/engineering_workflow --json
+```
+
+`engineering-workflow` can also create the index directly:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_with_index \
+  --with-index \
+  --json
+```
+
+The index links to existing report files and warnings only. It does not start a
+server, execute calculations, approve design decisions, or change ML policy.

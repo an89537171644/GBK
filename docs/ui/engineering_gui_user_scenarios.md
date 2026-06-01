@@ -59,3 +59,6 @@ implement UI and do not change deterministic calculations.
 K64 recommends a CLI-first static report workflow before any desktop or web UI.
 These scenarios remain requirements for a future wrapper and are not
 implemented as UI in K64.
+
+K65 supports these scenarios only by generating a static report index with
+links to workflow outputs. It does not launch a full UI.

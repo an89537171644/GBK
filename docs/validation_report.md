@@ -1166,3 +1166,23 @@ K64 does not implement UI, add UI dependencies, change formulas, change
 material values, change reinforcement selection, or approve ML for project use.
 The recommended direction is `cli_first_with_static_html_reports`;
 `ml_ready_for_project_use` remains false.
+
+## K65 Static Workflow Report Index Validation
+
+K65 adds validation coverage for `engineering-report-index` and
+`engineering-workflow --with-index`:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_index_smoke --json
+python -m sp63_core engineering-report-index --workflow-dir reports/engineering_workflow_index_smoke --json
+python -m sp63_core engineering-report-index --workflow-dir reports/engineering_workflow_index_smoke --output reports/engineering_workflow_index_smoke/index_custom.html --json
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_with_index_smoke --with-index --json
+```
+
+The tests verify deterministic-only indexes, optional ML-readiness links,
+required warnings, links to report HTML/Markdown/JSON, ZIP and workflow summary
+files, missing-critical-file review behavior, CLI JSON output, browser-open
+fallback behavior, `--with-index`, and the absence of formula-module imports.
+
+K65 does not implement a web server or GUI framework. HTML does not perform
+calculations and does not approve ML or project use.

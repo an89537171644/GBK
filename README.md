@@ -975,3 +975,26 @@ under `docs/ui/`. It does not implement UI, does not add Streamlit, Gradio,
 Flask, FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras,
 does not change formulas or material values, and keeps
 `ml_ready_for_project_use = false`.
+
+## K65 static workflow report index
+
+K65 adds a static HTML index for already generated engineering workflow folders:
+
+```bash
+python -m sp63_core engineering-report-index --workflow-dir reports/engineering_workflow_smoke --json
+```
+
+The workflow can also generate the index directly:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_with_index_smoke \
+  --with-index \
+  --json
+```
+
+The generated `index.html` links to the deterministic report, manifest, ZIP,
+workflow summaries, review README files, and optional ML-readiness artifacts. It
+is static navigation only: no web server, no GUI framework, no JavaScript
+calculations, no design approval, and no ML project-use approval.
