@@ -812,3 +812,16 @@ metrics only.
 
 Any interpretation of model winners still requires engineer review. ML remains
 advisory-only and deterministic SP63 checks remain mandatory.
+
+## K57 Multi-Seed Benchmark Trend Report
+
+K57 adds an aggregate trend report for several K55 synthetic benchmark reports.
+It summarizes dataset row counts, class distributions, metric mean/min/max/std
+values, and baseline-vs-neural winner counts across runs.
+
+The trend report reads existing benchmark outputs and does not rerun K55, train
+models, change formulas, change materials, or change reinforcement selection.
+It is not external validation and is not production evidence.
+
+Engineer review remains mandatory before drawing conclusions from benchmark
+trends. Material verification and external validation remain separate gates.

@@ -53,6 +53,7 @@ from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
     build_benchmark_model_comparison,
+    build_benchmark_trend_report,
     build_ml_proposal_package,
     build_ml_proposal_review_package,
     build_ml_readiness_report,
@@ -61,6 +62,7 @@ from sp63_core.ml import (
     build_neural_surrogate_report,
     build_report_baseline_ml_result,
     build_report_neural_surrogate_result,
+    discover_benchmark_reports,
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
@@ -528,6 +530,44 @@ def build_parser() -> ArgumentParser:
     )
     benchmark_model_comparison.add_argument("--json", action="store_true", help="print JSON output")
     benchmark_model_comparison.set_defaults(handler=_handle_benchmark_model_comparison)
+
+    benchmark_trend_report = subparsers.add_parser(
+        "benchmark-trend-report",
+        help="aggregate several synthetic benchmark reports into a trend report",
+    )
+    benchmark_trend_report.add_argument(
+        "--benchmark-report",
+        action="append",
+        default=[],
+        help="path to a K55 benchmark_report.json; may be repeated",
+    )
+    benchmark_trend_report.add_argument(
+        "--benchmark-dir",
+        action="append",
+        default=[],
+        help="directory to search recursively for benchmark_report.json files",
+    )
+    benchmark_trend_report.add_argument(
+        "--output-dir",
+        help="optional directory for benchmark trend Markdown/JSON/CSV files",
+    )
+    benchmark_trend_report.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write benchmark trend files even when output-dir is provided",
+    )
+    benchmark_trend_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown trend report",
+    )
+    benchmark_trend_report.add_argument(
+        "--csv",
+        action="store_true",
+        help="print CSV metric and winner trend rows",
+    )
+    benchmark_trend_report.add_argument("--json", action="store_true", help="print JSON output")
+    benchmark_trend_report.set_defaults(handler=_handle_benchmark_trend_report)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1816,6 +1856,69 @@ def _handle_benchmark_model_comparison(args: Namespace) -> int:
     print(f"baseline_status: {result.baseline_status}")
     print(f"neural_status: {result.neural_status}")
     print(f"metric_winners: {result.metric_winners}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"requires_engineer_review: {result.requires_engineer_review}")
+    print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
+    print(f"deterministic_checks_required: {result.deterministic_checks_required}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_benchmark_trend_report(args: Namespace) -> int:
+    report_paths = [Path(path) for path in args.benchmark_report]
+    for benchmark_dir in args.benchmark_dir:
+        report_paths.extend(discover_benchmark_reports(Path(benchmark_dir)))
+    report_paths = list(dict.fromkeys(report_paths))
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_benchmark_trend_report(
+        benchmark_report_paths=report_paths,
+        output_dir=output_dir,
+    )
+    payload = {
+        "command": "benchmark-trend-report",
+        **result.json_data,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="" if result.markdown.endswith("\n") else "\n")
+        return 0
+    if args.csv:
+        print("row_type,model,metric,count,mean,min,max,std,missing_count")
+        for row in result.csv_rows:
+            print(
+                "metric,"
+                f"{row['model']},{row['metric']},{row['count']},{row['mean']},"
+                f"{row['min']},{row['max']},{row['std']},{row['missing_count']}"
+            )
+        print("row_type,metric,baseline_win_count,neural_win_count,tie_count,missing_count")
+        for metric, row in result.winner_summary.items():
+            print(
+                "winner,"
+                f"{metric},{row['baseline_win_count']},{row['neural_win_count']},"
+                f"{row['tie_count']},{row['missing_count']}"
+            )
+        return 0
+
+    print("Benchmark trend report")
+    print(f"status: {result.status}")
+    print(f"trend_status: {result.trend_status}")
+    print(f"benchmark_count: {result.benchmark_count}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"dataset_row_count_summary: {result.dataset_row_count_summary}")
+    print(f"distribution_summary: {result.distribution_summary}")
+    print(f"winner_summary: {result.winner_summary}")
     print(f"synthetic_data_only: {result.synthetic_data_only}")
     print(f"requires_engineer_review: {result.requires_engineer_review}")
     print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")

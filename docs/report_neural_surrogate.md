@@ -205,3 +205,15 @@ The comparison reports per-metric winners between non-neural baseline and
 advisory neural surrogate smoke metrics. It does not rerun the benchmark,
 does not retrain the neural surrogate, and does not make neural output a design
 checker.
+
+## K57 Multi-Seed Trend Report
+
+K57 aggregates neural surrogate metrics across several K55 benchmark reports:
+
+```bash
+python -m sp63_core benchmark-trend-report --benchmark-dir reports/benchmark_runs --json
+```
+
+The trend report records neural metric mean/min/max/std, missing counts, and
+winner counts against the non-neural baseline. It remains advisory-only and is
+not production evidence.

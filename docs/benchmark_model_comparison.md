@@ -98,3 +98,17 @@ make the comparison status `fail`.
 - Material verification and external validation remain separate gates.
 - Engineer review is required before using benchmark trends for project
   decisions.
+
+## K57 Trend Reports
+
+After several benchmark runs are available, use K57 to aggregate trend metrics:
+
+```bash
+python -m sp63_core benchmark-trend-report \
+  --benchmark-dir reports/benchmark_runs \
+  --output-dir reports/benchmark_trend \
+  --json
+```
+
+The trend report compares stability across multiple synthetic benchmark
+reports. It remains advisory-only and is not external validation.

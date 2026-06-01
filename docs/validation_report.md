@@ -1016,3 +1016,22 @@ critical field failure handling, and CLI JSON/Markdown/CSV output.
 K56 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The comparison is a
 synthetic benchmark review report only; metrics are not production evidence.
+
+## K57 Multi-Seed Benchmark Trend Validation
+
+K57 adds validation coverage for `benchmark-trend-report`:
+
+```bash
+python -m sp63_core benchmark-trend-report --benchmark-report reports/synthetic_ml_benchmark_seed_1/benchmark_report.json --benchmark-report reports/synthetic_ml_benchmark_seed_2/benchmark_report.json --output-dir reports/benchmark_trend_smoke --json
+python -m sp63_core benchmark-trend-report --benchmark-dir reports --output-dir reports/benchmark_trend_discovery_smoke --json
+python -m sp63_core benchmark-trend-report --benchmark-report reports/synthetic_ml_benchmark_seed_1/benchmark_report.json --benchmark-report reports/synthetic_ml_benchmark_seed_2/benchmark_report.json --markdown
+python -m sp63_core benchmark-trend-report --benchmark-report reports/synthetic_ml_benchmark_seed_1/benchmark_report.json --benchmark-report reports/synthetic_ml_benchmark_seed_2/benchmark_report.json --csv
+```
+
+The tests verify multi-report aggregation, discovery, Markdown/JSON/CSV output,
+metric mean/min/max/std calculation, winner summary counts, missing metric
+warnings, and partial input-error handling.
+
+K57 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The trend report is a
+synthetic benchmark diagnostic only; trends are not production evidence.
