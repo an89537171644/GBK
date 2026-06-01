@@ -108,3 +108,16 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 The generator evaluates candidates through deterministic SP63 draft design
 results and accepts only cases that help fill the requested `overall_status`
 distribution. ML does not guide generation.
+
+## K55 Synthetic ML Benchmark
+
+K55 combines guided generation, batch report creation, dataset export, balance
+checks, feature checks, baseline ML, and neural surrogate smoke metrics:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The benchmark writes local `benchmark_report.json`, `benchmark_report.md`, and
+`README_BENCHMARK.md` files. Generated benchmark outputs should not be
+committed.

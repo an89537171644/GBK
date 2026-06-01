@@ -47,6 +47,10 @@ from sp63_core.ml.report_proposal_package import (
     build_ml_proposal_package,
 )
 from sp63_core.ml.safety import check_ml_prediction_safety, check_ml_proposal_safety
+from sp63_core.ml.synthetic_benchmark import (
+    SyntheticMLBenchmarkResult,
+    run_synthetic_ml_benchmark,
+)
 
 __all__ = [
     "BaselineModelBundle",
@@ -63,6 +67,7 @@ __all__ = [
     "NeuralAdvisoryPredictionResult",
     "ReportBaselineMLResult",
     "ReportNeuralSurrogateResult",
+    "SyntheticMLBenchmarkResult",
     "build_neural_advisory_prediction",
     "build_neural_advisory_safety_audit",
     "build_feature_matrix",
@@ -83,5 +88,6 @@ __all__ = [
     "proposal_from_prediction",
     "save_baseline_model_bundle",
     "train_baseline_models",
+    "run_synthetic_ml_benchmark",
     "verify_ml_proposal_with_deterministic_core",
 ]

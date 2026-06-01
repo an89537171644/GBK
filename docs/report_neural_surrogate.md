@@ -180,3 +180,15 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 
 Neural surrogate metrics remain smoke diagnostics only. ML does not guide
 generation and deterministic SP63 verification remains mandatory.
+
+## K55 Synthetic Benchmark
+
+K55 runs the advisory report-derived neural surrogate as part of a full
+synthetic benchmark:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The benchmark report compares neural metrics with non-neural baseline metrics.
+The neural surrogate remains advisory-only and is not a design checker.

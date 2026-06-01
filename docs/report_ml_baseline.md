@@ -181,3 +181,15 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 
 The baseline still uses leakage-safe feature selection and remains
 advisory-only. Guided generation does not make ML a calculator.
+
+## K55 Synthetic Benchmark
+
+K55 runs the report-derived baseline as part of a full synthetic benchmark:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The benchmark report compares baseline metrics with neural surrogate smoke
+metrics. These metrics are synthetic-only review aids and are not production
+evidence.

@@ -166,3 +166,16 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 The generated cases are still synthetic-only and must pass through
 `design-report-batch`, archive validation, dataset export, and this quality
 gate before ML review.
+
+## K55 Benchmark Quality Stage
+
+K55 runs this quality gate inside `synthetic-ml-benchmark` after guided
+generation, batch report creation, and dataset export:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The benchmark status remains `review_required` when the dataset is synthetic,
+too small, or missing production evidence. It remains a review artifact, not a
+design approval.

@@ -979,3 +979,22 @@ report-derived dataset export, and synthetic balance integration.
 K54 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. Guided data is synthetic
 only and requires engineer review.
+
+## K55 Large Balanced Synthetic ML Benchmark
+
+K55 adds validation coverage for `synthetic-ml-benchmark`:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark_smoke --target-pass 2 --target-fail 2 --target-review 2 --seed 42 --max-attempts 1000 --json
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark_smoke_derived --target-pass 2 --target-fail 2 --target-review 2 --seed 42 --max-attempts 1000 --feature-mode deterministic_derived --json
+```
+
+The benchmark verifies the integrated synthetic pipeline from guided input
+generation through batch reports, dataset export, balance/readiness gates,
+feature selection, baseline ML, neural surrogate smoke metrics, and
+Markdown/JSON benchmark reports.
+
+K55 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. Benchmark data is
+synthetic-only, benchmark metrics are not production evidence, and engineer
+review remains required.

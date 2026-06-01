@@ -209,3 +209,15 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 
 Feature preparation remains unchanged: status/check/result columns stay out of
 input-only ML features.
+
+## K55 Benchmark Feature Stage
+
+K55 runs this feature stage automatically inside `synthetic-ml-benchmark`:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+`input_only` remains the default benchmark feature mode.
+`deterministic_derived` is available for review-only experiments and keeps the
+existing leakage warning.
