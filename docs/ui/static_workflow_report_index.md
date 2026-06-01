@@ -79,3 +79,10 @@ This static index does not certify the design. Deterministic SP63 verification a
 - deterministic SP63 report remains the primary result;
 - engineer review remains mandatory;
 - `ml_ready_for_project_use = false`.
+
+## K66 Input Form Schema Link
+
+K66 adds `input-form-schema` as metadata for a future form that could launch the
+static-report workflow. The schema defines fields, validation hints, and
+mandatory warnings, but it does not implement a UI and does not perform
+calculations.

@@ -153,3 +153,14 @@ python -m sp63_core engineering-workflow \
 
 The index links to existing report files and warnings only. It does not start a
 server, execute calculations, approve design decisions, or change ML policy.
+
+## K66 Input Form Schema
+
+Future workflow launchers can inspect:
+
+```bash
+python -m sp63_core input-form-schema --output-dir reports/input_form_schema --json
+```
+
+The schema documents input fields and validation hints only. It does not change
+the engineering workflow runner and does not approve ML for project use.

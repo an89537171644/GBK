@@ -70,3 +70,9 @@ SP63 verification and engineer review are mandatory.
 The index remains static. It does not run calculations, start a web server, add
 JavaScript calculations, or add Streamlit/Gradio/FastAPI/Flask/PyQt/PySide/
 Tkinter/Electron dependencies.
+
+## K66 Form Schema Follow-Up
+
+K66 adds `input-form-schema` so a future static report viewer or launcher can
+use a documented set of input fields and validation hints without adding a GUI
+runtime or duplicating calculation logic.

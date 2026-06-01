@@ -128,3 +128,9 @@ K65 adds `engineering-report-index` as the first static report navigation layer.
 It creates `index.html` for an existing workflow output folder and keeps the
 contract rules intact: deterministic SP63 status remains primary, ML remains
 advisory-only, and `ml_ready_for_project_use` remains false.
+
+## K66 Input Schema
+
+K66 adds a machine-readable input form schema for future wrappers. A wrapper may
+use it to display fields and validation hints, but must still call the existing
+CLI/workflow commands and must not perform calculations in the UI layer.

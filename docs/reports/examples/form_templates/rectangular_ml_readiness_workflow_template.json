@@ -1,0 +1,10 @@
+{
+  "input_json_path": "docs/reports/examples/rectangular_design_input_example.json",
+  "output_dir": "reports/engineering_workflow_example",
+  "create_zip": true,
+  "with_index": true,
+  "include_ml_readiness": true,
+  "dataset_path": "data/report_dataset.jsonl",
+  "external_validation_csv": "docs/validation/samples/external_validation_filled_sample.csv",
+  "material_verification_csv": "docs/materials/material_verification_engineer_filled.csv"
+}

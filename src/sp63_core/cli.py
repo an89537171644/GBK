@@ -114,6 +114,7 @@ from sp63_core.validation import (
 from sp63_core.workflows import (
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
+    build_input_form_schema,
     build_static_workflow_report_index,
     render_self_check_markdown,
     run_engineering_workflow,
@@ -531,6 +532,31 @@ def build_parser() -> ArgumentParser:
         help="print Markdown planning decision",
     )
     engineering_gui_planning.set_defaults(handler=_handle_engineering_gui_planning)
+
+    input_form_schema = subparsers.add_parser(
+        "input-form-schema",
+        help="write or print future UI input JSON form schema and validation hints",
+    )
+    input_form_schema.add_argument(
+        "--output-dir",
+        help="output directory for input_form_schema.json and input_form_schema.md",
+    )
+    input_form_schema.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write schema files even when --output-dir is provided",
+    )
+    input_form_schema.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON summary",
+    )
+    input_form_schema.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown schema",
+    )
+    input_form_schema.set_defaults(handler=_handle_input_form_schema)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2066,6 +2092,45 @@ def _handle_engineering_gui_planning(args: Namespace) -> int:
     print(f"decision_status: {result.decision_status}")
     print(f"recommended_option: {result.recommended_option}")
     print(f"recommended_next_step: {result.recommended_next_step}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_input_form_schema(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_input_form_schema(output_dir=output_dir)
+    payload = {
+        "command": "input-form-schema",
+        "status": result.status,
+        "schema_status": result.schema_status,
+        "output_dir": result.output_dir,
+        "field_count": result.field_count,
+        "required_fields": result.required_fields,
+        "optional_fields": result.optional_fields,
+        "validation_rules_count": result.validation_rules_count,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Input form schema")
+    print(f"status: {result.status}")
+    print(f"schema_status: {result.schema_status}")
+    print(f"field_count: {result.field_count}")
+    print(f"validation_rules_count: {result.validation_rules_count}")
+    print(f"output_dir: {result.output_dir}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     return 0

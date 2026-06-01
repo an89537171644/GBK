@@ -91,3 +91,7 @@ K65 adds `engineering-report-index`, which can be run after a self-check output
 folder is created to generate a static `index.html` over the workflow artifacts.
 The index does not certify calculations and does not replace self-check,
 archive validation, or engineer review.
+
+K66 adds input-form schema metadata for future UI/wrapper validation hints. The
+self-check remains the executable workflow smoke test; the schema is not a
+calculation or approval mechanism.

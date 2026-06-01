@@ -962,3 +962,14 @@ K65 preserves calculation formulas, material values, material catalog gates,
 reinforcement selection, external validation, and ML safety policy. HTML output
 does not make ML a calculator; engineer review remains mandatory and
 `ml_ready_for_project_use` remains false.
+
+## K66 Input Form Schema Audit
+
+K66 adds `input-form-schema` and `workflows/input_form_schema.py` for future UI
+metadata only. It documents field groups, validation hints, mandatory warnings,
+and anonymized input templates.
+
+K66 does not implement UI, start a server, run calculations, change formulas,
+change material values, change reinforcement selection, or approve ML for
+project use. `ml_ready_for_project_use` remains false and engineer review
+remains mandatory.

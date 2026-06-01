@@ -69,9 +69,10 @@
 | `workflows/interface_contract.py` | implemented future GUI/desktop wrapper interface contract | yes | yes | use as planning contract only; no UI implementation and no project approval |
 | `workflows/gui_planning.py` | implemented planning-only GUI technology decision with CLI-first static report recommendation | yes | yes | K65 may add static report index/launcher planning without heavy UI dependencies |
 | `workflows/static_report_index.py` | implemented static HTML workflow report index over generated engineering workflow artifacts | yes | yes | use as static navigation only; no calculations, server, GUI framework, or project approval |
+| `workflows/input_form_schema.py` | implemented future UI input JSON form schema and validation hints | yes | yes | use as metadata only; no UI implementation, no calculations, and no ML project-use approval |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | experimental baseline sandbox implemented | yes | yes | advisory only; deterministic checks mandatory |
-| UI | planning contract, technology decision, and static report index only | yes | yes | K65 adds static HTML navigation; full UI implementation remains a separate approved step |
+| UI | planning contract, technology decision, static report index, and input form schema only | yes | yes | K66 adds schema/hints only; full UI implementation remains a separate approved step |

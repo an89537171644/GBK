@@ -86,6 +86,13 @@ python -m sp63_core engineering-report-index --workflow-dir <workflow_dir> --jso
 The index is still not a GUI framework and does not perform calculations. It is
 a navigation layer over deterministic workflow outputs.
 
+## K66 Form Schema Follow-Up
+
+K66 adds the next planning layer: `input-form-schema`. It describes future form
+fields, validation hints, and mandatory warnings while keeping the CLI/workflow
+layer authoritative. It does not implement UI and keeps
+`ml_ready_for_project_use = false`.
+
 ## Limitations
 
 K64 does not implement an interface, does not certify design decisions, does

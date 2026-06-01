@@ -998,3 +998,21 @@ The generated `index.html` links to the deterministic report, manifest, ZIP,
 workflow summaries, review README files, and optional ML-readiness artifacts. It
 is static navigation only: no web server, no GUI framework, no JavaScript
 calculations, no design approval, and no ML project-use approval.
+
+## K66 input form schema and validation hints
+
+K66 adds a planning-only input form schema for future engineering UI/wrapper
+work:
+
+```bash
+python -m sp63_core input-form-schema --output-dir reports/input_form_schema --json
+```
+
+The command writes `input_form_schema.json` and `input_form_schema.md` with
+field groups, required/optional fields, validation hints, and mandatory safety
+warnings. It also adds anonymized templates under
+`docs/reports/examples/form_templates/`.
+
+This is not a GUI and does not start a web server. The schema does not execute
+calculations, does not change formulas or materials, does not make ML a design
+checker, and keeps `ml_ready_for_project_use = false`.
