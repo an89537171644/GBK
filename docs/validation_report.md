@@ -962,3 +962,20 @@ preservation, CLI JSON output, and split-index output.
 K53 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The balance report is a
 review gate for synthetic ML experiments only.
+
+## K54 Guided Synthetic Class Balancing
+
+K54 adds validation coverage for `guided-synthetic-inputs`:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs_smoke --target-pass 2 --target-fail 2 --target-review 2 --seed 42 --max-attempts 500 --json
+```
+
+The tests verify guided case creation, manifest fields, deterministic
+`overall_status` recording, existing input-reader compatibility, CLI JSON
+output, no-serviceability review warnings, `design-report-batch` compatibility,
+report-derived dataset export, and synthetic balance integration.
+
+K54 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. Guided data is synthetic
+only and requires engineer review.

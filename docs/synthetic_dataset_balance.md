@@ -108,3 +108,16 @@ The report can recommend:
 - ML remains advisory-only.
 - Deterministic SP63 checks remain mandatory.
 - Every use of this gate requires engineer review.
+
+## K54 Guided Generation
+
+When balance recommendations indicate missing or weak classes, K54 can generate
+additional synthetic inputs toward a target distribution:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --json
+```
+
+The guided generator still uses deterministic SP63 results for candidate
+classification. It does not use ML to accept cases and does not turn synthetic
+data into external validation.

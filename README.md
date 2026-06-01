@@ -773,6 +773,26 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   not replace material verification, external validation, or deterministic SP63
   checks. ML remains advisory-only.
 
+## K54 guided synthetic class balancing status
+
+- CLI command `guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs
+  --target-pass 50 --target-fail 50 --target-review 50 --seed 42
+  --max-attempts 3000 --json` generates synthetic input JSON cases toward a
+  requested `overall_status` distribution.
+- Candidate cases are accepted only after deterministic SP63 draft design
+  evaluation reports an `overall_status` that helps fill the target
+  distribution.
+- Generated folders include `case_*.json`, `README_GUIDED_SYNTHETIC.md`, and
+  `guided_synthetic_manifest.json`.
+- The guided manifest records the target goal, final distribution,
+  accepted/rejected/generated counts, per-case SHA256, and deterministic
+  `overall_status`.
+- The guided input folder can feed `design-report-batch`,
+  `report-dataset-export`, and `synthetic-dataset-balance`.
+- ML does not guide generation and remains advisory-only. Synthetic data is not
+  external validation, deterministic SP63 checks remain mandatory, and engineer
+  review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

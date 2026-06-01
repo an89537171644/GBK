@@ -168,3 +168,15 @@ python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report
 The balance report is a review gate for class diversity and stratified split
 readiness. It does not make neural surrogate output a design checker, and it
 does not replace deterministic SP63 verification.
+
+## K54 Guided Synthetic Neural Smoke Source
+
+Guided generation can prepare a balanced synthetic source before neural smoke
+metrics are reviewed:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --json
+```
+
+Neural surrogate metrics remain smoke diagnostics only. ML does not guide
+generation and deterministic SP63 verification remains mandatory.

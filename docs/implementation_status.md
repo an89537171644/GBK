@@ -33,6 +33,7 @@
 | `dataset/ml_features.py` | implemented leakage-safe feature and split metadata for report-derived datasets | yes | yes | engineer review feature columns before baseline ML |
 | `dataset/synthetic_report_inputs.py` | implemented reproducible synthetic design-report input generation for report-derived ML smoke datasets | yes | yes | use only for synthetic ML experiments; external validation remains separate |
 | `dataset/synthetic_balance.py` | implemented synthetic report-derived dataset balance and stratified readiness gate | yes | yes | review class balance and split readiness before synthetic ML experiments |
+| `dataset/synthetic_guided.py` | implemented deterministic-guided synthetic input generation for class balancing | yes | yes | use only for synthetic ML experiments; external validation remains separate |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K21 report counters for deterministic statuses and serviceability output ranges | yes | no | compare enriched report ranges during dataset review |
 | `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |

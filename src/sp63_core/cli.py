@@ -33,6 +33,7 @@ from sp63_core.dataset import (
     export_dataset_split_csv,
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
+    generate_guided_synthetic_inputs,
     generate_synthetic_report_inputs,
     load_report_dataset_rows,
     run_report_dataset_quality_gate,
@@ -284,6 +285,28 @@ def build_parser() -> ArgumentParser:
     )
     synthetic_report_inputs.add_argument("--json", action="store_true", help="print JSON output")
     synthetic_report_inputs.set_defaults(handler=_handle_synthetic_report_inputs)
+
+    guided_synthetic_inputs = subparsers.add_parser(
+        "guided-synthetic-inputs",
+        help="generate deterministic-guided synthetic input JSON cases by target status",
+    )
+    guided_synthetic_inputs.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for guided synthetic input JSON cases",
+    )
+    guided_synthetic_inputs.add_argument("--target-pass", type=int, default=50)
+    guided_synthetic_inputs.add_argument("--target-fail", type=int, default=50)
+    guided_synthetic_inputs.add_argument("--target-review", type=int, default=50)
+    guided_synthetic_inputs.add_argument("--seed", type=int, default=42)
+    guided_synthetic_inputs.add_argument("--max-attempts", type=int, default=1000)
+    guided_synthetic_inputs.add_argument(
+        "--no-serviceability",
+        action="store_true",
+        help="omit serviceability fields and checks from generated candidates",
+    )
+    guided_synthetic_inputs.add_argument("--json", action="store_true", help="print JSON output")
+    guided_synthetic_inputs.set_defaults(handler=_handle_guided_synthetic_inputs)
 
     report_archive_validate = subparsers.add_parser(
         "report-archive-validate",
@@ -1318,6 +1341,49 @@ def _handle_synthetic_report_inputs(args: Namespace) -> int:
     return 0
 
 
+def _handle_guided_synthetic_inputs(args: Namespace) -> int:
+    target_distribution_goal = {
+        "pass": args.target_pass,
+        "fail": args.target_fail,
+        "review_or_fail": args.target_review,
+    }
+    result = generate_guided_synthetic_inputs(
+        output_dir=Path(args.output_dir),
+        target_distribution_goal=target_distribution_goal,
+        seed=args.seed,
+        max_attempts=args.max_attempts,
+        include_serviceability=not args.no_serviceability,
+    )
+    payload = {
+        "command": "guided-synthetic-inputs",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Guided synthetic report input generation")
+    print(f"status: {result.status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"target_distribution_goal: {result.target_distribution_goal}")
+    print(f"generated_count: {result.generated_count}")
+    print(f"accepted_count: {result.accepted_count}")
+    print(f"rejected_count: {result.rejected_count}")
+    print(f"final_distribution: {result.final_distribution}")
+    print(f"seed: {result.seed}")
+    print(f"max_attempts: {result.max_attempts}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"requires_engineer_review: {result.requires_engineer_review}")
+    print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
+    print(f"deterministic_checks_required: {result.deterministic_checks_required}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_report_archive_validate(args: Namespace) -> int:
     archive_path = Path(args.path)
     is_batch = bool(args.batch or (archive_path / "index.json").exists())
@@ -1589,7 +1655,13 @@ def _collect_batch_design_report_inputs(args: Namespace) -> tuple[Path, ...]:
         input_paths.extend(
             path
             for path in sorted(input_dir.glob("*.json"))
-            if path.name not in {"index.json", "manifest.json", "synthetic_manifest.json"}
+            if path.name
+            not in {
+                "index.json",
+                "manifest.json",
+                "synthetic_manifest.json",
+                "guided_synthetic_manifest.json",
+            }
         )
     if not input_paths:
         raise ValueError("design-report-batch requires --input-dir or at least one --input-json")

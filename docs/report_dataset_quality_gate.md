@@ -153,3 +153,16 @@ This complements the structural quality gate by checking target distribution,
 required `overall_status` classes, class imbalance, and whether a stratified
 train/validation/test split can preserve all target classes. The command
 reports recommendations instead of changing dataset rows.
+
+## K54 Guided Generation
+
+K54 can generate a synthetic input set toward the desired class distribution
+before this quality gate is run:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --json
+```
+
+The generated cases are still synthetic-only and must pass through
+`design-report-batch`, archive validation, dataset export, and this quality
+gate before ML review.
