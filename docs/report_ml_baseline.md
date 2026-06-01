@@ -142,3 +142,17 @@ The package combines K48 prediction, K49 safety audit, deterministic SP63
 statuses, class probabilities, proposal decision flags, rejection/review
 reasons, and Markdown output. It does not make ML a calculator and does not
 change the K46 baseline feature or training policy.
+
+## K52 Synthetic Report Inputs
+
+For a larger smoke dataset, generate synthetic input cases first:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+python -m sp63_core design-report-batch --input-dir reports/synthetic_inputs --output-dir reports/synthetic_batch_reports --json
+python -m sp63_core report-dataset-export --path reports/synthetic_batch_reports --batch --output reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core report-ml-baseline --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The baseline remains non-neural and advisory-only. Synthetic data does not
+replace external validation or engineer review.

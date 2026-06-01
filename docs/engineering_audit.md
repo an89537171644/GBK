@@ -730,3 +730,15 @@ verification remains mandatory, and engineer review remains required.
 - Golden-case expansion.
 - Baseline ML review only after deterministic checks and external validation
   gates are accepted.
+## K52 Synthetic Report Dataset Generation
+
+K52 adds a deterministic generator for synthetic report input JSON cases:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+```
+
+The generated cases are anonymous synthetic values for report-derived dataset
+and ML smoke experiments. They do not replace external validation, material
+verification, or engineer review. The generator does not change calculation
+formulas, material values, reinforcement selection, or ML safety rules.

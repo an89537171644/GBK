@@ -127,3 +127,16 @@ python -m sp63_core report-neural-predict --dataset reports/batch_dataset.jsonl 
 
 The prediction is never accepted on its own. The deterministic SP63 report for
 the same input remains authoritative.
+
+## K52 Larger Synthetic Inputs
+
+K52 adds:
+
+```bash
+python -m sp63_core synthetic-report-inputs --output-dir reports/synthetic_inputs --case-count 300 --seed 42 --json
+```
+
+The generated cases can be converted to report-derived rows through
+`design-report-batch` and `report-dataset-export` before running this quality
+gate. A larger synthetic set should reduce smoke-only small-dataset warnings,
+but it is still synthetic data and still requires engineer review.
