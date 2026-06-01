@@ -757,6 +757,22 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   ML remains advisory-only, deterministic SP63 checks remain mandatory, and
   engineer review is required.
 
+## K53 synthetic dataset balance and stratified readiness status
+
+- CLI command `synthetic-dataset-balance --dataset reports/synthetic_dataset_smoke.jsonl --json`
+  analyzes class balance and stratified split readiness for synthetic
+  report-derived datasets.
+- CSV datasets are supported with `--format csv`.
+- `--split-index-output reports/synthetic_split_index.json` writes a
+  deterministic train/validation/test split index by target class.
+- The gate checks required report-derived columns, advisory flags,
+  `archive_validation_status`, target class distribution, class imbalance,
+  stratified split feasibility, and leakage-like status/check columns.
+- `overall_status` readiness expects `pass`, `fail`, and `review_or_fail`.
+- Synthetic dataset balance reports are review aids only. Synthetic data does
+  not replace material verification, external validation, or deterministic SP63
+  checks. ML remains advisory-only.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

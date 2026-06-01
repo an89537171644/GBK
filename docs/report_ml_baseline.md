@@ -156,3 +156,17 @@ python -m sp63_core report-ml-baseline --dataset reports/synthetic_report_datase
 
 The baseline remains non-neural and advisory-only. Synthetic data does not
 replace external validation or engineer review.
+
+## K53 Synthetic Balance Before Baseline
+
+Run the synthetic balance gate before interpreting baseline metrics from a
+synthetic report-derived dataset:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The gate reports whether `overall_status` has `pass`, `fail`, and
+`review_or_fail`, whether minority classes are large enough, and whether a
+stratified split is feasible. Baseline metrics remain advisory-only and require
+engineer review.

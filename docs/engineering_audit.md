@@ -742,3 +742,23 @@ The generated cases are anonymous synthetic values for report-derived dataset
 and ML smoke experiments. They do not replace external validation, material
 verification, or engineer review. The generator does not change calculation
 formulas, material values, reinforcement selection, or ML safety rules.
+
+## K53 Synthetic Dataset Balance Readiness
+
+K53 adds `synthetic-dataset-balance` for reviewing synthetic report-derived
+datasets before ML smoke evaluation:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.csv --format csv --json
+```
+
+The report checks target class distribution, required `overall_status` classes,
+minority class counts, imbalance ratio, stratified split feasibility, leakage
+column detection, and advisory safety flags. It can write a split-index JSON for
+review.
+
+K53 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. Synthetic data
+remains synthetic-only, ML remains advisory-only, and deterministic SP63 checks
+remain mandatory.

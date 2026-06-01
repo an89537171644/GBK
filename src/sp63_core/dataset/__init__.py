@@ -46,6 +46,11 @@ from sp63_core.dataset.split import (
     export_dataset_split_csv,
     split_dataset_cases,
 )
+from sp63_core.dataset.synthetic_balance import (
+    SyntheticDatasetBalanceResult,
+    analyze_synthetic_dataset_balance,
+    build_stratified_split_summary,
+)
 from sp63_core.dataset.synthetic_report_inputs import (
     SYNTHETIC_REPORT_INPUT_GENERATOR,
     SyntheticReportInputGenerationResult,
@@ -71,8 +76,11 @@ __all__ = [
     "SYNTHETIC_REPORT_INPUT_GENERATOR",
     "ReportDatasetExportResult",
     "SyntheticReportInputGenerationResult",
+    "SyntheticDatasetBalanceResult",
+    "analyze_synthetic_dataset_balance",
     "build_dataset_report",
     "build_report_dataset_feature_set",
+    "build_stratified_split_summary",
     "detect_leakage_columns",
     "diagnostic_dataset_warnings",
     "diagnostic_group_leakage_count",

@@ -155,3 +155,16 @@ python -m sp63_core report-neural-surrogate --dataset reports/synthetic_report_d
 
 The neural surrogate remains advisory-only and is not a design checker.
 Synthetic data is not external validation and metrics are not certification.
+
+## K53 Synthetic Balance Before Neural Smoke Runs
+
+For synthetic report-derived neural surrogate smoke runs, first check class
+balance:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+```
+
+The balance report is a review gate for class diversity and stratified split
+readiness. It does not make neural surrogate output a design checker, and it
+does not replace deterministic SP63 verification.

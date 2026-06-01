@@ -173,3 +173,19 @@ folder can be passed directly to `design-report-batch`.
 
 Synthetic inputs are only for ML smoke experiments and pipeline checks. They do
 not replace material verification, manual checks, or external validation.
+
+## K53 Synthetic Dataset Balance
+
+Synthetic report-derived rows can now be checked for class balance and
+stratified split readiness:
+
+```bash
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.csv --format csv --json
+python -m sp63_core synthetic-dataset-balance --dataset reports/synthetic_report_dataset.jsonl --split-index-output reports/synthetic_split_index.json --json
+```
+
+The gate expects `overall_status` to include `pass`, `fail`, and
+`review_or_fail`, reports imbalance and minority-class warnings, and recommends
+new synthetic ranges when classes are missing. The split index is a review aid
+for future ML experiments; it does not certify the dataset.
