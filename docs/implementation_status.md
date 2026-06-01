@@ -64,6 +64,7 @@
 | `ml/external_readiness.py` | implemented external validation awareness for ML readiness | yes | yes | provide external validation and material verification CSVs before engineering ML review |
 | `ml/material_readiness.py` | implemented material verification coverage readiness for report-derived ML datasets | yes | yes | provide complete engineer-filled material verification CSV before engineering ML review |
 | `ml/engineering_readiness_bundle.py` | implemented aggregated engineering ML readiness bundle | yes | yes | review dataset, external validation, material verification, benchmark, and proposal evidence before ML research use |
+| `workflows/engineering_workflow.py` | implemented end-to-end engineering workflow runner for deterministic reports, archive validation, ZIP, and optional ML readiness | yes | yes | use only as review orchestration; engineer review and deterministic SP63 checks remain mandatory |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

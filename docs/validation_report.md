@@ -1097,3 +1097,21 @@ Markdown, and CSV modes.
 K60 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The readiness bundle does
 not approve ML for project use; `ml_ready_for_project_use` remains false.
+
+## K61 Engineering Workflow Runner Validation
+
+K61 adds validation coverage for `engineering-workflow`:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_smoke --json
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_nozip_smoke --no-zip --json
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_ml_smoke --include-ml-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+```
+
+The tests verify deterministic report bundle output, archive validation, ZIP
+creation, `--no-zip`, workflow summaries, `README_WORKFLOW.md`, advisory ML
+readiness output, missing-dataset review warnings, and CLI JSON/Markdown modes.
+
+K61 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The workflow is
+orchestration only and does not certify project use.
