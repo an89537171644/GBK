@@ -681,6 +681,27 @@ generation, external validation, or material verification. Neural prediction is
 not a project decision, K30 safety-wrapper philosophy remains mandatory, and
 deterministic SP63 verification remains authoritative.
 
+## K50 ML Proposal Package with Deterministic Safety Wrapper
+
+K50 adds `ml-proposal-package` as a package layer around K48 advisory prediction
+and K49 safety audit:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+```
+
+The package records predicted status, confidence, class probabilities,
+deterministic strength/serviceability/overall statuses,
+`prediction_matches_deterministic`, `advisory_signal_usable`,
+`safety_audit_status`, `proposal_status`, proposal accept/reject/review flags,
+warnings, errors, and rejection/review reasons.
+
+K50 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. It does not make ML
+a design checker. Even an accepted package is only an advisory signal and still
+requires deterministic SP63 verification and engineer review.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

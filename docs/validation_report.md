@@ -876,6 +876,28 @@ formulas, material values, reinforcement selection algorithms, UI, or external
 validation gates. Neural prediction remains advisory-only and is not a design
 checker. Deterministic SP63 checks and engineer review remain mandatory.
 
+## K50 ML Proposal Package with Deterministic Safety Wrapper
+
+K50 adds validation coverage for `ml-proposal-package`:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.csv --format csv --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+```
+
+The tests verify JSONL and CSV package construction, deterministic SP63 status
+propagation, class probabilities, advisory-only flags, accepted/review/rejected
+proposal decisions, mismatch rejection, deterministic fail rejection,
+deterministic-derived warning, Markdown output, CLI JSON output, and `--output`
+file creation.
+
+K50 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, UI, or external
+validation gates. ML proposal output remains advisory-only and is not a design
+checker. Deterministic SP63 checks and engineer review remain mandatory.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

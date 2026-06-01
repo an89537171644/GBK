@@ -53,6 +53,7 @@
 | `ml/report_neural_surrogate.py` | implemented advisory neural surrogate v2 for leakage-safe report-derived features | yes | yes | engineer review metrics and deterministic verification before any ML proposal use |
 | `ml/report_neural_prediction.py` | implemented neural advisory prediction with mandatory deterministic report verification | yes | yes | engineer review prediction/deterministic comparison before any ML proposal use |
 | `ml/report_neural_safety_audit.py` | implemented neural advisory safety audit report and proposal-audit wrapper | yes | yes | engineer review audit_status, rejection reasons, and deterministic comparison before any ML proposal use |
+| `ml/report_proposal_package.py` | implemented advisory ML proposal package through deterministic safety wrapper | yes | yes | engineer review proposal_status, rejection reasons, and deterministic safety evidence before any ML proposal use |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

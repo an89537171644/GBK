@@ -108,3 +108,17 @@ The audit records the prediction, deterministic statuses, match flag,
 `advisory_signal_usable`, `audit_status`, warnings, and rejection reasons. A
 prediction mismatch or deterministic fail/review status blocks advisory signal
 use and requires engineer review.
+
+## K50 Proposal Package
+
+K50 adds `ml-proposal-package` as an engineer-facing package for one advisory ML
+proposal:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+It includes this K48 prediction, K49 safety audit status, deterministic SP63
+statuses, class probabilities, proposal status, rejection/review reasons, and
+Markdown output. The proposal package is advisory-only and cannot be used as a
+design decision.

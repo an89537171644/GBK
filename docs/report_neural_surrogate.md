@@ -127,3 +127,16 @@ python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --
 
 The audit records `audit_status`, rejection reasons, warnings, and
 `advisory_signal_usable`. It does not make neural output a design checker.
+
+## K50 Proposal Package
+
+K50 adds a proposal package layer:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The package records predicted status, class probabilities, deterministic SP63
+statuses, K49 safety audit status, `proposal_status`, rejection/review reasons,
+warnings, and optional Markdown output. It remains advisory-only and does not
+turn the neural surrogate into a project design checker.
