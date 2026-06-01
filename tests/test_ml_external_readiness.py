@@ -24,6 +24,9 @@ def _write_dataset(path, *, external_status="not_provided", material_status="not
         "overall_status": "pass",
         "strength_status": "pass",
         "serviceability_status": "pass",
+        "concrete_class": "B25",
+        "longitudinal_rebar_class": "A500",
+        "stirrup_rebar_class": "A240",
         "external_validation_status": external_status,
         "material_verification_status": material_status,
     }

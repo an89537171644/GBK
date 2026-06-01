@@ -65,9 +65,11 @@ from sp63_core.ml import (
     discover_benchmark_reports,
     evaluate_baseline_models,
     evaluate_ml_external_validation_readiness,
+    evaluate_ml_material_verification_readiness,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
     render_ml_external_readiness_markdown,
+    render_ml_material_readiness_markdown,
     run_synthetic_ml_benchmark,
     save_baseline_model_bundle,
     train_baseline_models,
@@ -711,6 +713,33 @@ def build_parser() -> ArgumentParser:
     ml_external_readiness.add_argument("--output", help="optional Markdown output path")
     ml_external_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_external_readiness.set_defaults(handler=_handle_ml_external_readiness)
+
+    ml_material_readiness = subparsers.add_parser(
+        "ml-material-readiness",
+        help="check material verification coverage for ML/report-derived datasets",
+    )
+    ml_material_readiness.add_argument(
+        "--dataset",
+        required=True,
+        help="report-derived dataset path (jsonl, json, or csv)",
+    )
+    ml_material_readiness.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    ml_material_readiness.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV",
+    )
+    ml_material_readiness.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown readiness report",
+    )
+    ml_material_readiness.add_argument("--output", help="optional Markdown output path")
+    ml_material_readiness.add_argument("--json", action="store_true", help="print JSON output")
+    ml_material_readiness.set_defaults(handler=_handle_ml_material_readiness)
 
     ml_baseline = subparsers.add_parser(
         "ml-baseline",
@@ -2701,6 +2730,81 @@ def _handle_ml_external_readiness(args: Namespace) -> int:
         print("recommendations:")
         for recommendation in result.recommendations:
             print(f"- {recommendation}")
+    if output_path is not None:
+        print(f"output: {output_path}")
+    return 0
+
+
+def _handle_ml_material_readiness(args: Namespace) -> int:
+    result = evaluate_ml_material_verification_readiness(
+        dataset_path=Path(args.dataset),
+        material_verification_csv=(
+            None
+            if args.material_verification_csv is None
+            else Path(args.material_verification_csv)
+        ),
+        dataset_format=args.format,
+    )
+    markdown = render_ml_material_readiness_markdown(result)
+    output_path = None if args.output is None else Path(args.output)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(markdown, encoding="utf-8")
+
+    payload = {
+        "command": "ml-material-readiness",
+        **asdict(result),
+    }
+    if output_path is not None:
+        payload["output"] = str(output_path)
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.markdown:
+        print(markdown, end="")
+        if output_path is not None:
+            print(f"\noutput: {output_path}")
+        return 0
+
+    print("ML material verification readiness")
+    print(f"status: {result.status}")
+    print(f"source_dataset: {result.source_dataset}")
+    print(f"row_count: {result.row_count}")
+    print(f"material_verification_present: {result.material_verification_present}")
+    print(f"material_verification_complete: {result.material_verification_complete}")
+    print(f"material_coverage_ratio: {result.material_coverage_ratio:.6g}")
+    print(
+        "material_ready_for_engineering_review: "
+        f"{result.material_ready_for_engineering_review}"
+    )
+    print(f"material_ready_for_project_use: {result.material_ready_for_project_use}")
+    print(
+        "required_material_keys: "
+        f"{', '.join(result.required_material_keys) if result.required_material_keys else '-'}"
+    )
+    print(
+        "missing_material_keys: "
+        f"{', '.join(result.missing_material_keys) if result.missing_material_keys else '-'}"
+    )
+    print(
+        "rejected_material_keys: "
+        f"{', '.join(result.rejected_material_keys) if result.rejected_material_keys else '-'}"
+    )
+    print(
+        "review_required_material_keys: "
+        + (
+            ", ".join(result.review_required_material_keys)
+            if result.review_required_material_keys
+            else "-"
+        )
+    )
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     if output_path is not None:
         print(f"output: {output_path}")
     return 0

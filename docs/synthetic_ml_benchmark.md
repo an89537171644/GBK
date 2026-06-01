@@ -173,3 +173,20 @@ python -m sp63_core ml-external-readiness --dataset reports/synthetic_dataset_sm
 Synthetic benchmark data is not external validation. External validation CSVs
 and material verification CSVs must be supplied separately, and
 `ml_ready_for_project_use` remains false.
+
+## K59 Material Verification Readiness
+
+K59 adds `ml-material-readiness` for synthetic/report-derived benchmark
+datasets:
+
+```bash
+python -m sp63_core ml-material-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --material-verification-csv tests/fixtures/material_verification_sample.csv \
+  --json
+```
+
+The command checks material class coverage from the exported dataset against
+engineer-filled material verification rows. It does not change catalog values
+or benchmark metrics. Synthetic benchmark evidence remains review-only, ML
+remains advisory-only, and project-use readiness remains false.

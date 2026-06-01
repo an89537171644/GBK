@@ -14,10 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from sp63_core.dataset import load_report_dataset_rows
-from sp63_core.materials import (
-    MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
-    build_material_verification_report,
-)
+from sp63_core.ml.material_readiness import evaluate_ml_material_verification_readiness
 from sp63_core.validation import (
     EXTERNAL_VALIDATION_COLUMNS,
     build_external_validation_summary,
@@ -25,8 +22,6 @@ from sp63_core.validation import (
 
 NOT_PROVIDED = "not_provided"
 ACCEPTED = "accepted"
-VERIFIED = "engineer_verified"
-
 
 @dataclass(frozen=True)
 class MLExternalValidationReadinessResult:
@@ -44,6 +39,15 @@ class MLExternalValidationReadinessResult:
     synthetic_data_only: bool
     external_validation_present: bool
     material_verification_present: bool
+    material_verification_complete: bool
+    material_coverage_ratio: float
+    required_material_keys: tuple[str, ...]
+    verified_material_keys: tuple[str, ...]
+    missing_material_keys: tuple[str, ...]
+    rejected_material_keys: tuple[str, ...]
+    review_required_material_keys: tuple[str, ...]
+    material_ready_for_engineering_review: bool
+    material_ready_for_project_use: bool
     ml_ready_for_research: bool
     ml_ready_for_engineering_review: bool
     ml_ready_for_project_use: bool
@@ -116,26 +120,47 @@ def evaluate_ml_external_validation_readiness(
             errors.append(f"external validation CSV cannot be read: {exc}")
 
     material_verification_present = _dataset_has_material_verification(dataset_material_counts)
-    material_verification_pass = dataset_material_counts.get(VERIFIED, 0) > 0
+    material_verification_complete = False
+    material_coverage_ratio = 0.0
+    required_material_keys: tuple[str, ...] = ()
+    verified_material_keys: tuple[str, ...] = ()
+    missing_material_keys: tuple[str, ...] = ()
+    rejected_material_keys: tuple[str, ...] = ()
+    review_required_material_keys: tuple[str, ...] = ()
+    material_ready_for_engineering_review = False
+    material_ready_for_project_use = False
 
-    if material_verification_csv is None:
+    if dataset_path is not None and material_verification_csv is not None:
+        material_readiness = evaluate_ml_material_verification_readiness(
+            dataset_path=Path(dataset_path),
+            material_verification_csv=Path(material_verification_csv),
+        )
+        material_verification_present = material_readiness.material_verification_present
+        material_verification_complete = material_readiness.material_verification_complete
+        material_coverage_ratio = material_readiness.material_coverage_ratio
+        required_material_keys = material_readiness.required_material_keys
+        verified_material_keys = material_readiness.verified_material_keys
+        missing_material_keys = material_readiness.missing_material_keys
+        rejected_material_keys = material_readiness.rejected_material_keys
+        review_required_material_keys = material_readiness.review_required_material_keys
+        material_ready_for_engineering_review = (
+            material_readiness.material_ready_for_engineering_review
+        )
+        material_ready_for_project_use = material_readiness.material_ready_for_project_use
+        warnings.extend(material_readiness.warnings)
+        errors.extend(material_readiness.errors)
+        if not material_verification_present:
+            recommendations.append("provide engineer-filled material verification CSV")
+        if not material_ready_for_engineering_review:
+            recommendations.append(
+                "attach complete engineer material verification before engineering review"
+            )
+    elif material_verification_csv is None:
         warnings.append("material verification is not provided")
         recommendations.append("provide engineer-filled material verification CSV")
     else:
-        try:
-            material_rows = _load_required_csv(
-                Path(material_verification_csv),
-                MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
-                csv_name="material verification",
-            )
-            material_report = build_material_verification_report(material_rows)
-            material_verification_present = material_report.total_rows > 0
-            material_verification_pass = material_report.status == "pass"
-            warnings.extend(material_report.warnings)
-            if material_report.status != "pass":
-                warnings.append("material verification summary requires engineer review")
-        except (FileNotFoundError, ValueError, OSError) as exc:
-            errors.append(f"material verification CSV cannot be read: {exc}")
+        warnings.append("dataset is required for material verification readiness")
+        recommendations.append("provide a report-derived dataset with material class fields")
 
     row_count = len(dataset_rows)
     external_match_rate = (
@@ -160,8 +185,7 @@ def evaluate_ml_external_validation_readiness(
         and external_validation_present
         and accepted_external_case_count > 0
         and failed_external_case_count == 0
-        and material_verification_present
-        and material_verification_pass
+        and material_ready_for_engineering_review
     )
     ml_ready_for_project_use = False
 
@@ -197,6 +221,15 @@ def evaluate_ml_external_validation_readiness(
         synthetic_data_only=synthetic_data_only,
         external_validation_present=external_validation_present,
         material_verification_present=material_verification_present,
+        material_verification_complete=material_verification_complete,
+        material_coverage_ratio=material_coverage_ratio,
+        required_material_keys=required_material_keys,
+        verified_material_keys=verified_material_keys,
+        missing_material_keys=missing_material_keys,
+        rejected_material_keys=rejected_material_keys,
+        review_required_material_keys=review_required_material_keys,
+        material_ready_for_engineering_review=material_ready_for_engineering_review,
+        material_ready_for_project_use=material_ready_for_project_use,
         ml_ready_for_research=ml_ready_for_research,
         ml_ready_for_engineering_review=ml_ready_for_engineering_review,
         ml_ready_for_project_use=ml_ready_for_project_use,
@@ -239,6 +272,17 @@ def render_ml_external_readiness_markdown(
         "## Material verification summary",
         "",
         f"- material_verification_present: {result.material_verification_present}",
+        f"- material_verification_complete: {result.material_verification_complete}",
+        f"- material_coverage_ratio: {result.material_coverage_ratio:.6g}",
+        f"- required_material_keys: {_format_tuple(result.required_material_keys)}",
+        f"- verified_material_keys: {_format_tuple(result.verified_material_keys)}",
+        f"- missing_material_keys: {_format_tuple(result.missing_material_keys)}",
+        f"- rejected_material_keys: {_format_tuple(result.rejected_material_keys)}",
+        "- review_required_material_keys: "
+        + _format_tuple(result.review_required_material_keys),
+        "- material_ready_for_engineering_review: "
+        f"{result.material_ready_for_engineering_review}",
+        f"- material_ready_for_project_use: {result.material_ready_for_project_use}",
         "",
         "## Readiness flags",
         "",
@@ -337,3 +381,7 @@ def _format_optional_float(value: float | None) -> str:
     if value is None:
         return "-"
     return f"{value:.6g}"
+
+
+def _format_tuple(values: tuple[str, ...]) -> str:
+    return ", ".join(values) if values else "-"

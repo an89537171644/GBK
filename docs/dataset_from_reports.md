@@ -215,3 +215,21 @@ This checks whether the dataset is synthetic/report-derived only or has
 external validation and material verification support. A synthetic-only dataset
 is suitable for research smoke checks but remains `review_required` for
 engineering ML readiness.
+
+## K59 Material Verification Readiness
+
+After exporting report-derived rows, material verification coverage can be
+checked directly:
+
+```bash
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_report_dataset.jsonl --json
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_report_dataset.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --json
+```
+
+The command extracts `concrete_class`, `longitudinal_rebar_class`, and
+`stirrup_rebar_class` from the dataset and reports required material keys such
+as `concrete:B25`, `longitudinal_rebar:A500`, and `stirrup_rebar:A240`.
+
+This readiness gate does not approve catalog values and does not change the
+dataset. Complete material coverage can make a dataset ready for engineering
+review, but not for project use.

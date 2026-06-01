@@ -122,3 +122,17 @@ has external validation and material verification support.
 Synthetic benchmark trends remain synthetic-only evidence. External validation
 CSV files and material verification CSV files must be supplied separately
 before any engineering ML review.
+
+## K59 Material Verification Readiness
+
+K59 adds a separate material verification readiness command for report-derived
+datasets:
+
+```bash
+python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+```
+
+When an engineer-filled material verification CSV is supplied, the report lists
+required, verified, missing, rejected, and review-required material keys. Trend
+metrics still remain synthetic-only and cannot be interpreted as engineering
+evidence without external validation and material verification review.
