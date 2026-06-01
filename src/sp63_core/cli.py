@@ -52,6 +52,7 @@ from sp63_core.materials import (
 from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
+    build_benchmark_model_comparison,
     build_ml_proposal_package,
     build_ml_proposal_review_package,
     build_ml_readiness_report,
@@ -496,6 +497,37 @@ def build_parser() -> ArgumentParser:
     )
     synthetic_ml_benchmark.add_argument("--json", action="store_true", help="print JSON output")
     synthetic_ml_benchmark.set_defaults(handler=_handle_synthetic_ml_benchmark)
+
+    benchmark_model_comparison = subparsers.add_parser(
+        "benchmark-model-comparison",
+        help="compare baseline and neural metrics from a synthetic benchmark report",
+    )
+    benchmark_model_comparison.add_argument(
+        "--benchmark-report",
+        required=True,
+        help="path to K55 benchmark_report.json",
+    )
+    benchmark_model_comparison.add_argument(
+        "--output-dir",
+        help="optional directory for model_comparison.md/json/csv",
+    )
+    benchmark_model_comparison.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write model_comparison files even when output-dir is provided",
+    )
+    benchmark_model_comparison.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown comparison report",
+    )
+    benchmark_model_comparison.add_argument(
+        "--csv",
+        action="store_true",
+        help="print CSV comparison rows",
+    )
+    benchmark_model_comparison.add_argument("--json", action="store_true", help="print JSON output")
+    benchmark_model_comparison.set_defaults(handler=_handle_benchmark_model_comparison)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1734,6 +1766,56 @@ def _handle_synthetic_ml_benchmark(args: Namespace) -> int:
     print(f"feature_status: {result.feature_status}")
     print(f"baseline_status: {result.baseline_status}")
     print(f"neural_status: {result.neural_status}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"requires_engineer_review: {result.requires_engineer_review}")
+    print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
+    print(f"deterministic_checks_required: {result.deterministic_checks_required}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_benchmark_model_comparison(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_benchmark_model_comparison(
+        benchmark_report_path=Path(args.benchmark_report),
+        output_dir=output_dir,
+    )
+    payload = {
+        "command": "benchmark-model-comparison",
+        **result.json_data,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="" if result.markdown.endswith("\n") else "\n")
+        return 0
+    if args.csv:
+        print("metric,baseline,neural,winner")
+        for row in result.csv_rows:
+            print(f"{row['metric']},{row['baseline']},{row['neural']},{row['winner']}")
+        return 0
+
+    print("Benchmark model comparison")
+    print(f"status: {result.status}")
+    print(f"comparison_status: {result.comparison_status}")
+    print(f"benchmark_report_path: {result.benchmark_report_path}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"dataset_row_count: {result.dataset_row_count}")
+    print(f"final_distribution: {result.final_distribution}")
+    print(f"baseline_status: {result.baseline_status}")
+    print(f"neural_status: {result.neural_status}")
+    print(f"metric_winners: {result.metric_winners}")
     print(f"synthetic_data_only: {result.synthetic_data_only}")
     print(f"requires_engineer_review: {result.requires_engineer_review}")
     print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")

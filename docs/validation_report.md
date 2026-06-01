@@ -998,3 +998,21 @@ K55 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. Benchmark data is
 synthetic-only, benchmark metrics are not production evidence, and engineer
 review remains required.
+
+## K56 Benchmark Model Comparison Validation
+
+K56 adds validation coverage for `benchmark-model-comparison`:
+
+```bash
+python -m sp63_core benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json --output-dir reports/benchmark_comparison_smoke --json
+python -m sp63_core benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json --markdown
+python -m sp63_core benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json --csv
+```
+
+The tests verify reading a K55 benchmark JSON, exporting Markdown/JSON/CSV
+comparison files, per-metric winner calculation, missing metric warnings,
+critical field failure handling, and CLI JSON/Markdown/CSV output.
+
+K56 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The comparison is a
+synthetic benchmark review report only; metrics are not production evidence.

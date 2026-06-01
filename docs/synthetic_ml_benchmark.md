@@ -103,3 +103,35 @@ Large generated benchmark outputs should stay local and must not be committed.
 - Neural surrogate output is not a design checker.
 - Deterministic SP63 verification remains mandatory.
 - Engineer review is required.
+
+## K56 Model Comparison Export
+
+K56 adds a separate comparison export that reads an existing K55
+`benchmark_report.json` and compares the non-neural baseline metrics with the
+advisory neural surrogate metrics.
+
+```bash
+python -m sp63_core benchmark-model-comparison \
+  --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json \
+  --output-dir reports/benchmark_comparison \
+  --json
+```
+
+The comparison can also print Markdown or CSV:
+
+```bash
+python -m sp63_core benchmark-model-comparison \
+  --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json \
+  --markdown
+python -m sp63_core benchmark-model-comparison \
+  --benchmark-report reports/synthetic_ml_benchmark_smoke/benchmark_report.json \
+  --csv
+```
+
+The comparison report exports `model_comparison.md`,
+`model_comparison.json`, and `model_comparison.csv` when `--output-dir` is
+provided. These generated outputs are synthetic-only artifacts and should stay
+out of version control.
+
+K56 does not rerun the benchmark, does not train a model, and does not make ML
+a design checker. Metrics are review aids only.

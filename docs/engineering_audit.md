@@ -798,3 +798,17 @@ generation, external validation, material verification, or ML safety rules.
 Benchmark metrics are synthetic-only and are not production evidence. ML
 remains advisory-only, deterministic SP63 checks remain mandatory, and engineer
 review remains required.
+
+## K56 Benchmark Model Comparison
+
+K56 adds a read-only comparison report for K55 `benchmark_report.json` files.
+It compares non-neural baseline metrics with advisory neural surrogate metrics
+and can export Markdown, JSON, and CSV review artifacts.
+
+The comparison does not rerun the benchmark, does not train a model, does not
+change formulas, does not change material values, and does not modify
+reinforcement selection. It is a trend-review aid for synthetic benchmark
+metrics only.
+
+Any interpretation of model winners still requires engineer review. ML remains
+advisory-only and deterministic SP63 checks remain mandatory.
