@@ -136,3 +136,17 @@ When an engineer-filled material verification CSV is supplied, the report lists
 required, verified, missing, rejected, and review-required material keys. Trend
 metrics still remain synthetic-only and cannot be interpreted as engineering
 evidence without external validation and material verification review.
+
+## K60 Engineering Bundle
+
+K60 can reference `benchmark_trend_report.json` as optional trend evidence:
+
+```bash
+python -m sp63_core engineering-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --benchmark-trend-report reports/benchmark_trend/benchmark_trend_report.json \
+  --json
+```
+
+Trend evidence remains synthetic-only and review-only. It is not external
+validation and does not change `ml_ready_for_project_use = false`.

@@ -102,3 +102,20 @@ verification coverage is complete. `ml_ready_for_project_use` remains false.
 - ML remains advisory-only.
 - Deterministic SP63 checks remain mandatory.
 - Engineer review remains required.
+
+## K60 Engineering Bundle
+
+K60 consumes this readiness result through `engineering-ml-readiness`. Material
+verification is required before the bundle can set
+`ml_ready_for_engineering_review = true`:
+
+```bash
+python -m sp63_core engineering-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --external-validation-csv tests/fixtures/external_validation_sample.csv \
+  --material-verification-csv tests/fixtures/material_verification_sample.csv \
+  --json
+```
+
+The bundle does not approve catalog values and keeps
+`ml_ready_for_project_use = false`.

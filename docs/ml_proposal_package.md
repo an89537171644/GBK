@@ -117,3 +117,17 @@ It stores the original input, deterministic report, neural safety audit, this
 ML proposal package, a review README, manifest checksums, and optional ZIP
 archive. The ZIP/manifest package does not certify the design and does not make
 ML a calculator.
+
+## K60 Engineering Bundle
+
+K60 can reference `ml_proposal_package.json` as optional proposal evidence:
+
+```bash
+python -m sp63_core engineering-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --ml-proposal-package-json reports/ml_proposal_review/ml_proposal_package.json \
+  --json
+```
+
+Proposal evidence remains advisory-only. Deterministic SP63 verification and
+engineer review remain mandatory, and project-use readiness remains false.

@@ -863,3 +863,22 @@ review readiness now requires accepted external validation and complete
 material verification coverage. Project-use readiness remains false. K59 does
 not change formulas, material values, reinforcement selection, report
 generation, external validation, or ML safety rules.
+
+## K60 Engineering ML Readiness Bundle
+
+K60 adds `engineering-ml-readiness` as an aggregate review layer across:
+
+- report-derived dataset quality;
+- external validation readiness;
+- material verification readiness;
+- optional synthetic benchmark and model-comparison evidence;
+- optional advisory ML proposal package evidence.
+
+The bundle writes Markdown, JSON, CSV matrix, and `README_REVIEW.md` outputs
+when `--output-dir` is supplied. It can set
+`ml_ready_for_engineering_review = true` only when external validation has
+accepted cases without failures and material verification coverage is complete.
+
+K60 keeps `ml_ready_for_project_use = false`. It does not change deterministic
+formulas, material values, reinforcement selection, external validation logic,
+or ML safety rules.

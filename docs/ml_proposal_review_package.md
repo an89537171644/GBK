@@ -111,3 +111,12 @@ The review README explains:
 - K51 does not add UI or Streamlit.
 - K51 does not include full SP 63 text.
 - K51 does not include personal, grant, private, or closed SCAD/LIRA files.
+
+## K60 Engineering Bundle
+
+The K60 `engineering-ml-readiness` command can reference a proposal package JSON
+inside this review folder. The evidence is included in the readiness matrix as
+`ml_proposal_package`.
+
+The proposal package remains advisory-only and does not approve ML for project
+use.

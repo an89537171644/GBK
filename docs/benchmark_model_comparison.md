@@ -112,3 +112,18 @@ python -m sp63_core benchmark-trend-report \
 
 The trend report compares stability across multiple synthetic benchmark
 reports. It remains advisory-only and is not external validation.
+
+## K60 Engineering Bundle
+
+K60 can reference `model_comparison.json` as optional model-comparison
+evidence:
+
+```bash
+python -m sp63_core engineering-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --model-comparison-report reports/benchmark_comparison/model_comparison.json \
+  --json
+```
+
+Model comparison remains synthetic-only evidence. It can support engineering
+review context but cannot approve ML for project use.
