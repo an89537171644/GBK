@@ -722,6 +722,24 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - K50 does not make ML a calculator and does not add a new neural-network
   dependency.
 
+## K51 ML proposal engineering review package status
+
+- CLI command `ml-proposal-review-package --dataset reports/batch_dataset.jsonl
+  --input-json docs/reports/examples/rectangular_design_input_example.json
+  --output-dir reports/ml_proposal_review --json` creates an engineer-facing
+  handoff folder and ZIP for one advisory ML proposal.
+- CSV datasets are supported with `--format csv`.
+- `--no-zip` writes only the review folder.
+- The package contains `input.json`, deterministic report MD/JSON/HTML,
+  neural safety audit MD/JSON, ML proposal package MD/JSON,
+  `README_REVIEW.md`, and `manifest.json`.
+- The manifest records SHA256 checksums for package payload files, proposal
+  status, deterministic statuses, prediction match flag, advisory signal
+  usability, and safety flags.
+- ZIP and manifest packaging do not certify the design. ML remains
+  advisory-only, deterministic SP63 verification remains mandatory, and
+  engineer review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

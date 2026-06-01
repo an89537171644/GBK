@@ -47,6 +47,7 @@ from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
     build_ml_proposal_package,
+    build_ml_proposal_review_package,
     build_ml_readiness_report,
     build_neural_advisory_prediction,
     build_neural_advisory_safety_audit,
@@ -628,6 +629,47 @@ def build_parser() -> ArgumentParser:
         help="write JSON or Markdown proposal package report to a file",
     )
     ml_proposal_package.set_defaults(handler=_handle_ml_proposal_package)
+
+    ml_proposal_review_package = subparsers.add_parser(
+        "ml-proposal-review-package",
+        help="build engineering review package and ZIP for an advisory ML proposal",
+    )
+    ml_proposal_review_package.add_argument("--dataset", required=True, help="dataset file path")
+    ml_proposal_review_package.add_argument(
+        "--input-json",
+        required=True,
+        help="design input JSON",
+    )
+    ml_proposal_review_package.add_argument(
+        "--output-dir",
+        required=True,
+        help="output package directory",
+    )
+    ml_proposal_review_package.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    ml_proposal_review_package.add_argument("--target", default="overall_status")
+    ml_proposal_review_package.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    ml_proposal_review_package.add_argument("--hidden-layer-size", type=int, default=16)
+    ml_proposal_review_package.add_argument("--max-iter", type=int, default=500)
+    ml_proposal_review_package.add_argument("--random-state", type=int, default=42)
+    ml_proposal_review_package.add_argument(
+        "--no-zip",
+        action="store_true",
+        help="write package directory without ZIP export",
+    )
+    ml_proposal_review_package.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    ml_proposal_review_package.set_defaults(handler=_handle_ml_proposal_review_package)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -2338,6 +2380,48 @@ def _handle_ml_proposal_package(args: Namespace) -> int:
         print("rejection_reasons:")
         for reason in result.rejection_reasons:
             print(f"- {reason}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_ml_proposal_review_package(args: Namespace) -> int:
+    result = build_ml_proposal_review_package(
+        dataset_path=Path(args.dataset),
+        input_json_path=Path(args.input_json),
+        output_dir=Path(args.output_dir),
+        dataset_format=args.format,
+        target=args.target,
+        feature_mode=args.feature_mode,
+        create_zip=not args.no_zip,
+        random_state=args.random_state,
+        hidden_layer_sizes=(args.hidden_layer_size,),
+        max_iter=args.max_iter,
+    )
+    payload = {
+        "command": "ml-proposal-review-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("ML proposal engineering review package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"zip_path: {result.zip_path}")
+    print(f"proposal_status: {result.proposal_status}")
+    print(f"deterministic_overall_status: {result.deterministic_overall_status}")
+    print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
+    print(f"advisory_signal_usable: {result.advisory_signal_usable}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"readme_path: {result.readme_path}")
+    print(f"file_count: {result.file_count}")
+    print(f"zip_sha256: {result.zip_sha256}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

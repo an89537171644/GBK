@@ -898,6 +898,28 @@ formulas, material values, reinforcement selection algorithms, UI, or external
 validation gates. ML proposal output remains advisory-only and is not a design
 checker. Deterministic SP63 checks and engineer review remain mandatory.
 
+## K51 ML Proposal Engineering Review Package
+
+K51 adds validation coverage for `ml-proposal-review-package`:
+
+```bash
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review --json
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.csv --format csv --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review_csv --json
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --feature-mode deterministic_derived --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review_derived --json
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review_nozip --no-zip --json
+```
+
+The tests verify JSONL and CSV package creation, deterministic report
+MD/JSON/HTML outputs, neural safety audit MD/JSON outputs, ML proposal package
+MD/JSON outputs, README_REVIEW.md, manifest checksums, ZIP contents, `--no-zip`,
+deterministic-derived warnings, and CLI JSON output.
+
+K51 preserves report generation behavior and does not change calculation
+formulas, material values, reinforcement selection algorithms, UI, or external
+validation gates. ZIP and manifest packaging do not certify a design. ML
+remains advisory-only, deterministic SP63 checks remain mandatory, and engineer
+review remains required.
+
 ## Conclusion
 
 The core is a draft-MVP calculation kernel. It is suitable for controlled

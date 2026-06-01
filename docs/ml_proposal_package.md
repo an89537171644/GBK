@@ -103,3 +103,17 @@ Material verification and external validation remain separate engineer gates.
 - K50 reuses the K48/K49 advisory prediction and safety audit path.
 - The generated package is not certification evidence.
 - Engineer review remains mandatory before any project use.
+
+## K51 Review ZIP Package
+
+K51 adds `ml-proposal-review-package` as a handoff layer around this proposal
+package:
+
+```bash
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review --json
+```
+
+It stores the original input, deterministic report, neural safety audit, this
+ML proposal package, a review README, manifest checksums, and optional ZIP
+archive. The ZIP/manifest package does not certify the design and does not make
+ML a calculator.

@@ -122,3 +122,15 @@ It includes this K48 prediction, K49 safety audit status, deterministic SP63
 statuses, class probabilities, proposal status, rejection/review reasons, and
 Markdown output. The proposal package is advisory-only and cannot be used as a
 design decision.
+
+## K51 Review Package
+
+K51 creates an engineer review folder and ZIP around K48/K49/K50 outputs:
+
+```bash
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review --json
+```
+
+It includes the deterministic report, neural safety audit, ML proposal package,
+README_REVIEW.md, manifest checksums, and optional ZIP archive. The package is
+for review handoff only and is not certification evidence.
