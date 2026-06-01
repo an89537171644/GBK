@@ -59,6 +59,7 @@
 | `ml/report_proposal_package.py` | implemented advisory ML proposal package through deterministic safety wrapper | yes | yes | engineer review proposal_status, rejection reasons, and deterministic safety evidence before any ML proposal use |
 | `ml/proposal_review_package.py` | implemented engineering review folder and ZIP package for advisory ML proposal handoff | yes | yes | engineer review package manifest, ZIP checksums, and deterministic evidence before any ML proposal use |
 | `ml/synthetic_benchmark.py` | implemented large balanced synthetic ML benchmark orchestration | yes | yes | use only for synthetic advisory ML experiments; external validation and engineer review remain mandatory |
+| `ml/benchmark_comparison.py` | implemented benchmark model comparison export for baseline and neural synthetic metrics | yes | yes | review model_comparison reports before interpreting synthetic benchmark trends |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

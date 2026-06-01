@@ -809,6 +809,23 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   review.
 - ML remains advisory-only and is not a design checker.
 
+## K56 benchmark model comparison status
+
+- CLI command `benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark/benchmark_report.json --json`
+  compares K55 non-neural baseline metrics with advisory neural surrogate
+  metrics.
+- The command reads an existing `benchmark_report.json`; it does not rerun the
+  benchmark and does not train a model.
+- `--output-dir` writes `model_comparison.md`, `model_comparison.json`, and
+  `model_comparison.csv`.
+- Compared metrics include `accuracy`, `macro_f1`, `weighted_f1`,
+  `precision_macro`, and `recall_macro`.
+- Per-metric winners are reported as `baseline`, `neural`, `tie`, or
+  `missing`.
+- Comparison reports are synthetic-only review aids. Metrics are not production
+  evidence, ML remains advisory-only, deterministic SP63 checks remain
+  mandatory, and engineer review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

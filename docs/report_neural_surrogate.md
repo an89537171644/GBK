@@ -192,3 +192,16 @@ python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_ben
 
 The benchmark report compares neural metrics with non-neural baseline metrics.
 The neural surrogate remains advisory-only and is not a design checker.
+
+## K56 Benchmark Model Comparison
+
+K56 adds a read-only comparison command for K55 benchmark reports:
+
+```bash
+python -m sp63_core benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark/benchmark_report.json --json
+```
+
+The comparison reports per-metric winners between non-neural baseline and
+advisory neural surrogate smoke metrics. It does not rerun the benchmark,
+does not retrain the neural surrogate, and does not make neural output a design
+checker.

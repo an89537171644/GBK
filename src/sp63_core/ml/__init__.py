@@ -8,6 +8,10 @@ from sp63_core.ml.baseline import (
     train_baseline_models,
 )
 from sp63_core.ml.baseline_report import BaselineMLReport, build_baseline_ml_report
+from sp63_core.ml.benchmark_comparison import (
+    BenchmarkModelComparisonResult,
+    build_benchmark_model_comparison,
+)
 from sp63_core.ml.evaluate import evaluate_baseline_models, evaluate_ml_safety
 from sp63_core.ml.features import build_feature_matrix
 from sp63_core.ml.neural_surrogate import (
@@ -55,6 +59,7 @@ from sp63_core.ml.synthetic_benchmark import (
 __all__ = [
     "BaselineModelBundle",
     "BaselineMLReport",
+    "BenchmarkModelComparisonResult",
     "MLReadinessReport",
     "MLQualityGateResult",
     "MLReinforcementProposal",
@@ -72,6 +77,7 @@ __all__ = [
     "build_neural_advisory_safety_audit",
     "build_feature_matrix",
     "build_baseline_ml_report",
+    "build_benchmark_model_comparison",
     "build_ml_readiness_report",
     "build_ml_proposal_package",
     "build_ml_proposal_review_package",

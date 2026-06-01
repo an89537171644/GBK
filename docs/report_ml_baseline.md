@@ -193,3 +193,16 @@ python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_ben
 The benchmark report compares baseline metrics with neural surrogate smoke
 metrics. These metrics are synthetic-only review aids and are not production
 evidence.
+
+## K56 Benchmark Model Comparison
+
+K56 adds a comparison export for K55 benchmark reports:
+
+```bash
+python -m sp63_core benchmark-model-comparison --benchmark-report reports/synthetic_ml_benchmark/benchmark_report.json --json
+```
+
+The comparison reads the existing benchmark JSON and reports baseline vs neural
+metric winners for `accuracy`, `macro_f1`, `weighted_f1`, `precision_macro`,
+and `recall_macro`. It does not rerun baseline ML, does not retrain a model,
+and remains advisory-only.
