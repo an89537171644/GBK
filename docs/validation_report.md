@@ -1132,3 +1132,19 @@ missing-dataset review warnings, cleanup mode, and CLI JSON/Markdown modes.
 K62 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. The self-check is a
 technical readiness check only and does not certify project use.
+
+## K63 Engineering Interface Contract Validation
+
+K63 adds validation coverage for the future GUI/desktop wrapper contract:
+
+```bash
+python -m sp63_core engineering-interface-contract --output-dir reports/interface_contract_smoke --json
+python -m sp63_core engineering-interface-contract --output-dir reports/interface_contract_markdown_smoke --markdown
+```
+
+The tests verify required workflows, screens, inputs, outputs, warnings,
+forbidden UI actions, JSON/Markdown output, CLI behavior, and safety flags.
+
+K63 is requirements and contract work only. It does not implement UI, change
+formulas, change material values, change reinforcement selection, or approve ML
+for project use.

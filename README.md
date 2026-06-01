@@ -939,3 +939,18 @@ Recommended human setup:
 3. Require pytest and ruff checks.
 4. Use codex-ready issues as the task queue.
 5. Review every PR before merge.
+
+## Future GUI/Desktop Wrapper
+
+K63 adds a machine-readable interface contract and planning documents for a
+future engineering GUI/desktop wrapper:
+
+```bash
+python -m sp63_core engineering-interface-contract --output-dir reports/interface_contract --json
+```
+
+This is requirements and contract work only. It does not implement Streamlit,
+Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI. A future UI must call
+the existing CLI/workflow layer, expose deterministic SP63 results, keep
+engineer-review warnings visible, keep ML advisory-only, and keep
+`ml_ready_for_project_use = false`.

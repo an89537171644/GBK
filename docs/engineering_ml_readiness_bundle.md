@@ -122,3 +122,9 @@ python -m sp63_core engineering-workflow-self-check \
 
 The self-check still treats ML as advisory-only and verifies that
 `ml_ready_for_project_use` remains false.
+
+## Future GUI/Desktop Wrapper
+
+K63 requires future UI wrappers to display ML readiness only as advisory review
+evidence. The UI must not present ML output as a design checker and must keep
+`ml_ready_for_project_use = false` visible.

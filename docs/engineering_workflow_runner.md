@@ -108,3 +108,15 @@ python -m sp63_core engineering-workflow-self-check \
 The self-check verifies that the deterministic workflow creates the expected
 report, manifest, review README, ZIP, and summary files. It does not certify the
 calculation and does not replace engineer review.
+
+## Future GUI/Desktop Wrapper
+
+K63 defines the interface contract for a future GUI or desktop wrapper:
+
+```bash
+python -m sp63_core engineering-interface-contract --output-dir reports/interface_contract --json
+```
+
+The contract lists required screens, required inputs, required outputs,
+mandatory warnings, forbidden UI actions, and recommended CLI commands. It does
+not implement a UI and does not approve ML for project use.

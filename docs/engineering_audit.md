@@ -916,3 +916,14 @@ review README files. It can optionally include advisory ML readiness, but
 K62 is a technical workflow check only. It does not certify calculations,
 change formulas, change material values, change reinforcement selection, or
 approve ML for project use.
+
+## K63 Future GUI/Desktop Wrapper Contract
+
+K63 adds `engineering-interface-contract` and planning documents under
+`docs/ui/`. This is a requirements and interface-contract step only. It does not
+implement UI/Streamlit, does not change calculations, does not change materials,
+does not change reinforcement selection, and does not make ML a calculator.
+
+Future GUI/desktop wrappers must expose deterministic SP63 status, archive
+validation status, generated report files, material verification, external
+validation, engineer-review warnings, and `ml_ready_for_project_use = false`.
