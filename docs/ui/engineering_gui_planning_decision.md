@@ -75,6 +75,17 @@ The next step should remain planning/report-package oriented: generate a static
 HTML index or launcher plan around existing workflow outputs without adding a
 runtime GUI dependency.
 
+## K65 Follow-Up
+
+K65 implements this next step as a static `index.html` generator:
+
+```bash
+python -m sp63_core engineering-report-index --workflow-dir <workflow_dir> --json
+```
+
+The index is still not a GUI framework and does not perform calculations. It is
+a navigation layer over deterministic workflow outputs.
+
 ## Limitations
 
 K64 does not implement an interface, does not certify design decisions, does

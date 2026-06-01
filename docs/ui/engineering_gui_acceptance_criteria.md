@@ -32,3 +32,6 @@ implement Streamlit, Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI.
 K64 adds the technology decision and recommends
 `cli_first_with_static_html_reports`; UI implementation remains a separate
 approved step.
+
+K65 adds a static `index.html` over workflow outputs. This satisfies only a
+navigation/report-index step, not a full GUI acceptance criterion.

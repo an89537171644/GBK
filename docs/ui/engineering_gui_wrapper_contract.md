@@ -121,3 +121,10 @@ K64 recommends `cli_first_with_static_html_reports` as the next interface
 direction. The future wrapper should organize existing static report outputs
 and call the CLI/workflow layer instead of adding a heavy UI dependency or
 duplicating calculations.
+
+## K65 Static Index
+
+K65 adds `engineering-report-index` as the first static report navigation layer.
+It creates `index.html` for an existing workflow output folder and keeps the
+contract rules intact: deterministic SP63 status remains primary, ML remains
+advisory-only, and `ml_ready_for_project_use` remains false.

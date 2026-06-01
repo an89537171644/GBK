@@ -3,6 +3,7 @@
 import csv
 import json as jsonlib
 import shutil
+import webbrowser
 from argparse import ArgumentParser, Namespace
 from dataclasses import asdict
 from pathlib import Path
@@ -113,6 +114,7 @@ from sp63_core.validation import (
 from sp63_core.workflows import (
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
+    build_static_workflow_report_index,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_self_check,
@@ -398,6 +400,11 @@ def build_parser() -> ArgumentParser:
         action="store_true",
         help="skip deterministic report ZIP creation",
     )
+    engineering_workflow.add_argument(
+        "--with-index",
+        action="store_true",
+        help="create a static HTML index for generated workflow files",
+    )
     engineering_workflow.add_argument("--json", action="store_true", help="print JSON output")
     engineering_workflow.add_argument(
         "--markdown",
@@ -405,6 +412,32 @@ def build_parser() -> ArgumentParser:
         help="print Markdown workflow summary",
     )
     engineering_workflow.set_defaults(handler=_handle_engineering_workflow)
+
+    engineering_report_index = subparsers.add_parser(
+        "engineering-report-index",
+        help="create a static HTML index for an engineering workflow output folder",
+    )
+    engineering_report_index.add_argument(
+        "--workflow-dir",
+        required=True,
+        help="existing engineering workflow output directory",
+    )
+    engineering_report_index.add_argument(
+        "--output",
+        help="output HTML file path; defaults to <workflow-dir>/index.html",
+    )
+    engineering_report_index.add_argument(
+        "--title",
+        default="Engineering Workflow Report Index",
+        help="title for the generated static HTML index",
+    )
+    engineering_report_index.add_argument(
+        "--open-in-browser",
+        action="store_true",
+        help="open generated index with Python webbrowser; no web server is started",
+    )
+    engineering_report_index.add_argument("--json", action="store_true", help="print JSON output")
+    engineering_report_index.set_defaults(handler=_handle_engineering_report_index)
 
     engineering_workflow_self_check = subparsers.add_parser(
         "engineering-workflow-self-check",
@@ -1839,6 +1872,7 @@ def _handle_engineering_workflow(args: Namespace) -> int:
         ),
         include_ml_readiness=args.include_ml_readiness,
         create_zip=not args.no_zip,
+        with_index=args.with_index,
     )
     payload = {
         "command": "engineering-workflow",
@@ -1861,6 +1895,50 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print(f"ml_readiness_status: {result.ml_readiness_status}")
     print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_report_index(args: Namespace) -> int:
+    result = build_static_workflow_report_index(
+        workflow_dir=Path(args.workflow_dir),
+        output_path=Path(args.output) if args.output else None,
+        title=args.title,
+    )
+    open_browser_status = "not_requested"
+    warnings = list(result.warnings)
+    if args.open_in_browser:
+        try:
+            opened = webbrowser.open(Path(result.output_path).resolve().as_uri())
+        except OSError as exc:
+            opened = False
+            warnings.append(f"open-in-browser failed: {exc}")
+        open_browser_status = "opened" if opened else "not_opened"
+        if not opened:
+            warnings.append("open-in-browser requested but browser did not open")
+
+    payload = {
+        "command": "engineering-report-index",
+        **asdict(result),
+        "warnings": tuple(dict.fromkeys(warnings)),
+        "open_browser_status": open_browser_status,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Engineering workflow report index")
+    print(f"status: {result.status}")
+    print(f"index_status: {result.index_status}")
+    print(f"workflow_dir: {result.workflow_dir}")
+    print(f"output_path: {result.output_path}")
+    print(f"linked_files: {len(result.linked_files)}")
+    print(f"missing_expected_files: {len(result.missing_expected_files)}")
+    print(f"open_browser_status: {open_browser_status}")
+    _print_warnings(tuple(dict.fromkeys(warnings)))
     if result.errors:
         print("errors:")
         for error in result.errors:

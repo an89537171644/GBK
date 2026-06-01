@@ -59,3 +59,14 @@ A safe K65 candidate is a generated static HTML index over an existing
 engineering workflow output folder. The index should link to generated reports
 and surface warnings, but all calculation and validation logic must remain in
 the existing CLI/workflow layer.
+
+## K65 Implemented Static Index
+
+K65 implements the candidate as `engineering-report-index` and optional
+`engineering-workflow --with-index`. The generated `index.html` links to
+existing workflow artifacts and repeats the required warning that deterministic
+SP63 verification and engineer review are mandatory.
+
+The index remains static. It does not run calculations, start a web server, add
+JavaScript calculations, or add Streamlit/Gradio/FastAPI/Flask/PyQt/PySide/
+Tkinter/Electron dependencies.

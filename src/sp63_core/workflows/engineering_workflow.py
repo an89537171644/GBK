@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +23,7 @@ from sp63_core.report import (
     validate_report_bundle,
     write_report_manifest_json,
 )
+from sp63_core.workflows.static_report_index import build_static_workflow_report_index
 
 WORKFLOW_WARNING = (
     "This workflow does not certify the design. Deterministic SP63 verification "
@@ -52,6 +53,8 @@ class EngineeringWorkflowResult:
     requires_engineer_review: bool = True
     ml_is_advisory_only: bool = True
     deterministic_checks_required: bool = True
+    index_status: str | None = None
+    index_path: str | None = None
 
 
 def run_engineering_workflow(
@@ -64,6 +67,7 @@ def run_engineering_workflow(
     material_verification_csv: Path | None = None,
     include_ml_readiness: bool = False,
     create_zip: bool = True,
+    with_index: bool = False,
 ) -> EngineeringWorkflowResult:
     """Run the deterministic report workflow and optional advisory ML readiness."""
     input_path = Path(input_json_path)
@@ -188,9 +192,61 @@ def run_engineering_workflow(
             deterministic_dir=deterministic_dir,
             zip_path=zip_path,
             ml_output_dir=ml_output_dir if include_ml_readiness and dataset_path else None,
+            index_path=Path(result.index_path) if result.index_path else None,
         ),
         encoding="utf-8",
     )
+
+    if with_index:
+        index_result = build_static_workflow_report_index(
+            workflow_dir=root_output,
+            output_path=root_output / "index.html",
+        )
+        files_created_with_index = tuple(
+            dict.fromkeys((*result.files_created, index_result.output_path))
+        )
+        warnings_with_index = tuple(dict.fromkeys((*result.warnings, *index_result.warnings)))
+        errors_with_index = tuple(
+            dict.fromkeys(
+                (
+                    *result.errors,
+                    *(f"static report index: {error}" for error in index_result.errors),
+                )
+            )
+        )
+        workflow_status_with_index = _workflow_status_with_index(
+            workflow_status=result.workflow_status,
+            index_status=index_result.index_status,
+            index_errors=index_result.errors,
+        )
+        result = replace(
+            result,
+            status=workflow_status_with_index,
+            workflow_status=workflow_status_with_index,
+            index_status=index_result.index_status,
+            index_path=index_result.output_path,
+            files_created=files_created_with_index,
+            warnings=warnings_with_index,
+            errors=errors_with_index,
+        )
+        summary_json_path.write_text(
+            json.dumps(_workflow_summary_payload(result), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        summary_markdown_path.write_text(
+            _render_workflow_summary_markdown(result),
+            encoding="utf-8",
+        )
+        workflow_readme_path.write_text(
+            _render_workflow_readme(
+                result,
+                deterministic_dir=deterministic_dir,
+                zip_path=zip_path,
+                ml_output_dir=ml_output_dir if include_ml_readiness and dataset_path else None,
+                index_path=Path(result.index_path) if result.index_path else None,
+            ),
+            encoding="utf-8",
+        )
 
     return result
 
@@ -310,6 +366,21 @@ def _workflow_status(
     return "review_required"
 
 
+def _workflow_status_with_index(
+    *,
+    workflow_status: str,
+    index_status: str,
+    index_errors: tuple[str, ...],
+) -> str:
+    if index_errors or index_status == "fail":
+        return "fail"
+    if workflow_status == "fail":
+        return "fail"
+    if workflow_status == "review_required" or index_status == "review_required":
+        return "review_required"
+    return workflow_status
+
+
 def _workflow_summary_payload(result: EngineeringWorkflowResult) -> dict[str, Any]:
     payload = asdict(result)
     payload["report_type"] = "engineering_workflow_summary"
@@ -341,6 +412,8 @@ def _render_workflow_summary_markdown(result: EngineeringWorkflowResult) -> str:
         f"- ml_ready_for_research: `{result.ml_ready_for_research}`",
         f"- ml_ready_for_engineering_review: `{result.ml_ready_for_engineering_review}`",
         f"- ml_ready_for_project_use: `{result.ml_ready_for_project_use}`",
+        f"- index_status: `{result.index_status}`",
+        f"- index_path: `{result.index_path}`",
         "",
         "## Created Files",
         "",
@@ -371,6 +444,7 @@ def _render_workflow_readme(
     deterministic_dir: Path,
     zip_path: Path,
     ml_output_dir: Path | None,
+    index_path: Path | None,
 ) -> str:
     lines = [
         "# Engineering Workflow Runner",
@@ -389,6 +463,10 @@ def _render_workflow_readme(
         lines.append("- ML readiness: not run")
     else:
         lines.append(f"- ML readiness bundle: `{ml_output_dir}`")
+    if index_path is None:
+        lines.append("- static report index: not generated")
+    else:
+        lines.append(f"- static report index: `{index_path}`")
 
     lines.extend(
         [
@@ -422,6 +500,8 @@ def _render_workflow_readme(
             f"- zip_status: `{result.zip_status}`",
             f"- ml_readiness_status: `{result.ml_readiness_status}`",
             f"- ml_ready_for_project_use: `{result.ml_ready_for_project_use}`",
+            f"- index_status: `{result.index_status}`",
+            f"- index_path: `{result.index_path}`",
             "",
             "## Required Warnings",
             "",
