@@ -111,6 +111,7 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_engineering_interface_contract,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_self_check,
@@ -446,6 +447,31 @@ def build_parser() -> ArgumentParser:
         help="print Markdown self-check report",
     )
     engineering_workflow_self_check.set_defaults(handler=_handle_engineering_workflow_self_check)
+
+    engineering_interface_contract = subparsers.add_parser(
+        "engineering-interface-contract",
+        help="write or print the future GUI/desktop wrapper interface contract",
+    )
+    engineering_interface_contract.add_argument(
+        "--output-dir",
+        help="output directory for interface contract files",
+    )
+    engineering_interface_contract.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write contract files even when --output-dir is provided",
+    )
+    engineering_interface_contract.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON summary",
+    )
+    engineering_interface_contract.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown contract",
+    )
+    engineering_interface_contract.set_defaults(handler=_handle_engineering_interface_contract)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1856,6 +1882,48 @@ def _handle_engineering_workflow_self_check(args: Namespace) -> int:
         print("errors:")
         for error in result.errors:
             print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_interface_contract(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_engineering_interface_contract(output_dir=output_dir)
+    payload = {
+        "command": "engineering-interface-contract",
+        "status": result.status,
+        "contract_status": result.contract_status,
+        "workflow_names": result.workflow_names,
+        "required_screens": result.required_screens,
+        "required_inputs": result.required_inputs,
+        "required_outputs": result.required_outputs,
+        "mandatory_warnings": result.mandatory_warnings,
+        "forbidden_ui_actions": result.forbidden_ui_actions,
+        "recommended_cli_commands": result.recommended_cli_commands,
+        "output_dir": result.output_dir,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Engineering interface contract")
+    print(f"status: {result.status}")
+    print(f"contract_status: {result.contract_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"workflow_count: {len(result.workflow_names)}")
+    print(f"required_screen_count: {len(result.required_screens)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
     return 0
 
 

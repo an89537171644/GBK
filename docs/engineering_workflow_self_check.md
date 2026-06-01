@@ -75,3 +75,9 @@ The deterministic self-check verifies:
 - ML is advisory-only.
 - `ml_ready_for_project_use` must remain false.
 - UI/Streamlit is not added.
+
+## Future GUI/Desktop Wrapper
+
+K63 adds `engineering-interface-contract` for future UI planning. The contract
+must be used as a safety checklist for any GUI/desktop wrapper that calls the
+workflow self-check. It does not implement UI and does not certify calculations.
