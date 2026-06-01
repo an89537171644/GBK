@@ -111,6 +111,7 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
     render_self_check_markdown,
     run_engineering_workflow,
@@ -472,6 +473,31 @@ def build_parser() -> ArgumentParser:
         help="print Markdown contract",
     )
     engineering_interface_contract.set_defaults(handler=_handle_engineering_interface_contract)
+
+    engineering_gui_planning = subparsers.add_parser(
+        "engineering-gui-planning",
+        help="write or print the planning-only GUI technology decision",
+    )
+    engineering_gui_planning.add_argument(
+        "--output-dir",
+        help="output directory for GUI planning decision files",
+    )
+    engineering_gui_planning.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write planning files even when --output-dir is provided",
+    )
+    engineering_gui_planning.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON summary",
+    )
+    engineering_gui_planning.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown planning decision",
+    )
+    engineering_gui_planning.set_defaults(handler=_handle_engineering_gui_planning)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1922,6 +1948,46 @@ def _handle_engineering_interface_contract(args: Namespace) -> int:
     print(f"output_dir: {result.output_dir}")
     print(f"workflow_count: {len(result.workflow_names)}")
     print(f"required_screen_count: {len(result.required_screens)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_engineering_gui_planning(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_engineering_gui_planning_decision(output_dir=output_dir)
+    payload = {
+        "command": "engineering-gui-planning",
+        "status": result.status,
+        "decision_status": result.decision_status,
+        "recommended_option": result.recommended_option,
+        "considered_options": result.considered_options,
+        "rejected_options": result.rejected_options,
+        "required_backend_commands": result.required_backend_commands,
+        "required_safety_warnings": result.required_safety_warnings,
+        "recommended_next_step": result.recommended_next_step,
+        "output_dir": str(output_dir) if output_dir is not None else None,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Engineering GUI planning")
+    print(f"status: {result.status}")
+    print(f"decision_status: {result.decision_status}")
+    print(f"recommended_option: {result.recommended_option}")
+    print(f"recommended_next_step: {result.recommended_next_step}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     return 0

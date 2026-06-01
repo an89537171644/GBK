@@ -29,3 +29,6 @@ requires_engineer_review = true
 
 These criteria are planning artifacts for a future wrapper. K63 does not
 implement Streamlit, Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI.
+K64 adds the technology decision and recommends
+`cli_first_with_static_html_reports`; UI implementation remains a separate
+approved step.

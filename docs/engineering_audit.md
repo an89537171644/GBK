@@ -927,3 +927,22 @@ does not change reinforcement selection, and does not make ML a calculator.
 Future GUI/desktop wrappers must expose deterministic SP63 status, archive
 validation status, generated report files, material verification, external
 validation, engineer-review warnings, and `ml_ready_for_project_use = false`.
+
+## K64 Engineering GUI Planning Decision
+
+K64 adds `engineering-gui-planning` as a planning-only technology decision for a
+future minimal engineering interface:
+
+```bash
+python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning --json
+```
+
+The recommended option is `cli_first_with_static_html_reports`. This keeps the
+existing deterministic CLI/workflow layer as the authority and postpones heavy
+UI frameworks. Streamlit, Gradio, Flask, FastAPI, PyQt, PySide, Tkinter,
+Electron, PyTorch, TensorFlow, and Keras are not added.
+
+K64 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, external validation, material verification, and archive
+validation gates. It is planning work only; engineer review remains mandatory
+and `ml_ready_for_project_use` remains false.

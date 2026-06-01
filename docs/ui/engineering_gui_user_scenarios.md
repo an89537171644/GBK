@@ -53,3 +53,9 @@ implement UI and do not change deterministic calculations.
    The UI exposes generated files, warnings, validation gates, material
    verification, external validation, and final engineer acceptance checklist.
    The UI must not produce a project approval automatically.
+
+## K64 Planning Note
+
+K64 recommends a CLI-first static report workflow before any desktop or web UI.
+These scenarios remain requirements for a future wrapper and are not
+implemented as UI in K64.

@@ -114,3 +114,10 @@ K63 is requirements and interface-contract work only. It does not add Streamlit,
 Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or any web UI. It does not change
 formulas, material values, reinforcement selection, ML policy, or external
 validation gates.
+
+## K64 Technology Decision
+
+K64 recommends `cli_first_with_static_html_reports` as the next interface
+direction. The future wrapper should organize existing static report outputs
+and call the CLI/workflow layer instead of adding a heavy UI dependency or
+duplicating calculations.

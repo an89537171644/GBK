@@ -1148,3 +1148,21 @@ forbidden UI actions, JSON/Markdown output, CLI behavior, and safety flags.
 K63 is requirements and contract work only. It does not implement UI, change
 formulas, change material values, change reinforcement selection, or approve ML
 for project use.
+
+## K64 Engineering GUI Planning Decision Validation
+
+K64 adds validation coverage for the planning-only GUI technology decision:
+
+```bash
+python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning_smoke --json
+python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning_markdown_smoke --markdown
+```
+
+The tests verify the recommended option, considered interface options,
+rejected heavy UI options, required backend commands, safety warnings,
+JSON/Markdown output files, CLI behavior, and safety flags.
+
+K64 does not implement UI, add UI dependencies, change formulas, change
+material values, change reinforcement selection, or approve ML for project use.
+The recommended direction is `cli_first_with_static_html_reports`;
+`ml_ready_for_project_use` remains false.
