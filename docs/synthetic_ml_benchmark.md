@@ -135,3 +135,28 @@ out of version control.
 
 K56 does not rerun the benchmark, does not train a model, and does not make ML
 a design checker. Metrics are review aids only.
+
+## K57 Multi-Seed Trend Report
+
+K57 aggregates several K55 benchmark reports:
+
+```bash
+python -m sp63_core benchmark-trend-report \
+  --benchmark-report reports/synthetic_ml_benchmark_seed_1/benchmark_report.json \
+  --benchmark-report reports/synthetic_ml_benchmark_seed_2/benchmark_report.json \
+  --output-dir reports/benchmark_trend \
+  --json
+```
+
+Discovery mode is also available:
+
+```bash
+python -m sp63_core benchmark-trend-report \
+  --benchmark-dir reports/benchmark_runs \
+  --output-dir reports/benchmark_trend \
+  --json
+```
+
+The trend report summarizes row counts, class distributions, metric
+mean/min/max/std values, per-metric winner counts, recommendations, and
+warnings. It reads existing benchmark reports and does not rerun K55.

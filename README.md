@@ -826,6 +826,24 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   evidence, ML remains advisory-only, deterministic SP63 checks remain
   mandatory, and engineer review is required.
 
+## K57 multi-seed benchmark trend report status
+
+- CLI command `benchmark-trend-report` aggregates several K55
+  `benchmark_report.json` files.
+- Repeated `--benchmark-report` arguments and recursive `--benchmark-dir`
+  discovery are supported.
+- `--output-dir` writes `benchmark_trend_report.md`,
+  `benchmark_trend_report.json`, `benchmark_trend_metrics.csv`, and
+  `benchmark_trend_winners.csv`.
+- The report summarizes dataset row counts, class distributions, baseline
+  metric trends, neural metric trends, per-metric winner counts,
+  recommendations, and warnings.
+- Trend reports read existing benchmark outputs; they do not rerun K55 and do
+  not train models.
+- Synthetic benchmark trends are not external validation or production
+  evidence. ML remains advisory-only, deterministic SP63 checks remain
+  mandatory, and engineer review is required.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

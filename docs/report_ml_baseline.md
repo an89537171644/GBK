@@ -206,3 +206,15 @@ The comparison reads the existing benchmark JSON and reports baseline vs neural
 metric winners for `accuracy`, `macro_f1`, `weighted_f1`, `precision_macro`,
 and `recall_macro`. It does not rerun baseline ML, does not retrain a model,
 and remains advisory-only.
+
+## K57 Multi-Seed Trend Report
+
+K57 aggregates baseline metrics across several K55 benchmark reports:
+
+```bash
+python -m sp63_core benchmark-trend-report --benchmark-dir reports/benchmark_runs --json
+```
+
+The trend report records baseline metric mean/min/max/std and missing counts.
+It is a synthetic review aid only and does not promote baseline ML to a design
+checker.
