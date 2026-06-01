@@ -1076,3 +1076,24 @@ K59 preserves calculation formulas, material values, reinforcement selection,
 ML safety policy, UI, and external validation gates. Material verification
 readiness does not approve catalog values, does not certify ML, and keeps
 `material_ready_for_project_use` and `ml_ready_for_project_use` false.
+
+## K60 Engineering ML Readiness Bundle Validation
+
+K60 adds validation coverage for `engineering-ml-readiness`:
+
+```bash
+python -m sp63_core engineering-ml-readiness --dataset reports/synthetic_dataset_smoke.jsonl --json
+python -m sp63_core engineering-ml-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --material-verification-csv tests/fixtures/material_verification_sample.csv --output-dir reports/engineering_ml_readiness_smoke --json
+python -m sp63_core engineering-ml-readiness --dataset reports/synthetic_dataset_smoke.csv --format csv --external-validation-csv tests/fixtures/external_validation_sample.csv --material-verification-csv tests/fixtures/material_verification_sample.csv --output-dir reports/engineering_ml_readiness_csv_smoke --json
+python -m sp63_core engineering-ml-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --material-verification-csv tests/fixtures/material_verification_sample.csv --markdown
+python -m sp63_core engineering-ml-readiness --dataset reports/synthetic_dataset_smoke.jsonl --external-validation-csv tests/fixtures/external_validation_sample.csv --material-verification-csv tests/fixtures/material_verification_sample.csv --csv
+```
+
+The tests cover JSONL and CSV datasets, missing evidence review status,
+complete external/material evidence, failed external validation, rejected
+material verification, Markdown/JSON/CSV/README output files, and CLI JSON,
+Markdown, and CSV modes.
+
+K60 preserves calculation formulas, material values, reinforcement selection,
+ML safety policy, UI, and external validation gates. The readiness bundle does
+not approve ML for project use; `ml_ready_for_project_use` remains false.

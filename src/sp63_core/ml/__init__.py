@@ -17,6 +17,11 @@ from sp63_core.ml.benchmark_trend import (
     build_benchmark_trend_report,
     discover_benchmark_reports,
 )
+from sp63_core.ml.engineering_readiness_bundle import (
+    EngineeringMLReadinessBundleResult,
+    build_engineering_ml_readiness_bundle,
+    render_readiness_matrix_csv,
+)
 from sp63_core.ml.evaluate import evaluate_baseline_models, evaluate_ml_safety
 from sp63_core.ml.external_readiness import (
     MLExternalValidationReadinessResult,
@@ -76,6 +81,7 @@ __all__ = [
     "BaselineMLReport",
     "BenchmarkModelComparisonResult",
     "BenchmarkTrendReportResult",
+    "EngineeringMLReadinessBundleResult",
     "MLReadinessReport",
     "MLQualityGateResult",
     "MLReinforcementProposal",
@@ -97,6 +103,7 @@ __all__ = [
     "build_baseline_ml_report",
     "build_benchmark_model_comparison",
     "build_benchmark_trend_report",
+    "build_engineering_ml_readiness_bundle",
     "build_ml_readiness_report",
     "build_ml_proposal_package",
     "build_ml_proposal_review_package",
@@ -119,5 +126,6 @@ __all__ = [
     "run_synthetic_ml_benchmark",
     "render_ml_external_readiness_markdown",
     "render_ml_material_readiness_markdown",
+    "render_readiness_matrix_csv",
     "verify_ml_proposal_with_deterministic_core",
 ]

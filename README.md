@@ -875,6 +875,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   ML remains advisory-only, material values are not changed automatically, and
   deterministic SP63 checks remain mandatory.
 
+## K60 engineering ML readiness bundle status
+
+- CLI command `engineering-ml-readiness --dataset <dataset.jsonl> --json`
+  aggregates dataset quality, external validation readiness, material
+  verification readiness, optional benchmark evidence, and optional ML proposal
+  package evidence.
+- `--output-dir` writes `engineering_ml_readiness.md`,
+  `engineering_ml_readiness.json`, `engineering_ml_readiness_matrix.csv`, and
+  `README_REVIEW.md`.
+- Complete external validation and material verification can make
+  `ml_ready_for_engineering_review = true`, but
+  `ml_ready_for_project_use = false` remains a hard stop.
+- The bundle is advisory-only and does not change formulas, material values,
+  reinforcement selection, or deterministic SP63 checks.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

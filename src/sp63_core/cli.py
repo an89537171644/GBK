@@ -54,6 +54,7 @@ from sp63_core.ml import (
     build_baseline_ml_report,
     build_benchmark_model_comparison,
     build_benchmark_trend_report,
+    build_engineering_ml_readiness_bundle,
     build_ml_proposal_package,
     build_ml_proposal_review_package,
     build_ml_readiness_report,
@@ -70,6 +71,7 @@ from sp63_core.ml import (
     evaluate_ml_safety,
     render_ml_external_readiness_markdown,
     render_ml_material_readiness_markdown,
+    render_readiness_matrix_csv,
     run_synthetic_ml_benchmark,
     save_baseline_model_bundle,
     train_baseline_models,
@@ -740,6 +742,67 @@ def build_parser() -> ArgumentParser:
     ml_material_readiness.add_argument("--output", help="optional Markdown output path")
     ml_material_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_material_readiness.set_defaults(handler=_handle_ml_material_readiness)
+
+    engineering_ml_readiness = subparsers.add_parser(
+        "engineering-ml-readiness",
+        help="build an advisory engineering ML readiness bundle",
+    )
+    engineering_ml_readiness.add_argument(
+        "--dataset",
+        required=True,
+        help="report-derived dataset path (jsonl, json, or csv)",
+    )
+    engineering_ml_readiness.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    engineering_ml_readiness.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV",
+    )
+    engineering_ml_readiness.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV",
+    )
+    engineering_ml_readiness.add_argument("--benchmark-report", help="benchmark_report.json")
+    engineering_ml_readiness.add_argument(
+        "--benchmark-trend-report",
+        help="benchmark_trend_report.json",
+    )
+    engineering_ml_readiness.add_argument(
+        "--model-comparison-report",
+        help="model_comparison.json",
+    )
+    engineering_ml_readiness.add_argument(
+        "--ml-proposal-package-json",
+        help="ml_proposal_package.json",
+    )
+    engineering_ml_readiness.add_argument(
+        "--output-dir",
+        help="optional directory for Markdown, JSON, CSV matrix, and README_REVIEW.md",
+    )
+    engineering_ml_readiness.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write output files even when output-dir is supplied",
+    )
+    engineering_ml_readiness.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown readiness bundle",
+    )
+    engineering_ml_readiness.add_argument(
+        "--csv",
+        action="store_true",
+        help="print readiness matrix CSV",
+    )
+    engineering_ml_readiness.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineering_ml_readiness.set_defaults(handler=_handle_engineering_ml_readiness)
 
     ml_baseline = subparsers.add_parser(
         "ml-baseline",
@@ -2807,6 +2870,82 @@ def _handle_ml_material_readiness(args: Namespace) -> int:
             print(f"- {error}")
     if output_path is not None:
         print(f"output: {output_path}")
+    return 0
+
+
+def _handle_engineering_ml_readiness(args: Namespace) -> int:
+    output_dir = None if args.no_output_files or args.output_dir is None else Path(args.output_dir)
+    result = build_engineering_ml_readiness_bundle(
+        dataset_path=Path(args.dataset),
+        output_dir=output_dir,
+        dataset_format=args.format,
+        external_validation_csv=(
+            None
+            if args.external_validation_csv is None
+            else Path(args.external_validation_csv)
+        ),
+        material_verification_csv=(
+            None
+            if args.material_verification_csv is None
+            else Path(args.material_verification_csv)
+        ),
+        benchmark_report_path=(
+            None if args.benchmark_report is None else Path(args.benchmark_report)
+        ),
+        benchmark_trend_report_path=(
+            None
+            if args.benchmark_trend_report is None
+            else Path(args.benchmark_trend_report)
+        ),
+        model_comparison_report_path=(
+            None
+            if args.model_comparison_report is None
+            else Path(args.model_comparison_report)
+        ),
+        ml_proposal_package_json=(
+            None
+            if args.ml_proposal_package_json is None
+            else Path(args.ml_proposal_package_json)
+        ),
+    )
+    payload = {
+        "command": "engineering-ml-readiness",
+        **asdict(result),
+    }
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+    if args.csv:
+        print(render_readiness_matrix_csv(result.readiness_matrix), end="")
+        return 0
+
+    print("Engineering ML readiness bundle")
+    print(f"status: {result.status}")
+    print(f"readiness_status: {result.readiness_status}")
+    print(f"dataset_path: {result.dataset_path}")
+    print(f"row_count: {result.row_count}")
+    print(f"external_validation_present: {result.external_validation_present}")
+    print(f"material_verification_present: {result.material_verification_present}")
+    print(f"benchmark_evidence_present: {result.benchmark_evidence_present}")
+    print(f"proposal_evidence_present: {result.proposal_evidence_present}")
+    print(f"ml_ready_for_research: {result.ml_ready_for_research}")
+    print(f"ml_ready_for_engineering_review: {result.ml_ready_for_engineering_review}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
+    if result.output_dir is not None:
+        print(f"output_dir: {result.output_dir}")
     return 0
 
 
