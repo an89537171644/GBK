@@ -1186,3 +1186,20 @@ fallback behavior, `--with-index`, and the absence of formula-module imports.
 
 K65 does not implement a web server or GUI framework. HTML does not perform
 calculations and does not approve ML or project use.
+
+## K66 Input Form Schema Validation
+
+K66 adds validation coverage for the future input form schema:
+
+```bash
+python -m sp63_core input-form-schema --output-dir reports/input_form_schema_smoke --json
+python -m sp63_core input-form-schema --output-dir reports/input_form_schema_markdown_smoke --markdown
+```
+
+The tests verify schema metadata, geometry/material/load/serviceability/workflow
+field groups, optional ML-readiness fields, validation hints, mandatory
+warnings, output JSON/Markdown files, anonymized templates, and the invariant
+`ml_ready_for_project_use = false`.
+
+K66 does not validate or modify deterministic calculation formulas. It does not
+implement UI or make ML a project-use checker.

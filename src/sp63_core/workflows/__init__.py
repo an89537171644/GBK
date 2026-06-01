@@ -8,6 +8,10 @@ from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
     build_engineering_gui_planning_decision,
 )
+from sp63_core.workflows.input_form_schema import (
+    InputFormSchemaResult,
+    build_input_form_schema,
+)
 from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
@@ -25,11 +29,13 @@ from sp63_core.workflows.static_report_index import (
 __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
+    "InputFormSchemaResult",
     "StaticWorkflowReportIndexResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
+    "build_input_form_schema",
     "build_static_workflow_report_index",
     "render_self_check_markdown",
     "run_engineering_workflow",
