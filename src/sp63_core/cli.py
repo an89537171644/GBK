@@ -110,7 +110,11 @@ from sp63_core.validation import (
     run_shear_golden_cases,
     validate_dataset_cases,
 )
-from sp63_core.workflows import run_engineering_workflow
+from sp63_core.workflows import (
+    render_self_check_markdown,
+    run_engineering_workflow,
+    run_engineering_workflow_self_check,
+)
 
 
 def build_parser() -> ArgumentParser:
@@ -399,6 +403,49 @@ def build_parser() -> ArgumentParser:
         help="print Markdown workflow summary",
     )
     engineering_workflow.set_defaults(handler=_handle_engineering_workflow)
+
+    engineering_workflow_self_check = subparsers.add_parser(
+        "engineering-workflow-self-check",
+        help="run a smoke self-check for the engineering workflow runner",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for self-check artifacts",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--include-ml-readiness",
+        action="store_true",
+        help="include advisory ML readiness in the self-check",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--dataset",
+        help="report-derived ML dataset path for optional ML readiness",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV for optional ML readiness",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV for optional ML readiness",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="remove temporary workflow output folders after the self-check",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineering_workflow_self_check.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown self-check report",
+    )
+    engineering_workflow_self_check.set_defaults(handler=_handle_engineering_workflow_self_check)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1760,6 +1807,49 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print(f"archive_validation_status: {result.archive_validation_status}")
     print(f"zip_status: {result.zip_status}")
     print(f"ml_readiness_status: {result.ml_readiness_status}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_workflow_self_check(args: Namespace) -> int:
+    result = run_engineering_workflow_self_check(
+        output_dir=Path(args.output_dir),
+        include_ml_readiness=args.include_ml_readiness,
+        dataset_path=Path(args.dataset) if args.dataset else None,
+        external_validation_csv=(
+            Path(args.external_validation_csv) if args.external_validation_csv else None
+        ),
+        material_verification_csv=(
+            Path(args.material_verification_csv) if args.material_verification_csv else None
+        ),
+        cleanup=args.cleanup,
+    )
+    payload = {
+        "command": "engineering-workflow-self-check",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(render_self_check_markdown(result), end="")
+        return 0
+
+    print("Engineering workflow self-check")
+    print(f"status: {result.status}")
+    print(f"self_check_status: {result.self_check_status}")
+    print(f"passed_checks: {result.passed_checks}")
+    print(f"failed_checks: {result.failed_checks}")
+    print(f"skipped_checks: {result.skipped_checks}")
+    print(f"deterministic_workflow_status: {result.deterministic_workflow_status}")
+    print(f"deterministic_archive_status: {result.deterministic_archive_status}")
+    print(f"deterministic_zip_status: {result.deterministic_zip_status}")
+    print(f"ml_workflow_status: {result.ml_workflow_status}")
     print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:

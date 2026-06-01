@@ -104,3 +104,21 @@ python -m sp63_core engineering-workflow \
 
 The workflow stores the readiness output under `ml_readiness/`. It remains
 advisory-only and keeps `ml_ready_for_project_use = false`.
+
+## K62 Self-Check Integration
+
+The K62 workflow self-check can include this readiness bundle when a dataset is
+provided:
+
+```bash
+python -m sp63_core engineering-workflow-self-check \
+  --output-dir reports/workflow_self_check_ml \
+  --include-ml-readiness \
+  --dataset reports/synthetic_dataset_smoke.jsonl \
+  --external-validation-csv tests/fixtures/external_validation_sample.csv \
+  --material-verification-csv tests/fixtures/material_verification_sample.csv \
+  --json
+```
+
+The self-check still treats ML as advisory-only and verifies that
+`ml_ready_for_project_use` remains false.

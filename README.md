@@ -903,6 +903,21 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   design, does not change formulas or material values, and requires engineer
   review.
 
+## Recommended engineering workflow
+
+Run these commands before reviewing generated report packages:
+
+```bash
+python -m sp63_core validate --golden
+python -m sp63_core manual-cases --json
+python -m sp63_core engineering-workflow-self-check --output-dir reports/workflow_self_check --json
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow --json
+```
+
+K62 adds `engineering-workflow-self-check` and quickstart documents under
+`docs/quickstart/`. The self-check verifies that the workflow technically runs,
+but it does not certify a design. Engineer review remains mandatory.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.
