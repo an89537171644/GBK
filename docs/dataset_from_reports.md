@@ -189,3 +189,16 @@ The gate expects `overall_status` to include `pass`, `fail`, and
 `review_or_fail`, reports imbalance and minority-class warnings, and recommends
 new synthetic ranges when classes are missing. The split index is a review aid
 for future ML experiments; it does not certify the dataset.
+
+## K54 Guided Synthetic Inputs
+
+To produce a more balanced synthetic source before report export, run:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --seed 42 --max-attempts 3000 --json
+python -m sp63_core design-report-batch --input-dir reports/guided_synthetic_inputs --output-dir reports/guided_synthetic_reports --json
+python -m sp63_core report-dataset-export --path reports/guided_synthetic_reports --batch --output reports/guided_synthetic_dataset.jsonl --json
+```
+
+The guided manifest is ignored by batch input discovery. Accepted cases are
+selected by deterministic `overall_status`, not ML.

@@ -198,3 +198,14 @@ The balance gate checks whether the selected target has enough class diversity
 for stratified train/validation/test review. It also reports leakage-like
 status/check columns so feature selection can keep them out of input-only ML
 features.
+
+## K54 Guided Synthetic Inputs
+
+Use guided generation when synthetic balance needs additional class diversity:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --json
+```
+
+Feature preparation remains unchanged: status/check/result columns stay out of
+input-only ML features.

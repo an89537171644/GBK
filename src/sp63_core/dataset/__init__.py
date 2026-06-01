@@ -51,6 +51,11 @@ from sp63_core.dataset.synthetic_balance import (
     analyze_synthetic_dataset_balance,
     build_stratified_split_summary,
 )
+from sp63_core.dataset.synthetic_guided import (
+    GUIDED_SYNTHETIC_INPUT_GENERATOR,
+    GuidedSyntheticGenerationResult,
+    generate_guided_synthetic_inputs,
+)
 from sp63_core.dataset.synthetic_report_inputs import (
     SYNTHETIC_REPORT_INPUT_GENERATOR,
     SyntheticReportInputGenerationResult,
@@ -73,7 +78,9 @@ __all__ = [
     "SUPPORTED_REPORT_DATASET_TARGETS",
     "SUPPORTED_REPORT_DATASET_FORMATS",
     "SUPPORTED_REPORT_QUALITY_FORMATS",
+    "GUIDED_SYNTHETIC_INPUT_GENERATOR",
     "SYNTHETIC_REPORT_INPUT_GENERATOR",
+    "GuidedSyntheticGenerationResult",
     "ReportDatasetExportResult",
     "SyntheticReportInputGenerationResult",
     "SyntheticDatasetBalanceResult",
@@ -93,6 +100,7 @@ __all__ = [
     "extract_dataset_row_from_report_json",
     "generate_diagnostic_dataset_cases",
     "generate_dataset_cases",
+    "generate_guided_synthetic_inputs",
     "generate_synthetic_report_inputs",
     "load_report_dataset_rows",
     "run_report_dataset_quality_gate",

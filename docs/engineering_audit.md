@@ -762,3 +762,20 @@ K53 does not change formulas, material values, reinforcement selection, report
 generation, external validation, or material verification. Synthetic data
 remains synthetic-only, ML remains advisory-only, and deterministic SP63 checks
 remain mandatory.
+
+## K54 Guided Synthetic Class Balancing
+
+K54 adds `guided-synthetic-inputs` for deterministic-guided synthetic input
+generation:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --seed 42 --max-attempts 3000 --json
+```
+
+Candidates are generated from engineering-style synthetic ranges and accepted
+only when deterministic SP63 draft design returns an `overall_status` needed by
+the target distribution. ML is not used to guide or accept candidates.
+
+K54 does not change formulas, material values, reinforcement selection, report
+generation, external validation, material verification, or ML safety rules.
+Synthetic data remains synthetic-only and requires engineer review.

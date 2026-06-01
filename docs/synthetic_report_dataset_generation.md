@@ -96,3 +96,15 @@ The balance gate reports target distribution, required `overall_status`
 classes, class imbalance, split counts, leakage-like audit columns, warnings,
 and generation recommendations. It is still synthetic-only and requires
 engineer review.
+
+## K54 Guided Synthetic Balancing
+
+K54 adds guided generation toward a target status distribution:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --seed 42 --max-attempts 3000 --json
+```
+
+The generator evaluates candidates through deterministic SP63 draft design
+results and accepts only cases that help fill the requested `overall_status`
+distribution. ML does not guide generation.

@@ -170,3 +170,14 @@ The gate reports whether `overall_status` has `pass`, `fail`, and
 `review_or_fail`, whether minority classes are large enough, and whether a
 stratified split is feasible. Baseline metrics remain advisory-only and require
 engineer review.
+
+## K54 Guided Synthetic Baseline Source
+
+K54 can create a more balanced synthetic source before baseline evaluation:
+
+```bash
+python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_synthetic_inputs --target-pass 50 --target-fail 50 --target-review 50 --json
+```
+
+The baseline still uses leakage-safe feature selection and remains
+advisory-only. Guided generation does not make ML a calculator.
