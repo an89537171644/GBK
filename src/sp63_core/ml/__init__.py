@@ -15,6 +15,10 @@ from sp63_core.ml.neural_surrogate import (
     build_neural_surrogate_report,
 )
 from sp63_core.ml.proposal import MLReinforcementProposal, proposal_from_prediction
+from sp63_core.ml.proposal_review_package import (
+    MLProposalReviewPackageResult,
+    build_ml_proposal_review_package,
+)
 from sp63_core.ml.proposal_safety import (
     MLProposal,
     MLProposalVerificationResult,
@@ -53,6 +57,7 @@ __all__ = [
     "MLProposal",
     "MLProposalVerificationResult",
     "MLProposalPackageResult",
+    "MLProposalReviewPackageResult",
     "NeuralAdvisorySafetyAuditResult",
     "NeuralSurrogateReport",
     "NeuralAdvisoryPredictionResult",
@@ -64,6 +69,7 @@ __all__ = [
     "build_baseline_ml_report",
     "build_ml_readiness_report",
     "build_ml_proposal_package",
+    "build_ml_proposal_review_package",
     "build_neural_surrogate_report",
     "build_report_baseline_ml_result",
     "build_report_neural_surrogate_result",

@@ -702,6 +702,26 @@ generation, external validation, or material verification. It does not make ML
 a design checker. Even an accepted package is only an advisory signal and still
 requires deterministic SP63 verification and engineer review.
 
+## K51 ML Proposal Engineering Review Package
+
+K51 adds `ml-proposal-review-package` for engineer handoff of one advisory ML
+proposal:
+
+```bash
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review --json
+```
+
+The package writes `input.json`, deterministic report MD/JSON/HTML, neural
+safety audit MD/JSON, ML proposal package MD/JSON, `README_REVIEW.md`,
+`manifest.json`, and optional ZIP archive. The manifest records SHA256 payload
+checksums, deterministic statuses, proposal status, prediction match flag,
+advisory signal usability, and mandatory review flags.
+
+K51 does not change formulas, material values, reinforcement selection, report
+generation, external validation, or material verification. ZIP and manifest
+packaging do not certify a design. ML remains advisory-only, deterministic SP63
+verification remains mandatory, and engineer review remains required.
+
 ## Next Stages
 
 - Engineer review of material catalogs and formula cards.

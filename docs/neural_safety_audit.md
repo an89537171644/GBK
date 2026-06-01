@@ -125,3 +125,16 @@ The package reuses the K48 prediction and this K49 audit, then records
 `proposal_status`, proposal accept/reject/review flags, rejection or review
 reasons, warnings, class probabilities, and deterministic SP63 statuses.
 Acceptance remains advisory-only and is not a project decision.
+
+## K51 Engineering Review Package
+
+K51 packages this audit together with the deterministic report and K50 proposal
+package:
+
+```bash
+python -m sp63_core ml-proposal-review-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/ml_proposal_review --json
+```
+
+The package includes `neural_safety_audit.md/json`, manifest checksums,
+`README_REVIEW.md`, and optional ZIP export for engineer handoff. It does not
+certify the design and does not turn ML into a calculation engine.
