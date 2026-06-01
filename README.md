@@ -703,6 +703,25 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
 - Neural prediction remains advisory-only and is not a project decision.
   Deterministic SP63 verification and engineer review remain mandatory.
 
+## K50 ML proposal package status
+
+- CLI command `ml-proposal-package --dataset reports/batch_dataset.jsonl
+  --input-json docs/reports/examples/rectangular_design_input_example.json
+  --json` builds one advisory proposal package.
+- CSV datasets are supported with `--format csv`.
+- Markdown output is supported with `--markdown`, and `--output` can write the
+  package report to disk.
+- The package connects neural advisory prediction, K49 safety audit,
+  deterministic SP63 verification, proposal decision status, rejection/review
+  reasons, warnings, and class probabilities.
+- `proposal_status` can be `accepted`, `review_required`, or `rejected`.
+  Acceptance is advisory-only and still requires deterministic SP63 verification
+  and engineer review.
+- `deterministic_derived` remains a review-only feature mode and warns about
+  possible design-decision leakage.
+- K50 does not make ML a calculator and does not add a new neural-network
+  dependency.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

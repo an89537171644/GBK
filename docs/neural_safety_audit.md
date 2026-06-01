@@ -111,3 +111,17 @@ neural advisory prediction differs from deterministic SP63 result
 - Material verification and external validation remain separate engineer gates.
 - Metrics and predictions are not production evidence.
 - Engineer review remains mandatory.
+
+## K50 Proposal Package
+
+K50 adds `ml-proposal-package` as the next review layer after this safety audit:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --markdown
+```
+
+The package reuses the K48 prediction and this K49 audit, then records
+`proposal_status`, proposal accept/reject/review flags, rejection or review
+reasons, warnings, class probabilities, and deterministic SP63 statuses.
+Acceptance remains advisory-only and is not a project decision.

@@ -46,6 +46,7 @@ from sp63_core.materials import (
 from sp63_core.ml import (
     MLProposal,
     build_baseline_ml_report,
+    build_ml_proposal_package,
     build_ml_readiness_report,
     build_neural_advisory_prediction,
     build_neural_advisory_safety_audit,
@@ -595,6 +596,38 @@ def build_parser() -> ArgumentParser:
         help="write JSON or Markdown audit report to a file",
     )
     neural_safety_audit.set_defaults(handler=_handle_neural_safety_audit)
+
+    ml_proposal_package = subparsers.add_parser(
+        "ml-proposal-package",
+        help="build advisory ML proposal package with deterministic SP63 verification",
+    )
+    ml_proposal_package.add_argument("--dataset", required=True, help="dataset file path")
+    ml_proposal_package.add_argument("--input-json", required=True, help="design input JSON")
+    ml_proposal_package.add_argument(
+        "--format",
+        choices=("jsonl", "json", "csv"),
+        help="dataset format; inferred from extension when omitted",
+    )
+    ml_proposal_package.add_argument("--target", default="overall_status")
+    ml_proposal_package.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    ml_proposal_package.add_argument("--hidden-layer-size", type=int, default=16)
+    ml_proposal_package.add_argument("--max-iter", type=int, default=500)
+    ml_proposal_package.add_argument("--random-state", type=int, default=42)
+    ml_proposal_package.add_argument("--json", action="store_true", help="print JSON output")
+    ml_proposal_package.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown proposal package report",
+    )
+    ml_proposal_package.add_argument(
+        "--output",
+        help="write JSON or Markdown proposal package report to a file",
+    )
+    ml_proposal_package.set_defaults(handler=_handle_ml_proposal_package)
 
     neural_surrogate = subparsers.add_parser(
         "neural-surrogate",
@@ -2231,6 +2264,75 @@ def _handle_neural_safety_audit(args: Namespace) -> int:
     print(f"deterministic_overall_status: {result.deterministic_overall_status}")
     print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
     print(f"advisory_signal_usable: {result.advisory_signal_usable}")
+    print(f"neural_network_used: {result.neural_network_used}")
+    if result.rejection_reasons:
+        print("rejection_reasons:")
+        for reason in result.rejection_reasons:
+            print(f"- {reason}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_ml_proposal_package(args: Namespace) -> int:
+    result = build_ml_proposal_package(
+        dataset_path=Path(args.dataset),
+        dataset_format=args.format,
+        input_json_path=Path(args.input_json),
+        target=args.target,
+        feature_mode=args.feature_mode,
+        hidden_layer_sizes=(args.hidden_layer_size,),
+        max_iter=args.max_iter,
+        random_state=args.random_state,
+    )
+    payload = {
+        "command": "ml-proposal-package",
+        **result.json_data,
+    }
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if args.markdown:
+            output_path.write_text(result.markdown, encoding="utf-8")
+        else:
+            output_path.write_text(
+                jsonlib.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown)
+        return 0
+
+    print("ML proposal package")
+    print(f"status: {result.status}")
+    print(f"proposal_status: {result.proposal_status}")
+    print("ML proposal output is advisory-only and is not a design decision.")
+    print("Deterministic SP63 verification and engineer review are mandatory.")
+    print(f"source_dataset: {result.source_dataset}")
+    print(f"input_json_path: {result.input_json_path}")
+    print(f"target: {result.target}")
+    print(f"feature_mode: {result.feature_mode}")
+    print(f"predicted_status: {result.predicted_status}")
+    print(f"prediction_confidence: {result.prediction_confidence}")
+    print(f"deterministic_strength_status: {result.deterministic_strength_status}")
+    print(
+        "deterministic_serviceability_status: "
+        f"{result.deterministic_serviceability_status}"
+    )
+    print(f"deterministic_overall_status: {result.deterministic_overall_status}")
+    print(f"prediction_matches_deterministic: {result.prediction_matches_deterministic}")
+    print(f"advisory_signal_usable: {result.advisory_signal_usable}")
+    print(f"safety_audit_status: {result.safety_audit_status}")
+    print(f"proposal_accepted: {result.proposal_accepted}")
+    print(f"proposal_rejected: {result.proposal_rejected}")
+    print(f"proposal_requires_review: {result.proposal_requires_review}")
     print(f"neural_network_used: {result.neural_network_used}")
     if result.rejection_reasons:
         print("rejection_reasons:")

@@ -129,3 +129,16 @@ python -m sp63_core neural-safety-audit --dataset reports/batch_dataset.jsonl --
 The audit is intended for engineer review of predicted status, deterministic
 status, match result, warnings, and rejection reasons. It keeps ML
 advisory-only and does not change the baseline feature or training policy.
+
+## K50 Proposal Package
+
+K50 adds the next packaging layer for one advisory ML proposal:
+
+```bash
+python -m sp63_core ml-proposal-package --dataset reports/batch_dataset.jsonl --input-json docs/reports/examples/rectangular_design_input_example.json --json
+```
+
+The package combines K48 prediction, K49 safety audit, deterministic SP63
+statuses, class probabilities, proposal decision flags, rejection/review
+reasons, and Markdown output. It does not make ML a calculator and does not
+change the K46 baseline feature or training policy.
