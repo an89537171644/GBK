@@ -120,3 +120,15 @@ python -m sp63_core engineering-interface-contract --output-dir reports/interfac
 The contract lists required screens, required inputs, required outputs,
 mandatory warnings, forbidden UI actions, and recommended CLI commands. It does
 not implement a UI and does not approve ML for project use.
+
+K64 adds the planning-only technology decision:
+
+```bash
+python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning --json
+```
+
+The recommended direction is `cli_first_with_static_html_reports`: keep the
+CLI/workflow layer as the authority, organize existing static HTML/Markdown/JSON
+outputs, and postpone heavy UI dependencies. A future interface must still show
+deterministic SP63 statuses, archive validation, material verification, external
+validation, engineer-review warnings, and `ml_ready_for_project_use = false`.

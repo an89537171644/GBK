@@ -954,3 +954,24 @@ Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI. A future UI must call
 the existing CLI/workflow layer, expose deterministic SP63 results, keep
 engineer-review warnings visible, keep ML advisory-only, and keep
 `ml_ready_for_project_use = false`.
+
+## K64 engineering GUI planning decision
+
+K64 adds the planning-only command:
+
+```bash
+python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning --json
+```
+
+The recommended direction is `cli_first_with_static_html_reports`. The project
+already produces HTML, Markdown, JSON, manifest, ZIP, workflow, material
+verification, external validation, and advisory ML readiness artifacts, so the
+next interface step should organize those static outputs instead of adding a
+heavy GUI runtime.
+
+K64 also writes `engineering_gui_planning_decision.json` and
+`engineering_gui_planning_decision.md` and documents the considered options
+under `docs/ui/`. It does not implement UI, does not add Streamlit, Gradio,
+Flask, FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras,
+does not change formulas or material values, and keeps
+`ml_ready_for_project_use = false`.

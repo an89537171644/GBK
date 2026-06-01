@@ -81,3 +81,8 @@ The deterministic self-check verifies:
 K63 adds `engineering-interface-contract` for future UI planning. The contract
 must be used as a safety checklist for any GUI/desktop wrapper that calls the
 workflow self-check. It does not implement UI and does not certify calculations.
+
+K64 adds `engineering-gui-planning` and recommends
+`cli_first_with_static_html_reports`. A future wrapper should use self-check and
+workflow outputs as static review artifacts before any GUI runtime is
+considered.
