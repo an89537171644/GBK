@@ -793,6 +793,22 @@ python -m sp63_core train-baseline --generate-dataset-limit 500 --model-output m
   external validation, deterministic SP63 checks remain mandatory, and engineer
   review is required.
 
+## K55 large balanced synthetic ML benchmark status
+
+- CLI command `synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark
+  --target-pass 100 --target-fail 100 --target-review 100 --seed 42
+  --max-attempts 10000 --json` runs the guided synthetic benchmark pipeline.
+- The pipeline reuses guided synthetic generation, batch design reports,
+  report dataset export, balance/readiness gates, feature-set checks,
+  non-neural baseline ML, and advisory neural surrogate smoke checks.
+- Outputs include `benchmark_report.json`, `benchmark_report.md`,
+  `README_BENCHMARK.md`, and local generated dataset/report folders.
+- Generated benchmark outputs are synthetic-only and should not be committed.
+- Benchmark metrics are not production evidence and do not replace material
+  verification, external validation, deterministic SP63 checks, or engineer
+  review.
+- ML remains advisory-only and is not a design checker.
+
 ## Codex automation workflow
 
 Codex automation is intended to work through GitHub Issues and Pull Requests.

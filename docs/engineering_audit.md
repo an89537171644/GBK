@@ -779,3 +779,22 @@ the target distribution. ML is not used to guide or accept candidates.
 K54 does not change formulas, material values, reinforcement selection, report
 generation, external validation, material verification, or ML safety rules.
 Synthetic data remains synthetic-only and requires engineer review.
+
+## K55 Large Balanced Synthetic ML Benchmark
+
+K55 adds `synthetic-ml-benchmark` as an orchestration layer for synthetic ML
+experiments:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The command connects guided synthetic input generation, deterministic report
+batching, report dataset export, synthetic balance/readiness checks, feature
+selection, non-neural baseline ML, and advisory neural surrogate smoke metrics.
+
+K55 does not change formulas, material values, reinforcement selection, report
+generation, external validation, material verification, or ML safety rules.
+Benchmark metrics are synthetic-only and are not production evidence. ML
+remains advisory-only, deterministic SP63 checks remain mandatory, and engineer
+review remains required.

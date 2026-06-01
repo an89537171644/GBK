@@ -99,6 +99,19 @@ python -m sp63_core synthetic-dataset-balance --dataset reports/guided_synthetic
 The report batch reader ignores `guided_synthetic_manifest.json`, so the guided
 input folder can be passed directly to `design-report-batch`.
 
+## K55 Synthetic ML Benchmark
+
+K55 wraps guided generation and downstream report-derived ML checks into one
+benchmark command:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The benchmark still accepts cases only by deterministic SP63 draft
+`overall_status`. ML is evaluated after dataset export and does not guide
+generation or become a design checker.
+
 ## Safety Notes
 
 - Guided synthetic data is synthetic-only.

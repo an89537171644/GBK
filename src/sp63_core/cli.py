@@ -63,6 +63,7 @@ from sp63_core.ml import (
     evaluate_baseline_models,
     evaluate_ml_quality_gate,
     evaluate_ml_safety,
+    run_synthetic_ml_benchmark,
     save_baseline_model_bundle,
     train_baseline_models,
     verify_ml_proposal_with_deterministic_core,
@@ -453,6 +454,48 @@ def build_parser() -> ArgumentParser:
     )
     synthetic_dataset_balance.add_argument("--json", action="store_true", help="print JSON output")
     synthetic_dataset_balance.set_defaults(handler=_handle_synthetic_dataset_balance)
+
+    synthetic_ml_benchmark = subparsers.add_parser(
+        "synthetic-ml-benchmark",
+        help="run guided synthetic report dataset through ML benchmark stages",
+    )
+    synthetic_ml_benchmark.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for benchmark artifacts",
+    )
+    synthetic_ml_benchmark.add_argument("--target-pass", type=int, default=100)
+    synthetic_ml_benchmark.add_argument("--target-fail", type=int, default=100)
+    synthetic_ml_benchmark.add_argument("--target-review", type=int, default=100)
+    synthetic_ml_benchmark.add_argument("--seed", type=int, default=42)
+    synthetic_ml_benchmark.add_argument("--max-attempts", type=int, default=10000)
+    synthetic_ml_benchmark.add_argument(
+        "--target",
+        choices=SUPPORTED_REPORT_DATASET_TARGETS,
+        default="overall_status",
+    )
+    synthetic_ml_benchmark.add_argument(
+        "--feature-mode",
+        choices=("input_only", "deterministic_derived"),
+        default="input_only",
+    )
+    synthetic_ml_benchmark.add_argument(
+        "--no-serviceability",
+        action="store_true",
+        help="omit serviceability fields and checks from guided candidates",
+    )
+    synthetic_ml_benchmark.add_argument(
+        "--no-reports",
+        action="store_true",
+        help="only generate guided inputs and benchmark metadata",
+    )
+    synthetic_ml_benchmark.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print the generated Markdown benchmark report",
+    )
+    synthetic_ml_benchmark.add_argument("--json", action="store_true", help="print JSON output")
+    synthetic_ml_benchmark.set_defaults(handler=_handle_synthetic_ml_benchmark)
 
     dataset = subparsers.add_parser("generate-dataset", help="generate deterministic dataset rows")
     dataset.add_argument("--limit", type=int, required=True)
@@ -1636,6 +1679,65 @@ def _handle_synthetic_dataset_balance(args: Namespace) -> int:
         print("leakage_columns_detected:")
         for column in result.leakage_columns_detected:
             print(f"- {column}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_synthetic_ml_benchmark(args: Namespace) -> int:
+    target_distribution_goal = {
+        "pass": args.target_pass,
+        "fail": args.target_fail,
+        "review_or_fail": args.target_review,
+    }
+    result = run_synthetic_ml_benchmark(
+        output_dir=Path(args.output_dir),
+        target_distribution_goal=target_distribution_goal,
+        seed=args.seed,
+        max_attempts=args.max_attempts,
+        include_serviceability=not args.no_serviceability,
+        target=args.target,
+        feature_mode=args.feature_mode,
+        create_reports=not args.no_reports,
+    )
+    payload = {
+        "command": "synthetic-ml-benchmark",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print((Path(result.output_dir) / "benchmark_report.md").read_text(encoding="utf-8"))
+        return 0
+
+    print("Synthetic ML benchmark")
+    print(f"status: {result.status}")
+    print(f"benchmark_status: {result.benchmark_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"target_distribution_goal: {result.target_distribution_goal}")
+    print(f"final_distribution: {result.final_distribution}")
+    print(f"generated_count: {result.generated_count}")
+    print(f"accepted_count: {result.accepted_count}")
+    print(f"rejected_count: {result.rejected_count}")
+    print(f"report_count: {result.report_count}")
+    print(f"dataset_row_count: {result.dataset_row_count}")
+    print(f"balance_status: {result.balance_status}")
+    print(f"quality_status: {result.quality_status}")
+    print(f"feature_status: {result.feature_status}")
+    print(f"baseline_status: {result.baseline_status}")
+    print(f"neural_status: {result.neural_status}")
+    print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"requires_engineer_review: {result.requires_engineer_review}")
+    print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
+    print(f"deterministic_checks_required: {result.deterministic_checks_required}")
     if result.recommendations:
         print("recommendations:")
         for recommendation in result.recommendations:

@@ -121,3 +121,16 @@ python -m sp63_core guided-synthetic-inputs --output-dir reports/guided_syntheti
 The guided generator still uses deterministic SP63 results for candidate
 classification. It does not use ML to accept cases and does not turn synthetic
 data into external validation.
+
+## K55 Benchmark Integration
+
+K55 runs the balance gate automatically inside the larger synthetic ML
+benchmark:
+
+```bash
+python -m sp63_core synthetic-ml-benchmark --output-dir reports/synthetic_ml_benchmark --target-pass 100 --target-fail 100 --target-review 100 --json
+```
+
+The balance output contributes to `benchmark_report.json` and
+`benchmark_report.md`. A `review_required` balance status keeps the benchmark
+in review, and synthetic benchmark metrics remain non-production evidence.
