@@ -134,3 +134,15 @@ advisory-only, and `ml_ready_for_project_use` remains false.
 K66 adds a machine-readable input form schema for future wrappers. A wrapper may
 use it to display fields and validation hints, but must still call the existing
 CLI/workflow commands and must not perform calculations in the UI layer.
+
+## K67 Input Preflight
+
+K67 adds `input-preflight` as the wrapper-safe pre-run validation command:
+
+```bash
+python -m sp63_core input-preflight --input-json <input.json> --output-dir <preflight-dir> --json
+```
+
+Future wrappers should surface the preflight status and issues before launching
+deterministic workflow commands. Preflight does not approve a design and does
+not make ML project-ready.

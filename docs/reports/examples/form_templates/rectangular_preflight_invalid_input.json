@@ -1,0 +1,15 @@
+{
+  "b": -300,
+  "h": 500,
+  "cover": 600,
+  "stirrup_diameter_for_geometry": 8,
+  "concrete_class": "B99",
+  "longitudinal_rebar_class": "A500",
+  "stirrup_rebar_class": "A240",
+  "M": 150000000,
+  "Q": -80000,
+  "Mser": 30000000,
+  "span": 400,
+  "ml_ready_for_project_use": true,
+  "unknown_demo_field": "not_allowed"
+}

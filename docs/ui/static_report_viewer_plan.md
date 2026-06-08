@@ -76,3 +76,15 @@ Tkinter/Electron dependencies.
 K66 adds `input-form-schema` so a future static report viewer or launcher can
 use a documented set of input fields and validation hints without adding a GUI
 runtime or duplicating calculation logic.
+
+## K67 Preflight Follow-Up
+
+K67 adds `input-preflight`, which a future static launcher can run before
+`engineering-workflow`:
+
+```bash
+python -m sp63_core input-preflight --input-json <input.json> --output-dir <preflight_dir> --json
+```
+
+The launcher should display the preflight status and issues, but deterministic
+SP63 checks and engineer review remain mandatory.

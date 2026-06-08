@@ -40,3 +40,9 @@ must not duplicate deterministic calculations or treat ML as a design checker.
 - Engineer review remains mandatory.
 - Material verification and external validation remain separate gates.
 - `ml_ready_for_project_use` remains false.
+
+## K67 Input Preflight
+
+The recommended CLI-first path now includes `input-preflight` before running
+workflow commands. This keeps input validation in the backend/report layer
+instead of adding UI-side calculations or a GUI dependency.

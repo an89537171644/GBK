@@ -1016,3 +1016,23 @@ warnings. It also adds anonymized templates under
 This is not a GUI and does not start a web server. The schema does not execute
 calculations, does not change formulas or materials, does not make ML a design
 checker, and keeps `ml_ready_for_project_use = false`.
+
+## K67 input JSON preflight validation
+
+K67 adds a preflight validator for engineering input JSON files:
+
+```bash
+python -m sp63_core input-preflight \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/input_preflight \
+  --json
+```
+
+The command writes `input_preflight_report.json` and
+`input_preflight_report.md`, checks required fields, unknown fields, numeric
+ranges, material classes, optional ML/external/material paths, and flags review
+conditions such as `Mser > M`.
+
+Preflight is reporting only. It does not run calculations, does not approve
+project use, does not change formulas or materials, and keeps
+`ml_ready_for_project_use = false`.

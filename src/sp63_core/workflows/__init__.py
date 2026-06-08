@@ -12,6 +12,12 @@ from sp63_core.workflows.input_form_schema import (
     InputFormSchemaResult,
     build_input_form_schema,
 )
+from sp63_core.workflows.input_preflight import (
+    InputPreflightIssue,
+    InputPreflightResult,
+    render_input_preflight_markdown,
+    run_input_preflight,
+)
 from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
@@ -30,6 +36,8 @@ __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
     "InputFormSchemaResult",
+    "InputPreflightIssue",
+    "InputPreflightResult",
     "StaticWorkflowReportIndexResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
@@ -38,6 +46,8 @@ __all__ = [
     "build_input_form_schema",
     "build_static_workflow_report_index",
     "render_self_check_markdown",
+    "render_input_preflight_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_self_check",
+    "run_input_preflight",
 ]

@@ -1203,3 +1203,20 @@ warnings, output JSON/Markdown files, anonymized templates, and the invariant
 
 K66 does not validate or modify deterministic calculation formulas. It does not
 implement UI or make ML a project-use checker.
+
+## K67 Input JSON Preflight Validation
+
+K67 adds validation coverage for the input JSON preflight command:
+
+```bash
+python -m sp63_core input-preflight --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/input_preflight_smoke --json
+python -m sp63_core input-preflight --input-json docs/reports/examples/form_templates/rectangular_serviceability_input_template.json --output-dir reports/input_preflight_markdown_smoke --markdown
+```
+
+The tests verify pass, review_required, and fail paths; missing required
+fields; unknown fields; invalid JSON; non-object JSON; material class checks;
+optional ML-readiness/path checks; JSON/Markdown output files; anonymized
+preflight templates; and the invariant `ml_ready_for_project_use = false`.
+
+K67 does not import or run deterministic formula modules. It does not change
+formulas, material values, reinforcement selection, UI, or ML safety policy.
