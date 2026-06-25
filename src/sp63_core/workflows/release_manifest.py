@@ -6,7 +6,7 @@ import hashlib
 import json
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -88,7 +88,7 @@ def build_release_artifact_manifest(
         )
 
     status = "fail" if errors else "pass"
-    generated_at_utc = datetime.now(UTC).replace(microsecond=0).isoformat()
+    generated_at_utc = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     result = ReleaseArtifactManifestResult(
         status=status,
         manifest_status=status,
