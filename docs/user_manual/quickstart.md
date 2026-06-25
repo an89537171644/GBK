@@ -21,3 +21,15 @@ python -m sp63_core engineering-workflow \
 
 Review generated reports manually. Do not treat any generated file as project
 approval.
+
+Run the clean deterministic demo workflow:
+
+```bash
+python -m sp63_core clean-demo-workflow \
+  --output-dir reports/clean_demo_workflow_smoke \
+  --json
+```
+
+The clean demo uses a known passing input and verifies preflight, deterministic
+report generation, archive validation, ZIP creation, and static report index
+generation. It is review evidence only and still requires engineer review.

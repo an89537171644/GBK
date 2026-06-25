@@ -1,5 +1,10 @@
 """Workflow orchestration helpers for SP63 engineering review flows."""
 
+from sp63_core.workflows.clean_demo_workflow import (
+    CLEAN_DEMO_INPUT,
+    CleanDemoWorkflowResult,
+    run_clean_demo_workflow,
+)
 from sp63_core.workflows.diagnostics_catalog import (
     DiagnosticsCatalogResult,
     build_diagnostics_catalog,
@@ -92,6 +97,8 @@ __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
+    "CLEAN_DEMO_INPUT",
+    "CleanDemoWorkflowResult",
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "DiagnosticsCatalogResult",
@@ -132,6 +139,7 @@ __all__ = [
     "render_material_verification_closure_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
+    "run_clean_demo_workflow",
     "run_engineering_workflow_self_check",
     "run_input_preflight",
     "run_protected_files_guard",

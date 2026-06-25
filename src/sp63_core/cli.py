@@ -129,6 +129,7 @@ from sp63_core.workflows import (
     render_docs_audit_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
+    run_clean_demo_workflow,
     run_engineering_workflow,
     run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
@@ -540,6 +541,23 @@ def build_parser() -> ArgumentParser:
         help="print Markdown self-check report",
     )
     engineering_workflow_self_check.set_defaults(handler=_handle_engineering_workflow_self_check)
+
+    clean_demo_workflow = subparsers.add_parser(
+        "clean-demo-workflow",
+        help="run a clean deterministic demo workflow and write review artifacts",
+    )
+    clean_demo_workflow.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for clean demo workflow artifacts",
+    )
+    clean_demo_workflow.add_argument("--json", action="store_true", help="print JSON output")
+    clean_demo_workflow.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown clean demo workflow summary",
+    )
+    clean_demo_workflow.set_defaults(handler=_handle_clean_demo_workflow)
 
     engineering_interface_contract = subparsers.add_parser(
         "engineering-interface-contract",
@@ -2383,6 +2401,39 @@ def _handle_engineering_workflow_self_check(args: Namespace) -> int:
     print(f"deterministic_zip_status: {result.deterministic_zip_status}")
     print(f"ml_workflow_status: {result.ml_workflow_status}")
     print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_clean_demo_workflow(args: Namespace) -> int:
+    result = run_clean_demo_workflow(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "clean-demo-workflow",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        summary_path = Path(result.output_dir) / "clean_demo_workflow.md"
+        print(summary_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Clean deterministic demo workflow")
+    print(f"status: {result.status}")
+    print(f"demo_status: {result.demo_status}")
+    print(f"workflow_status: {result.workflow_status}")
+    print(f"preflight_status: {result.preflight_status}")
+    print(f"deterministic_report_status: {result.deterministic_report_status}")
+    print(f"archive_validation_status: {result.archive_validation_status}")
+    print(f"zip_status: {result.zip_status}")
+    print(f"index_status: {result.index_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -1489,3 +1489,20 @@ absence of direct formula-module imports.
 
 K83 does not change formulas, material values, material catalogs,
 reinforcement selection, external validation logic, or ML safety policy.
+
+## K84 Clean Deterministic Demo Workflow Validation
+
+K84 adds validation coverage for `clean-demo-workflow`:
+
+```bash
+python -m sp63_core clean-demo-workflow --output-dir reports/clean_demo_workflow_smoke --json
+```
+
+The tests verify that the clean demo input passes preflight and that the
+deterministic workflow produces a passing report, archive validation result,
+ZIP package, and static index. CLI JSON/Markdown behavior and mandatory safety
+flags are covered.
+
+K84 is workflow review evidence only. It does not certify designs, change
+formulas, change material values, change reinforcement selection, implement UI,
+or make ML a calculator.

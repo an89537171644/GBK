@@ -1271,3 +1271,19 @@ The report gathers golden validation, manual cases, material audit, external
 validation sample, workflow self-check, input schema/preflight, static index,
 protected files guard, and user manual statuses. It is review evidence only:
 it does not publish a release, certify designs, or approve project use.
+
+## K84 clean deterministic demo workflow
+
+K84 adds a clean deterministic demo command:
+
+```bash
+python -m sp63_core clean-demo-workflow \
+  --output-dir reports/clean_demo_workflow_smoke \
+  --json
+```
+
+The command runs a known passing input through preflight, deterministic report
+generation, archive validation, ZIP creation, and static report indexing. It is
+review evidence only: engineer review remains mandatory, deterministic checks
+remain required, ML remains advisory-only, and `ml_ready_for_project_use`
+remains `false`.
