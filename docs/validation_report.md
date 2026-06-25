@@ -1551,3 +1551,19 @@ checksums, CLI JSON behavior, and mandatory safety flags.
 
 K87 does not change formulas, material values, protected calculation files,
 `validation/external.py`, or ML safety behavior.
+
+## K88 v0.9 Final Audit Validation
+
+K88 adds validation coverage for `v09-final-audit`:
+
+```bash
+python -m sp63_core v09-final-audit --output-dir reports/v09_final_audit_smoke --json
+```
+
+The tests verify aggregated audit generation, expected audit item names,
+JSON/Markdown reports, CLI JSON output, no failed audit items in the smoke
+scenario, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K88 is release-preparation evidence only. It does not publish a release,
+certify calculations, change formulas, change material values, implement UI, or
+make ML a calculator.

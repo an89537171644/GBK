@@ -100,6 +100,10 @@ from sp63_core.workflows.user_manual_index import (
     UserManualIndexResult,
     build_user_manual_index,
 )
+from sp63_core.workflows.v09_final_audit import (
+    V09FinalAuditResult,
+    build_v09_final_audit,
+)
 from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
@@ -131,6 +135,7 @@ __all__ = [
     "ReleaseCandidateReportResult",
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
+    "V09FinalAuditResult",
     "V09ReadinessResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
@@ -150,6 +155,7 @@ __all__ = [
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
     "build_user_manual_index",
+    "build_v09_final_audit",
     "build_v09_readiness_gate",
     "render_docs_audit_markdown",
     "render_self_check_markdown",

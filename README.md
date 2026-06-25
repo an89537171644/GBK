@@ -1332,3 +1332,18 @@ Without an engineer-filled CSV the command returns `review_required`. When a CSV
 is provided, it summarizes accepted/review/failed rows and writes JSON,
 Markdown, and SHA256 manifest files. It does not change formulas, material
 values, or `validation/external.py`.
+
+## K88 v0.9 final audit
+
+K88 adds an aggregated final audit command:
+
+```bash
+python -m sp63_core v09-final-audit \
+  --output-dir reports/v09_final_audit_smoke \
+  --json
+```
+
+The report summarizes protected-files, docs, readiness, clean demo, handoff,
+launcher, material verification closure, and external validation evidence
+checks. It is release-preparation evidence only and does not publish a release,
+certify designs, or approve project use.

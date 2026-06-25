@@ -128,6 +128,7 @@ from sp63_core.workflows import (
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
+    build_v09_final_audit,
     build_v09_readiness_gate,
     render_docs_audit_markdown,
     render_material_verification_closure_markdown,
@@ -938,6 +939,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown v0.9 readiness report",
     )
     v09_readiness.set_defaults(handler=_handle_v09_readiness)
+
+    v09_final_audit = subparsers.add_parser(
+        "v09-final-audit",
+        help="build final v0.9 release-preparation audit report",
+    )
+    v09_final_audit.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for final v0.9 audit artifacts",
+    )
+    v09_final_audit.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested audit artifacts",
+    )
+    v09_final_audit.add_argument("--json", action="store_true", help="print JSON output")
+    v09_final_audit.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown final v0.9 audit report",
+    )
+    v09_final_audit.set_defaults(handler=_handle_v09_final_audit)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -3110,6 +3133,38 @@ def _handle_v09_readiness(args: Namespace) -> int:
     print(f"status: {result.status}")
     print(f"readiness_status: {result.readiness_status}")
     print(f"gate_count: {result.gate_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_v09_final_audit(args: Namespace) -> int:
+    result = build_v09_final_audit(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-final-audit",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("v0.9 final audit")
+    print(f"status: {result.status}")
+    print(f"audit_status: {result.audit_status}")
+    print(f"audit_count: {result.audit_count}")
     print(f"passed_count: {result.passed_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
