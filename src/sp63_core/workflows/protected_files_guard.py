@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -33,6 +34,9 @@ class ProtectedFilesGuardResult:
     protected_files: tuple[str, ...]
     changed_protected_files: tuple[str, ...]
     checked_git_ref: str
+    base_ref: str
+    head_ref: str
+    github_actions_detected: bool
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
     requires_engineer_review: bool = True
@@ -45,16 +49,24 @@ def run_protected_files_guard(
     changed_files: Iterable[str] | None = None,
     repo_dir: Path | None = None,
     allow_review_required: bool = False,
+    env: Mapping[str, str] | None = None,
 ) -> ProtectedFilesGuardResult:
     """Check git diff for protected calculation/material/external files."""
     warnings: list[str] = [PROTECTED_FILES_GUARD_WARNING]
     errors: list[str] = []
-    checked_git_ref = f"{base_ref}...{head_ref}"
+    resolved_base_ref, resolved_head_ref, github_actions_detected = _resolve_git_refs(
+        base_ref=base_ref,
+        head_ref=head_ref,
+        env=os.environ if env is None else env,
+    )
+    checked_git_ref = f"{resolved_base_ref}...{resolved_head_ref}"
+    if github_actions_detected:
+        warnings.append("GitHub Actions environment detected for protected-files guard")
 
     if changed_files is None:
         diff_result = _git_changed_files(
-            base_ref=base_ref,
-            head_ref=head_ref,
+            base_ref=resolved_base_ref,
+            head_ref=resolved_head_ref,
             repo_dir=repo_dir,
         )
         if diff_result[1]:
@@ -67,6 +79,9 @@ def run_protected_files_guard(
                 protected_files=PROTECTED_FILES,
                 changed_protected_files=(),
                 checked_git_ref=checked_git_ref,
+                base_ref=resolved_base_ref,
+                head_ref=resolved_head_ref,
+                github_actions_detected=github_actions_detected,
                 warnings=tuple(dict.fromkeys(warnings)),
                 errors=(),
                 requires_engineer_review=True,
@@ -90,10 +105,31 @@ def run_protected_files_guard(
         protected_files=PROTECTED_FILES,
         changed_protected_files=changed_protected,
         checked_git_ref=checked_git_ref,
+        base_ref=resolved_base_ref,
+        head_ref=resolved_head_ref,
+        github_actions_detected=github_actions_detected,
         warnings=tuple(dict.fromkeys(warnings)),
         errors=tuple(errors),
         requires_engineer_review=True,
     )
+
+
+def _resolve_git_refs(
+    *,
+    base_ref: str,
+    head_ref: str,
+    env: Mapping[str, str],
+) -> tuple[str, str, bool]:
+    github_actions_detected = env.get("GITHUB_ACTIONS", "").lower() == "true"
+    if not github_actions_detected:
+        return base_ref, head_ref, False
+
+    github_base_ref = env.get("GITHUB_BASE_REF", "").strip()
+    if base_ref == "main" and github_base_ref:
+        return f"origin/{github_base_ref}", head_ref, True
+    if base_ref == "main":
+        return "origin/main", head_ref, True
+    return base_ref, head_ref, True
 
 
 def _git_changed_files(

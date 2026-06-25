@@ -1352,3 +1352,20 @@ and absence of direct formula-module imports.
 
 K75 creates review evidence only. It does not publish a release, certify
 designs, change formulas, change material values, or make ML a calculator.
+
+## K76 CI Safety Workflow Validation
+
+K76 adds `.github/workflows/safety.yml` and strengthens
+`protected-files-check` for GitHub Actions ref handling:
+
+```bash
+python -m sp63_core protected-files-check --json
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_ci_smoke --json
+```
+
+The tests verify GitHub Actions base-ref detection, JSON fields for resolved
+refs, protected-file pass/fail behavior, and CLI output. The workflow uses
+`fetch-depth: 0` so `origin/main` is available in CI.
+
+K76 does not change formulas, material values, reinforcement selection,
+external validation logic, or ML safety policy.

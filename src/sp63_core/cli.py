@@ -2547,19 +2547,22 @@ def _handle_protected_files_check(args: Namespace) -> int:
     }
     if args.json:
         print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
-        return 0
+        return 1 if result.status == "fail" else 0
 
     print("Protected files check")
     print(f"status: {result.status}")
     print(f"guard_status: {result.guard_status}")
     print(f"checked_git_ref: {result.checked_git_ref}")
+    print(f"base_ref: {result.base_ref}")
+    print(f"head_ref: {result.head_ref}")
+    print(f"github_actions_detected: {result.github_actions_detected}")
     print(f"changed_protected_files: {len(result.changed_protected_files)}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
         for error in result.errors:
             print(f"- {error}")
-    return 0
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_user_manual_index(args: Namespace) -> int:
