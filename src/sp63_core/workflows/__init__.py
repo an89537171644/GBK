@@ -127,6 +127,10 @@ from sp63_core.workflows.release_notes import (
     ReleaseNotesPackageResult,
     build_release_notes_package,
 )
+from sp63_core.workflows.review_signoff_templates import (
+    ReviewSignoffTemplatesResult,
+    build_review_signoff_templates,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -217,6 +221,7 @@ __all__ = [
     "ReleaseBundleResult",
     "ReleaseCandidateReportResult",
     "ReleaseNotesPackageResult",
+    "ReviewSignoffTemplatesResult",
     "SprintStepSpec",
     "TraceabilityMatrixResult",
     "UserManualIndexResult",
@@ -242,6 +247,7 @@ __all__ = [
     "build_release_artifact_manifest",
     "build_release_bundle",
     "build_release_notes_package",
+    "build_review_signoff_templates",
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",

@@ -134,6 +134,7 @@ from sp63_core.workflows import (
     build_release_bundle,
     build_release_candidate_report,
     build_release_notes_package,
+    build_review_signoff_templates,
     build_static_input_form_preview,
     build_static_launcher_dashboard,
     build_static_workflow_report_index,
@@ -1205,6 +1206,22 @@ def build_parser() -> ArgumentParser:
         help="print Markdown checklist",
     )
     release_acceptance_checklist.set_defaults(handler=_handle_release_acceptance_checklist)
+
+    review_signoff_templates = subparsers.add_parser(
+        "review-signoff-templates",
+        help="build placeholder-only review signoff templates",
+    )
+    review_signoff_templates.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for review signoff templates",
+    )
+    review_signoff_templates.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    review_signoff_templates.set_defaults(handler=_handle_review_signoff_templates)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3790,6 +3807,29 @@ def _handle_release_acceptance_checklist(args: Namespace) -> int:
     print(f"manual_signoff_required_count: {result.manual_signoff_required_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_review_signoff_templates(args: Namespace) -> int:
+    result = build_review_signoff_templates(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "review-signoff-templates",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Review signoff templates")
+    print(f"status: {result.status}")
+    print(f"template_count: {result.template_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
