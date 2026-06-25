@@ -88,3 +88,9 @@ python -m sp63_core input-preflight --input-json <input.json> --output-dir <pref
 
 The launcher should display the preflight status and issues, but deterministic
 SP63 checks and engineer review remain mandatory.
+
+## K68 Input Form Preview
+
+K68 adds a static `input_form_preview.html` generator. It can help engineers
+inspect the expected input fields before preparing JSON files, while keeping
+all calculation and validation authority in CLI/workflow commands.

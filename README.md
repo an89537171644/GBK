@@ -1036,3 +1036,17 @@ conditions such as `Mser > M`.
 Preflight is reporting only. It does not run calculations, does not approve
 project use, does not change formulas or materials, and keeps
 `ml_ready_for_project_use = false`.
+
+## K68 static input form preview
+
+K68 adds a static HTML preview of the input form schema:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview --json
+```
+
+The command writes `input_form_preview.html`, `input_form_preview.json`, and
+`README_INPUT_FORM_PREVIEW.md`. The HTML shows fields, units, defaults,
+required flags, validation hints, and warnings only. It contains no JavaScript
+calculations, does not start a web server, does not approve a design, and keeps
+`ml_ready_for_project_use = false`.

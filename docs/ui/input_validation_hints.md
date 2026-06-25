@@ -52,3 +52,9 @@ python -m sp63_core input-preflight --input-json docs/reports/examples/rectangul
 Preflight can return `pass`, `review_required`, or `fail` before the engineering
 workflow starts. It is still not a calculation and does not approve project
 use.
+
+## K68 Static Preview
+
+K68 adds `input-form-preview`, which renders these fields and hints as static
+HTML. The preview is safe to open as a file and contains no JavaScript
+calculation logic.

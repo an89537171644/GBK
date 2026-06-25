@@ -1220,3 +1220,20 @@ preflight templates; and the invariant `ml_ready_for_project_use = false`.
 
 K67 does not import or run deterministic formula modules. It does not change
 formulas, material values, reinforcement selection, UI, or ML safety policy.
+
+## K68 Static Input Form Preview Validation
+
+K68 adds validation coverage for `input-form-preview`:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview_smoke --json
+```
+
+The tests verify generated HTML/JSON/README artifacts, mandatory warning text,
+geometry/material/load fields, `ml_ready_for_project_use = false`, CLI JSON and
+Markdown output, `--no-output-files`, and the absence of formula-module
+imports.
+
+K68 is static preview work only. It does not implement a GUI, web server,
+JavaScript calculations, project approval, formula changes, or material value
+changes.

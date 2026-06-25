@@ -991,3 +991,17 @@ K67 is reporting only. It does not execute design calculations, change
 formulas, change material values, change reinforcement selection, implement UI,
 or make ML a calculator. Deterministic SP63 checks, material verification,
 external validation, and engineer review remain mandatory.
+
+## K68 Static Input Form Preview
+
+K68 adds `input-form-preview` and `workflows/static_input_form_preview.py` to
+render a static HTML preview from the input form schema:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview --json
+```
+
+The preview displays fields, units, defaults, validation hints, and safety
+warnings only. It does not perform calculations, does not add JavaScript
+calculators, does not start a web server, does not implement a GUI framework,
+and does not approve project use. `ml_ready_for_project_use` remains false.

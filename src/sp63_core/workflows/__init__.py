@@ -27,6 +27,10 @@ from sp63_core.workflows.self_check import (
     render_self_check_markdown,
     run_engineering_workflow_self_check,
 )
+from sp63_core.workflows.static_input_form_preview import (
+    StaticInputFormPreviewResult,
+    build_static_input_form_preview,
+)
 from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
@@ -39,12 +43,14 @@ __all__ = [
     "InputPreflightIssue",
     "InputPreflightResult",
     "StaticWorkflowReportIndexResult",
+    "StaticInputFormPreviewResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
     "build_input_form_schema",
     "build_static_workflow_report_index",
+    "build_static_input_form_preview",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "run_engineering_workflow",

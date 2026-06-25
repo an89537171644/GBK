@@ -62,3 +62,14 @@ python -m sp63_core input-preflight --input-json docs/reports/examples/rectangul
 The preflight command still does not calculate a design. It checks input JSON
 shape and engineering sanity before workflow execution, writes JSON/Markdown
 reports, and keeps `ml_ready_for_project_use = false`.
+
+## K68 Static Preview
+
+K68 adds a static HTML preview generated from this schema:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview --json
+```
+
+The preview is read-only documentation of form fields and warnings. It does not
+execute calculations and does not implement a GUI runtime.

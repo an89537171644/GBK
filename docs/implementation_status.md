@@ -71,9 +71,10 @@
 | `workflows/static_report_index.py` | implemented static HTML workflow report index over generated engineering workflow artifacts | yes | yes | use as static navigation only; no calculations, server, GUI framework, or project approval |
 | `workflows/input_form_schema.py` | implemented future UI input JSON form schema and validation hints | yes | yes | use as metadata only; no UI implementation, no calculations, and no ML project-use approval |
 | `workflows/input_preflight.py` | implemented input JSON preflight validator and engineering validation report | yes | yes | run before engineering workflow or future GUI launcher; report only and no calculations |
+| `workflows/static_input_form_preview.py` | implemented static HTML preview of the input form schema | yes | yes | use as read-only preview only; no calculations, JavaScript calculator, server, or project approval |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | experimental baseline sandbox implemented | yes | yes | advisory only; deterministic checks mandatory |
-| UI | planning contract, technology decision, static report index, input form schema, and input preflight reporting only | yes | yes | K67 adds preflight reporting only; full UI implementation remains a separate approved step |
+| UI | planning contract, technology decision, static report index, input form schema, input preflight reporting, and static input form preview only | yes | yes | K68 adds static preview only; full UI implementation remains a separate approved step |
