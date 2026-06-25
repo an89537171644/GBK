@@ -1521,3 +1521,18 @@ content, mandatory safety flags, and `ml_ready_for_project_use = false`.
 
 K85 does not run calculations, change formulas, change material values,
 implement UI, include private documents, or make ML a calculator.
+
+## K86 Launcher Scripts Validation
+
+K86 adds validation coverage for `launcher-scripts`:
+
+```bash
+python -m sp63_core launcher-scripts --output-dir reports/launcher_scripts_smoke --json
+```
+
+The tests verify `.cmd` and `.sh` script generation, manifest SHA256 checksums,
+CLI JSON output, mandatory safety flags, and that scripts remain wrappers around
+`python -m sp63_core` commands.
+
+K86 does not add a GUI, start a server, change formulas, change material
+values, or make ML a calculator.

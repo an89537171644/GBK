@@ -119,6 +119,7 @@ from sp63_core.workflows import (
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
+    build_launcher_scripts_package,
     build_material_verification_closure,
     build_project_template_package,
     build_release_artifact_manifest,
@@ -575,6 +576,18 @@ def build_parser() -> ArgumentParser:
         help="print JSON output",
     )
     engineering_handoff_package.set_defaults(handler=_handle_engineering_handoff_package)
+
+    launcher_scripts = subparsers.add_parser(
+        "launcher-scripts",
+        help="create lightweight CLI launcher scripts for engineering review",
+    )
+    launcher_scripts.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for launcher scripts",
+    )
+    launcher_scripts.add_argument("--json", action="store_true", help="print JSON output")
+    launcher_scripts.set_defaults(handler=_handle_launcher_scripts)
 
     engineering_interface_contract = subparsers.add_parser(
         "engineering-interface-contract",
@@ -2474,6 +2487,31 @@ def _handle_engineering_handoff_package(args: Namespace) -> int:
     print(f"package_status: {result.package_status}")
     print(f"output_dir: {result.output_dir}")
     print(f"file_count: {result.file_count}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_launcher_scripts(args: Namespace) -> int:
+    result = build_launcher_scripts_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "launcher-scripts",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Launcher scripts package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"script_count: {result.script_count}")
+    print(f"output_dir: {result.output_dir}")
     print(f"manifest_path: {result.manifest_path}")
     print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
     _print_warnings(result.warnings)

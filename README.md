@@ -1302,3 +1302,18 @@ The package gathers editable input JSON, clean demo input, evidence templates,
 review docs, static input preview, run commands, and a SHA256 manifest. It is a
 scaffold only: it does not run calculations, approve project use, change
 material values, add UI dependencies, or make ML a calculator.
+
+## K86 launcher scripts package
+
+K86 adds command-wrapper scripts:
+
+```bash
+python -m sp63_core launcher-scripts \
+  --output-dir reports/launcher_scripts_smoke \
+  --json
+```
+
+The generated `.cmd` and `.sh` files call existing `python -m sp63_core`
+commands for clean demo, single workflow, batch workflow, and opening the static
+index. They do not contain formulas, start a server, implement UI, or approve
+project use.

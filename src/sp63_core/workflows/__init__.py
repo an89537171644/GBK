@@ -48,6 +48,10 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.launcher_scripts import (
+    LauncherScriptsPackageResult,
+    build_launcher_scripts_package,
+)
 from sp63_core.workflows.material_verification_closure import (
     MaterialVerificationClosureResult,
     build_material_verification_closure,
@@ -110,6 +114,7 @@ __all__ = [
     "InputFormSchemaResult",
     "InputPreflightIssue",
     "InputPreflightResult",
+    "LauncherScriptsPackageResult",
     "MaterialVerificationClosureResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
@@ -133,6 +138,7 @@ __all__ = [
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
+    "build_launcher_scripts_package",
     "build_material_verification_closure",
     "build_project_template_package",
     "build_static_workflow_report_index",
