@@ -1347,3 +1347,15 @@ The report summarizes protected-files, docs, readiness, clean demo, handoff,
 launcher, material verification closure, and external validation evidence
 checks. It is release-preparation evidence only and does not publish a release,
 certify designs, or approve project use.
+
+## K89 agent sprint guard
+
+K89 adds a local sprint completeness command:
+
+```bash
+python -m sp63_core agent-sprint-guard --from-k 83 --to-k 90 --json
+```
+
+The guard checks expected local files for each K-step and reports the first
+missing step as `proposed_next_k`. It does not inspect GitHub PR/Issue state,
+approve merges, certify calculations, or approve project use.

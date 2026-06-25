@@ -1,5 +1,10 @@
 """Workflow orchestration helpers for SP63 engineering review flows."""
 
+from sp63_core.workflows.agent_sprint_guard import (
+    AgentSprintGuardResult,
+    SprintStepSpec,
+    build_agent_sprint_guard,
+)
 from sp63_core.workflows.clean_demo_workflow import (
     CLEAN_DEMO_INPUT,
     CleanDemoWorkflowResult,
@@ -110,6 +115,7 @@ from sp63_core.workflows.v09_readiness import (
 )
 
 __all__ = [
+    "AgentSprintGuardResult",
     "EngineeringGUIPlanningResult",
     "EngineeringHandoffPackageResult",
     "EngineeringInterfaceContractResult",
@@ -133,12 +139,14 @@ __all__ = [
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
+    "SprintStepSpec",
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
     "V09FinalAuditResult",
     "V09ReadinessResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
+    "build_agent_sprint_guard",
     "build_engineering_gui_planning_decision",
     "build_engineering_handoff_package",
     "build_engineering_interface_contract",

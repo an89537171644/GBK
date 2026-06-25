@@ -1567,3 +1567,19 @@ scenario, mandatory safety flags, and `ml_ready_for_project_use = false`.
 K88 is release-preparation evidence only. It does not publish a release,
 certify calculations, change formulas, change material values, implement UI, or
 make ML a calculator.
+
+## K89 Agent Sprint Guard Validation
+
+K89 adds validation coverage for `agent-sprint-guard`:
+
+```bash
+python -m sp63_core agent-sprint-guard --from-k 83 --to-k 90 --json
+```
+
+The tests verify complete and missing synthetic sprint ranges, invalid range
+handling, CLI JSON behavior, mandatory safety flags, and
+`ml_ready_for_project_use = false`.
+
+K89 is a local completeness check only. It does not inspect GitHub state,
+approve merges, certify calculations, change formulas, change materials, or make
+ML a calculator.

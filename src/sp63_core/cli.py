@@ -112,6 +112,7 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_agent_sprint_guard,
     build_diagnostics_catalog,
     build_docs_audit_report,
     build_engineering_gui_planning_decision,
@@ -961,6 +962,15 @@ def build_parser() -> ArgumentParser:
         help="print Markdown final v0.9 audit report",
     )
     v09_final_audit.set_defaults(handler=_handle_v09_final_audit)
+
+    agent_sprint_guard = subparsers.add_parser(
+        "agent-sprint-guard",
+        help="check local K-step artifact completeness for an agent sprint",
+    )
+    agent_sprint_guard.add_argument("--from-k", type=int, required=True)
+    agent_sprint_guard.add_argument("--to-k", type=int, required=True)
+    agent_sprint_guard.add_argument("--json", action="store_true", help="print JSON output")
+    agent_sprint_guard.set_defaults(handler=_handle_agent_sprint_guard)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -3169,6 +3179,33 @@ def _handle_v09_final_audit(args: Namespace) -> int:
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
     print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_agent_sprint_guard(args: Namespace) -> int:
+    result = build_agent_sprint_guard(from_k=args.from_k, to_k=args.to_k)
+    payload = {
+        "command": "agent-sprint-guard",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Agent sprint guard")
+    print(f"status: {result.status}")
+    print(f"guard_status: {result.guard_status}")
+    print(f"from_k: {result.from_k}")
+    print(f"to_k: {result.to_k}")
+    print(f"checked_step_count: {result.checked_step_count}")
+    print(f"completed_count: {result.completed_count}")
+    print(f"missing_count: {result.missing_count}")
+    print(f"proposed_next_k: {result.proposed_next_k}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
