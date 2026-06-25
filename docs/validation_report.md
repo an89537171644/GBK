@@ -1289,3 +1289,20 @@ modules.
 
 K71 is orchestration only. It does not change formulas, material values,
 reinforcement selection, deterministic checks, UI policy, or ML safety policy.
+
+## K72 Evidence Templates Package Validation
+
+K72 adds validation coverage for `evidence-templates`:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates_smoke --json
+```
+
+The tests verify that external validation and material verification templates
+are copied from existing schemas, `README_EVIDENCE_TEMPLATES.md` is created,
+`evidence_templates_manifest.json` records SHA256 checksums, CLI JSON works,
+required safety warnings are present, and formula modules are not imported.
+
+K72 does not create real external validation values, does not change formulas,
+does not change material values, does not update the material catalog, and does
+not make ML a calculator.

@@ -1063,3 +1063,20 @@ K71 is orchestration only. It does not execute new formulas, change
 calculation modules, change material values, change reinforcement selection,
 implement UI, or make ML a calculator. Engineer review remains mandatory for
 every case.
+
+## K72 External/Material Evidence Templates Package
+
+K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package
+blank engineer-input templates:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates --json
+```
+
+The package contains external-validation and material-verification CSV
+templates, a README, and a SHA256 manifest. It reuses existing schemas and does
+not invent incompatible formats.
+
+K72 does not add real external values, closed SCAD/LIRA files, personal data,
+full SP 63 text, formula changes, material value changes, or automatic catalog
+updates. Engineer review remains mandatory.

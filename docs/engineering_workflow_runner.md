@@ -237,3 +237,15 @@ The batch output contains one `case_####/` folder per input file plus
 `batch_workflow_summary.json`, `batch_workflow_summary.md`, `batch_index.html`,
 and `README_BATCH_WORKFLOW.md`. Invalid cases are recorded as failed cases and
 do not prevent remaining inputs from being processed.
+
+## K72 Evidence Templates Package
+
+Use K72 when handing off blank evidence templates to an engineer:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates --json
+```
+
+The command packages external validation and material verification CSV
+templates plus a README and SHA256 manifest. The package does not contain real
+external values and does not update the material catalog automatically.

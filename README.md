@@ -1110,3 +1110,18 @@ The batch runner creates one `case_####/` workflow folder per input file plus
 `batch_index.html`, and `README_BATCH_WORKFLOW.md`. Invalid cases do not stop
 the whole batch; they are reported as failed cases. The batch index is static
 HTML only and performs no calculations.
+
+## K72 evidence templates package
+
+K72 adds an engineer handoff package for blank external-validation and
+material-verification templates:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates --json
+```
+
+The package writes `external_validation_template.csv`,
+`material_verification_template.csv`, `README_EVIDENCE_TEMPLATES.md`, and
+`evidence_templates_manifest.json` with SHA256 checksums. These are templates
+only: they do not provide real SCAD/LIRA values, do not update the material
+catalog, and do not approve project use.

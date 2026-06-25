@@ -12,6 +12,10 @@ from sp63_core.workflows.engineering_workflow_batch import (
     BatchEngineeringWorkflowResult,
     run_engineering_workflow_batch,
 )
+from sp63_core.workflows.evidence_templates import (
+    EvidenceTemplatesPackageResult,
+    build_evidence_templates_package,
+)
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
     build_engineering_gui_planning_decision,
@@ -48,6 +52,7 @@ __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
+    "EvidenceTemplatesPackageResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
@@ -58,6 +63,7 @@ __all__ = [
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
+    "build_evidence_templates_package",
     "build_diagnostics_catalog",
     "build_input_form_schema",
     "build_static_workflow_report_index",

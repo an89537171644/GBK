@@ -115,6 +115,7 @@ from sp63_core.workflows import (
     build_diagnostics_catalog,
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
+    build_evidence_templates_package,
     build_input_form_schema,
     build_static_input_form_preview,
     build_static_workflow_report_index,
@@ -679,6 +680,18 @@ def build_parser() -> ArgumentParser:
         help="print Markdown diagnostics catalog",
     )
     diagnostics_catalog.set_defaults(handler=_handle_diagnostics_catalog)
+
+    evidence_templates = subparsers.add_parser(
+        "evidence-templates",
+        help="create external validation and material verification template package",
+    )
+    evidence_templates.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for evidence template package",
+    )
+    evidence_templates.add_argument("--json", action="store_true", help="print JSON output")
+    evidence_templates.set_defaults(handler=_handle_evidence_templates)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2421,6 +2434,31 @@ def _handle_diagnostics_catalog(args: Namespace) -> int:
     print(f"diagnostics_count: {result.diagnostics_count}")
     print(f"categories: {', '.join(result.categories)}")
     print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_evidence_templates(args: Namespace) -> int:
+    result = build_evidence_templates_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "evidence-templates",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Evidence templates package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"external_validation_template_path: {result.external_validation_template_path}")
+    print(f"material_verification_template_path: {result.material_verification_template_path}")
+    print(f"manifest_path: {result.manifest_path}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
