@@ -39,6 +39,10 @@ from sp63_core.workflows.protected_files_guard import (
     ProtectedFilesGuardResult,
     run_protected_files_guard,
 )
+from sp63_core.workflows.release_candidate import (
+    ReleaseCandidateReportResult,
+    build_release_candidate_report,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -72,12 +76,14 @@ __all__ = [
     "PROTECTED_FILES",
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
+    "ReleaseCandidateReportResult",
     "UserManualIndexResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
+    "build_release_candidate_report",
     "build_diagnostics_catalog",
     "build_input_form_schema",
     "build_static_workflow_report_index",

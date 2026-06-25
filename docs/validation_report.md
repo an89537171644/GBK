@@ -1337,3 +1337,18 @@ works, safety flags remain present, and formula modules are not imported.
 
 K74 is documentation only. It does not change formulas, materials,
 deterministic checks, external validation logic, or ML safety policy.
+
+## K75 Release Candidate Report Validation
+
+K75 adds validation coverage for `release-candidate-report`:
+
+```bash
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_v0_9_smoke --json
+```
+
+The tests verify JSON/Markdown/README creation, collected status fields, known
+limitations, `ml_ready_for_project_use = false`, CLI JSON/Markdown behavior,
+and absence of direct formula-module imports.
+
+K75 creates review evidence only. It does not publish a release, certify
+designs, change formulas, change material values, or make ML a calculator.

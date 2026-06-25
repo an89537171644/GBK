@@ -117,6 +117,7 @@ from sp63_core.workflows import (
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
+    build_release_candidate_report,
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
@@ -737,6 +738,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown manual index",
     )
     user_manual_index.set_defaults(handler=_handle_user_manual_index)
+
+    release_candidate_report = subparsers.add_parser(
+        "release-candidate-report",
+        help="build a draft release candidate review report",
+    )
+    release_candidate_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release candidate report files",
+    )
+    release_candidate_report.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release candidate version label",
+    )
+    release_candidate_report.add_argument("--json", action="store_true", help="print JSON output")
+    release_candidate_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release candidate report",
+    )
+    release_candidate_report.set_defaults(handler=_handle_release_candidate_report)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2574,6 +2597,38 @@ def _handle_user_manual_index(args: Namespace) -> int:
     print(f"required_files: {len(result.required_files)}")
     print(f"missing_files: {len(result.missing_files)}")
     print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_release_candidate_report(args: Namespace) -> int:
+    result = build_release_candidate_report(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-candidate-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        report_path = Path(result.output_dir) / "release_candidate_report.md"
+        print(report_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release candidate report")
+    print(f"status: {result.status}")
+    print(f"release_candidate_status: {result.release_candidate_status}")
+    print(f"version: {result.version}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"protected_files_guard_status: {result.protected_files_guard_status}")
+    print(f"user_manual_status: {result.user_manual_status}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

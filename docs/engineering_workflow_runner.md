@@ -273,3 +273,20 @@ python -m sp63_core user-manual-index --json
 The manual collects quickstart, input data, preflight, workflow, report index,
 batch workflow, ML advisory limits, evidence templates, troubleshooting, and
 acceptance checklist pages for engineer review.
+
+## K75 Release Candidate Report
+
+Use K75 for a draft release-candidate review summary:
+
+```bash
+python -m sp63_core release-candidate-report \
+  --output-dir reports/release_candidate_v0_9 \
+  --json
+```
+
+The report gathers golden validation, manual cases, material audit, external
+validation sample, workflow self-check, input schema/preflight, static index,
+protected-files guard, and user manual statuses. It is review evidence only:
+it does not publish a release, certify project use, change formulas, change
+material values, change reinforcement selection, implement UI, or make ML a
+calculator.

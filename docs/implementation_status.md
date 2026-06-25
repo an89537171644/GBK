@@ -77,6 +77,7 @@
 | `workflows/evidence_templates.py` | implemented external/material evidence templates package with SHA256 manifest | yes | yes | engineer must fill templates manually; package does not approve project use |
 | `workflows/protected_files_guard.py` | implemented protected files guard for formula/material/external validation release checks | yes | yes | use as review aid only; guard does not approve merge or project use |
 | `workflows/user_manual_index.py` | implemented user manual package completeness index | yes | yes | keep manual updated with workflow changes; manual does not certify project use |
+| `workflows/release_candidate.py` | implemented draft v0.9 release candidate report across validation/workflow/manual guard statuses | yes | yes | review report before any release; report does not certify project use |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

@@ -1152,3 +1152,18 @@ The manual covers quickstart, input data, preflight, workflow runs, static
 indexes, batch workflow, ML advisory limits, evidence templates,
 troubleshooting, and acceptance checklist. It is documentation only and does
 not certify designs or approve project use.
+
+## K75 release candidate report
+
+K75 adds a draft release candidate report:
+
+```bash
+python -m sp63_core release-candidate-report \
+  --output-dir reports/release_candidate_v0_9 \
+  --json
+```
+
+The report gathers golden validation, manual cases, material audit, external
+validation sample, workflow self-check, input schema/preflight, static index,
+protected files guard, and user manual statuses. It is review evidence only:
+it does not publish a release, certify designs, or approve project use.

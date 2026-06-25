@@ -1114,3 +1114,20 @@ troubleshooting, and acceptance checklist.
 K74 is documentation only. It does not change formulas, material values,
 reinforcement selection, external validation logic, UI behavior, or ML safety
 policy. Engineer review remains mandatory.
+
+## K75 Release Candidate Report
+
+K75 adds `release-candidate-report` and `workflows/release_candidate.py`:
+
+```bash
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_v0_9 --json
+```
+
+The report gathers golden validation, manual verification, material audit,
+external validation sample, workflow self-check, input schema/preflight, static
+index, protected-files guard, and user manual statuses.
+
+K75 does not publish a release, certify designs, change formulas, change
+material values, change reinforcement selection, implement UI, or make ML a
+calculator. The report remains `review_required` while material audit and
+external validation remain engineer gates.
