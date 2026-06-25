@@ -127,6 +127,7 @@ from sp63_core.workflows import (
     build_json_output_contract,
     build_launcher_scripts_package,
     build_material_verification_closure,
+    build_next_release_roadmap,
     build_portable_package,
     build_project_template_package,
     build_release_acceptance_checklist,
@@ -152,6 +153,7 @@ from sp63_core.workflows import (
     render_freeze_remediation_plan_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
+    render_next_release_roadmap_markdown,
     render_release_acceptance_checklist_markdown,
     render_self_check_markdown,
     render_traceability_matrix_markdown,
@@ -1246,6 +1248,23 @@ def build_parser() -> ArgumentParser:
         help="print Markdown review build report",
     )
     v09_review_build.set_defaults(handler=_handle_v09_review_build)
+
+    next_release_roadmap = subparsers.add_parser(
+        "next-release-roadmap",
+        help="build the post-v0.9 next release roadmap",
+    )
+    next_release_roadmap.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for next release roadmap artifacts",
+    )
+    next_release_roadmap.add_argument("--json", action="store_true", help="print JSON output")
+    next_release_roadmap.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown roadmap",
+    )
+    next_release_roadmap.set_defaults(handler=_handle_next_release_roadmap)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3885,6 +3904,33 @@ def _handle_v09_review_build(args: Namespace) -> int:
     print(f"review_build_status: {result.review_build_status}")
     print(f"artifact_count: {result.artifact_count}")
     print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_next_release_roadmap(args: Namespace) -> int:
+    result = build_next_release_roadmap(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "next-release-roadmap",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_next_release_roadmap_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Next release roadmap")
+    print(f"status: {result.status}")
+    print(f"section_count: {result.section_count}")
     print(f"review_required_count: {result.review_required_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")

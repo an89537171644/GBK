@@ -93,6 +93,11 @@ from sp63_core.workflows.material_verification_closure import (
     build_material_verification_closure,
     render_material_verification_closure_markdown,
 )
+from sp63_core.workflows.next_release_roadmap import (
+    NextReleaseRoadmapResult,
+    build_next_release_roadmap,
+    render_next_release_roadmap_markdown,
+)
 from sp63_core.workflows.portable_package import (
     PortablePackageResult,
     build_portable_package,
@@ -213,6 +218,7 @@ __all__ = [
     "JsonOutputContractResult",
     "LauncherScriptsPackageResult",
     "MaterialVerificationClosureResult",
+    "NextReleaseRoadmapResult",
     "PortablePackageResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
@@ -260,6 +266,7 @@ __all__ = [
     "build_json_output_contract",
     "build_launcher_scripts_package",
     "build_material_verification_closure",
+    "build_next_release_roadmap",
     "build_portable_package",
     "build_project_template_package",
     "build_static_workflow_report_index",
@@ -285,6 +292,7 @@ __all__ = [
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",
+    "render_next_release_roadmap_markdown",
     "render_release_acceptance_checklist_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
