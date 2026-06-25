@@ -112,21 +112,30 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_agent_sprint_guard,
     build_diagnostics_catalog,
     build_docs_audit_report,
     build_engineering_gui_planning_decision,
+    build_engineering_handoff_package,
     build_engineering_interface_contract,
     build_evidence_templates_package,
+    build_external_validation_evidence_package,
     build_input_form_schema,
+    build_launcher_scripts_package,
+    build_material_verification_closure,
     build_project_template_package,
     build_release_artifact_manifest,
     build_release_candidate_report,
+    build_release_notes_package,
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
+    build_v09_final_audit,
     build_v09_readiness_gate,
     render_docs_audit_markdown,
+    render_material_verification_closure_markdown,
     render_self_check_markdown,
+    run_clean_demo_workflow,
     run_engineering_workflow,
     run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
@@ -539,6 +548,82 @@ def build_parser() -> ArgumentParser:
     )
     engineering_workflow_self_check.set_defaults(handler=_handle_engineering_workflow_self_check)
 
+    clean_demo_workflow = subparsers.add_parser(
+        "clean-demo-workflow",
+        help="run a clean deterministic demo workflow and write review artifacts",
+    )
+    clean_demo_workflow.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for clean demo workflow artifacts",
+    )
+    clean_demo_workflow.add_argument("--json", action="store_true", help="print JSON output")
+    clean_demo_workflow.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown clean demo workflow summary",
+    )
+    clean_demo_workflow.set_defaults(handler=_handle_clean_demo_workflow)
+
+    engineering_handoff_package = subparsers.add_parser(
+        "engineering-handoff-package",
+        help="create a portable engineering handoff package for review",
+    )
+    engineering_handoff_package.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for handoff package files",
+    )
+    engineering_handoff_package.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineering_handoff_package.set_defaults(handler=_handle_engineering_handoff_package)
+
+    launcher_scripts = subparsers.add_parser(
+        "launcher-scripts",
+        help="create lightweight CLI launcher scripts for engineering review",
+    )
+    launcher_scripts.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for launcher scripts",
+    )
+    launcher_scripts.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    launcher_scripts.set_defaults(handler=_handle_launcher_scripts)
+
+    external_validation_evidence = subparsers.add_parser(
+        "external-validation-evidence-package",
+        help="create an external validation evidence package and optional CSV summary",
+    )
+    external_validation_evidence.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for external validation evidence package",
+    )
+    external_validation_evidence.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV to summarize",
+    )
+    external_validation_evidence.add_argument(
+        "--strict",
+        action="store_true",
+        help="run strict summary checks when a CSV is provided",
+    )
+    external_validation_evidence.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    external_validation_evidence.set_defaults(
+        handler=_handle_external_validation_evidence_package
+    )
+
     engineering_interface_contract = subparsers.add_parser(
         "engineering-interface-contract",
         help="write or print the future GUI/desktop wrapper interface contract",
@@ -813,6 +898,28 @@ def build_parser() -> ArgumentParser:
     )
     release_manifest.set_defaults(handler=_handle_release_manifest)
 
+    release_notes = subparsers.add_parser(
+        "release-notes",
+        help="build v0.9 engineering release notes package",
+    )
+    release_notes.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release notes package",
+    )
+    release_notes.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release notes version label",
+    )
+    release_notes.add_argument("--json", action="store_true", help="print JSON output")
+    release_notes.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release notes",
+    )
+    release_notes.set_defaults(handler=_handle_release_notes)
+
     user_acceptance_smoke = subparsers.add_parser(
         "user-acceptance-smoke",
         help="run v0.9 user acceptance smoke suite",
@@ -856,6 +963,37 @@ def build_parser() -> ArgumentParser:
         help="print Markdown v0.9 readiness report",
     )
     v09_readiness.set_defaults(handler=_handle_v09_readiness)
+
+    v09_final_audit = subparsers.add_parser(
+        "v09-final-audit",
+        help="build final v0.9 release-preparation audit report",
+    )
+    v09_final_audit.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for final v0.9 audit artifacts",
+    )
+    v09_final_audit.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested audit artifacts",
+    )
+    v09_final_audit.add_argument("--json", action="store_true", help="print JSON output")
+    v09_final_audit.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown final v0.9 audit report",
+    )
+    v09_final_audit.set_defaults(handler=_handle_v09_final_audit)
+
+    agent_sprint_guard = subparsers.add_parser(
+        "agent-sprint-guard",
+        help="check local K-step artifact completeness for an agent sprint",
+    )
+    agent_sprint_guard.add_argument("--from-k", type=int, required=True)
+    agent_sprint_guard.add_argument("--to-k", type=int, required=True)
+    agent_sprint_guard.add_argument("--json", action="store_true", help="print JSON output")
+    agent_sprint_guard.set_defaults(handler=_handle_agent_sprint_guard)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1165,6 +1303,37 @@ def build_parser() -> ArgumentParser:
         help="print JSON output",
     )
     material_verification_report.set_defaults(handler=_handle_material_verification_report)
+
+    material_verification_closure = subparsers.add_parser(
+        "material-verification-closure",
+        help="build material verification closure evidence",
+    )
+    material_verification_closure.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV",
+    )
+    material_verification_closure.add_argument(
+        "--output-dir",
+        help="optional output directory for closure report files",
+    )
+    material_verification_closure.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write closure report files",
+    )
+    material_verification_closure.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown output",
+    )
+    material_verification_closure.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    material_verification_closure.set_defaults(
+        handler=_handle_material_verification_closure
+    )
 
     manual_cases = subparsers.add_parser(
         "manual-cases",
@@ -2358,6 +2527,123 @@ def _handle_engineering_workflow_self_check(args: Namespace) -> int:
     return 0
 
 
+def _handle_clean_demo_workflow(args: Namespace) -> int:
+    result = run_clean_demo_workflow(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "clean-demo-workflow",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        summary_path = Path(result.output_dir) / "clean_demo_workflow.md"
+        print(summary_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Clean deterministic demo workflow")
+    print(f"status: {result.status}")
+    print(f"demo_status: {result.demo_status}")
+    print(f"workflow_status: {result.workflow_status}")
+    print(f"preflight_status: {result.preflight_status}")
+    print(f"deterministic_report_status: {result.deterministic_report_status}")
+    print(f"archive_validation_status: {result.archive_validation_status}")
+    print(f"zip_status: {result.zip_status}")
+    print(f"index_status: {result.index_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_handoff_package(args: Namespace) -> int:
+    result = build_engineering_handoff_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "engineering-handoff-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Engineering handoff package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"file_count: {result.file_count}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_launcher_scripts(args: Namespace) -> int:
+    result = build_launcher_scripts_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "launcher-scripts",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Launcher scripts package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"script_count: {result.script_count}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_external_validation_evidence_package(args: Namespace) -> int:
+    result = build_external_validation_evidence_package(
+        output_dir=Path(args.output_dir),
+        external_validation_csv=(
+            Path(args.external_validation_csv) if args.external_validation_csv else None
+        ),
+        strict_mode=args.strict,
+    )
+    payload = {
+        "command": "external-validation-evidence-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("External validation evidence package")
+    print(f"status: {result.status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"total_cases: {result.total_cases}")
+    print(f"accepted_cases: {result.accepted_cases}")
+    print(f"review_cases: {result.review_cases}")
+    print(f"failed_cases: {result.failed_cases}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_engineering_interface_contract(args: Namespace) -> int:
     output_dir = None
     if args.output_dir and not args.no_output_files:
@@ -2828,6 +3114,37 @@ def _handle_release_manifest(args: Namespace) -> int:
     return 0
 
 
+def _handle_release_notes(args: Namespace) -> int:
+    result = build_release_notes_package(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-notes",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.release_notes_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release notes package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"version: {result.version}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"release_notes_markdown_path: {result.release_notes_markdown_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_user_acceptance_smoke(args: Namespace) -> int:
     result = run_user_acceptance_smoke(
         output_dir=Path(args.output_dir),
@@ -2884,6 +3201,65 @@ def _handle_v09_readiness(args: Namespace) -> int:
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
     print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_v09_final_audit(args: Namespace) -> int:
+    result = build_v09_final_audit(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-final-audit",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("v0.9 final audit")
+    print(f"status: {result.status}")
+    print(f"audit_status: {result.audit_status}")
+    print(f"audit_count: {result.audit_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_agent_sprint_guard(args: Namespace) -> int:
+    result = build_agent_sprint_guard(from_k=args.from_k, to_k=args.to_k)
+    payload = {
+        "command": "agent-sprint-guard",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Agent sprint guard")
+    print(f"status: {result.status}")
+    print(f"guard_status: {result.guard_status}")
+    print(f"from_k: {result.from_k}")
+    print(f"to_k: {result.to_k}")
+    print(f"checked_step_count: {result.checked_step_count}")
+    print(f"completed_count: {result.completed_count}")
+    print(f"missing_count: {result.missing_count}")
+    print(f"proposed_next_k: {result.proposed_next_k}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
@@ -3830,6 +4206,51 @@ def _handle_material_verification_report(args: Namespace) -> int:
     print(document.markdown, end="")
     if output_path is not None:
         print(f"\nreport_output: {output_path}")
+    return 0
+
+
+def _handle_material_verification_closure(args: Namespace) -> int:
+    csv_path = (
+        None
+        if args.material_verification_csv is None
+        else Path(args.material_verification_csv)
+    )
+    output_dir = None
+    if not args.no_output_files and args.output_dir is not None:
+        output_dir = Path(args.output_dir)
+    result = build_material_verification_closure(
+        material_verification_csv=csv_path,
+        output_dir=output_dir,
+    )
+    payload = {
+        "command": "material-verification-closure",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(render_material_verification_closure_markdown(result), end="")
+        return 0
+
+    print("Material verification closure")
+    print(f"status: {result.status}")
+    print(f"closure_status: {result.closure_status}")
+    print(f"material_verification_csv: {result.material_verification_csv}")
+    print(f"coverage_ratio: {result.coverage_ratio:.6g}")
+    print(
+        "material_ready_for_engineering_review: "
+        f"{result.material_ready_for_engineering_review}"
+    )
+    print(f"material_ready_for_project_use: {result.material_ready_for_project_use}")
+    print(f"missing_material_keys: {len(result.missing_material_keys)}")
+    print(f"rejected_material_keys: {len(result.rejected_material_keys)}")
+    print(f"review_required_material_keys: {len(result.review_required_material_keys)}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     return 0
 
 

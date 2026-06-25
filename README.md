@@ -1271,3 +1271,106 @@ The report gathers golden validation, manual cases, material audit, external
 validation sample, workflow self-check, input schema/preflight, static index,
 protected files guard, and user manual statuses. It is review evidence only:
 it does not publish a release, certify designs, or approve project use.
+
+## K84 clean deterministic demo workflow
+
+K84 adds a clean deterministic demo command:
+
+```bash
+python -m sp63_core clean-demo-workflow \
+  --output-dir reports/clean_demo_workflow_smoke \
+  --json
+```
+
+The command runs a known passing input through preflight, deterministic report
+generation, archive validation, ZIP creation, and static report indexing. It is
+review evidence only: engineer review remains mandatory, deterministic checks
+remain required, ML remains advisory-only, and `ml_ready_for_project_use`
+remains `false`.
+
+## K85 engineering handoff package
+
+K85 adds a portable handoff package command:
+
+```bash
+python -m sp63_core engineering-handoff-package \
+  --output-dir reports/engineering_handoff_package_smoke \
+  --json
+```
+
+The package gathers editable input JSON, clean demo input, evidence templates,
+review docs, static input preview, run commands, and a SHA256 manifest. It is a
+scaffold only: it does not run calculations, approve project use, change
+material values, add UI dependencies, or make ML a calculator.
+
+## K86 launcher scripts package
+
+K86 adds command-wrapper scripts:
+
+```bash
+python -m sp63_core launcher-scripts \
+  --output-dir reports/launcher_scripts_smoke \
+  --json
+```
+
+The generated `.cmd` and `.sh` files call existing `python -m sp63_core`
+commands for clean demo, single workflow, batch workflow, and opening the static
+index. They do not contain formulas, start a server, implement UI, or approve
+project use.
+
+## K87 external validation evidence package
+
+K87 adds an external validation evidence package:
+
+```bash
+python -m sp63_core external-validation-evidence-package \
+  --output-dir reports/external_validation_evidence_smoke \
+  --json
+```
+
+Without an engineer-filled CSV the command returns `review_required`. When a CSV
+is provided, it summarizes accepted/review/failed rows and writes JSON,
+Markdown, and SHA256 manifest files. It does not change formulas, material
+values, or `validation/external.py`.
+
+## K88 v0.9 final audit
+
+K88 adds an aggregated final audit command:
+
+```bash
+python -m sp63_core v09-final-audit \
+  --output-dir reports/v09_final_audit_smoke \
+  --json
+```
+
+The report summarizes protected-files, docs, readiness, clean demo, handoff,
+launcher, material verification closure, and external validation evidence
+checks. It is release-preparation evidence only and does not publish a release,
+certify designs, or approve project use.
+
+## K89 agent sprint guard
+
+K89 adds a local sprint completeness command:
+
+```bash
+python -m sp63_core agent-sprint-guard --from-k 83 --to-k 90 --json
+```
+
+The guard checks expected local files for each K-step and reports the first
+missing step as `proposed_next_k`. It does not inspect GitHub PR/Issue state,
+approve merges, certify calculations, or approve project use.
+
+## K90 release notes package
+
+K90 adds v0.9 release-preparation notes:
+
+```bash
+python -m sp63_core release-notes \
+  --output-dir reports/release_notes_v0_9_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The package writes release notes, a release checklist, and known limitations.
+It does not publish a release, certify calculations, approve project use, or
+make ML project-ready.

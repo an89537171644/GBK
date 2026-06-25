@@ -1473,3 +1473,129 @@ direct formula-module imports.
 
 K82 is review evidence only. It does not publish a release, certify designs,
 change formulas, change material values, implement UI, or make ML a calculator.
+
+## K83 Material Verification Closure Validation
+
+K83 adds validation coverage for `material-verification-closure`:
+
+```bash
+python -m sp63_core material-verification-closure --material-verification-csv tests/fixtures/material_verification_sample.csv --output-dir reports/material_verification_closure_smoke --json
+```
+
+The tests verify no-CSV review-required behavior, complete fixture readiness
+for engineering review, missing material coverage, rejected material failure,
+CLI JSON/Markdown behavior, `material_ready_for_project_use = false`, and
+absence of direct formula-module imports.
+
+K83 does not change formulas, material values, material catalogs,
+reinforcement selection, external validation logic, or ML safety policy.
+
+## K84 Clean Deterministic Demo Workflow Validation
+
+K84 adds validation coverage for `clean-demo-workflow`:
+
+```bash
+python -m sp63_core clean-demo-workflow --output-dir reports/clean_demo_workflow_smoke --json
+```
+
+The tests verify that the clean demo input passes preflight and that the
+deterministic workflow produces a passing report, archive validation result,
+ZIP package, and static index. CLI JSON/Markdown behavior and mandatory safety
+flags are covered.
+
+K84 is workflow review evidence only. It does not certify designs, change
+formulas, change material values, change reinforcement selection, implement UI,
+or make ML a calculator.
+
+## K85 Engineering Handoff Package Validation
+
+K85 adds validation coverage for `engineering-handoff-package`:
+
+```bash
+python -m sp63_core engineering-handoff-package --output-dir reports/engineering_handoff_package_smoke --json
+```
+
+The tests verify package generation, input/demo/evidence/docs/preview files,
+SHA256 manifest entries, CLI JSON output, scaffold-only README/RUN_COMMANDS
+content, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K85 does not run calculations, change formulas, change material values,
+implement UI, include private documents, or make ML a calculator.
+
+## K86 Launcher Scripts Validation
+
+K86 adds validation coverage for `launcher-scripts`:
+
+```bash
+python -m sp63_core launcher-scripts --output-dir reports/launcher_scripts_smoke --json
+```
+
+The tests verify `.cmd` and `.sh` script generation, manifest SHA256 checksums,
+CLI JSON output, mandatory safety flags, and that scripts remain wrappers around
+`python -m sp63_core` commands.
+
+K86 does not add a GUI, start a server, change formulas, change material
+values, or make ML a calculator.
+
+## K87 External Validation Evidence Package Validation
+
+K87 adds validation coverage for `external-validation-evidence-package`:
+
+```bash
+python -m sp63_core external-validation-evidence-package --output-dir reports/external_validation_evidence_smoke --json
+```
+
+The tests verify no-CSV `review_required` behavior, filled sample summary,
+template/checklist copying, JSON/Markdown summary generation, manifest SHA256
+checksums, CLI JSON behavior, and mandatory safety flags.
+
+K87 does not change formulas, material values, protected calculation files,
+`validation/external.py`, or ML safety behavior.
+
+## K88 v0.9 Final Audit Validation
+
+K88 adds validation coverage for `v09-final-audit`:
+
+```bash
+python -m sp63_core v09-final-audit --output-dir reports/v09_final_audit_smoke --json
+```
+
+The tests verify aggregated audit generation, expected audit item names,
+JSON/Markdown reports, CLI JSON output, no failed audit items in the smoke
+scenario, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K88 is release-preparation evidence only. It does not publish a release,
+certify calculations, change formulas, change material values, implement UI, or
+make ML a calculator.
+
+## K89 Agent Sprint Guard Validation
+
+K89 adds validation coverage for `agent-sprint-guard`:
+
+```bash
+python -m sp63_core agent-sprint-guard --from-k 83 --to-k 90 --json
+```
+
+The tests verify complete and missing synthetic sprint ranges, invalid range
+handling, CLI JSON behavior, mandatory safety flags, and
+`ml_ready_for_project_use = false`.
+
+K89 is a local completeness check only. It does not inspect GitHub state,
+approve merges, certify calculations, change formulas, change materials, or make
+ML a calculator.
+
+## K90 Release Notes Package Validation
+
+K90 adds validation coverage for `release-notes`:
+
+```bash
+python -m sp63_core release-notes --output-dir reports/release_notes_v0_9_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify release notes JSON/Markdown output, release checklist,
+known-limitations output, root documentation files, CHANGELOG entry, CLI JSON
+behavior, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K90 is documentation and release-preparation metadata only. It does not publish
+a release, certify calculations, change formulas, change materials, implement
+UI, or make ML a calculator.

@@ -1,5 +1,15 @@
 """Workflow orchestration helpers for SP63 engineering review flows."""
 
+from sp63_core.workflows.agent_sprint_guard import (
+    AgentSprintGuardResult,
+    SprintStepSpec,
+    build_agent_sprint_guard,
+)
+from sp63_core.workflows.clean_demo_workflow import (
+    CLEAN_DEMO_INPUT,
+    CleanDemoWorkflowResult,
+    run_clean_demo_workflow,
+)
 from sp63_core.workflows.diagnostics_catalog import (
     DiagnosticsCatalogResult,
     build_diagnostics_catalog,
@@ -8,6 +18,10 @@ from sp63_core.workflows.docs_audit import (
     DocsAuditResult,
     build_docs_audit_report,
     render_docs_audit_markdown,
+)
+from sp63_core.workflows.engineering_handoff_package import (
+    EngineeringHandoffPackageResult,
+    build_engineering_handoff_package,
 )
 from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
@@ -20,6 +34,10 @@ from sp63_core.workflows.engineering_workflow_batch import (
 from sp63_core.workflows.evidence_templates import (
     EvidenceTemplatesPackageResult,
     build_evidence_templates_package,
+)
+from sp63_core.workflows.external_validation_evidence_package import (
+    ExternalValidationEvidencePackageResult,
+    build_external_validation_evidence_package,
 )
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
@@ -39,6 +57,15 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.launcher_scripts import (
+    LauncherScriptsPackageResult,
+    build_launcher_scripts_package,
+)
+from sp63_core.workflows.material_verification_closure import (
+    MaterialVerificationClosureResult,
+    build_material_verification_closure,
+    render_material_verification_closure_markdown,
+)
 from sp63_core.workflows.project_template import (
     ProjectTemplatePackageResult,
     build_project_template_package,
@@ -55,6 +82,10 @@ from sp63_core.workflows.release_candidate import (
 from sp63_core.workflows.release_manifest import (
     ReleaseArtifactManifestResult,
     build_release_artifact_manifest,
+)
+from sp63_core.workflows.release_notes import (
+    ReleaseNotesPackageResult,
+    build_release_notes_package,
 )
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
@@ -78,21 +109,32 @@ from sp63_core.workflows.user_manual_index import (
     UserManualIndexResult,
     build_user_manual_index,
 )
+from sp63_core.workflows.v09_final_audit import (
+    V09FinalAuditResult,
+    build_v09_final_audit,
+)
 from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
 )
 
 __all__ = [
+    "AgentSprintGuardResult",
     "EngineeringGUIPlanningResult",
+    "EngineeringHandoffPackageResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
+    "CLEAN_DEMO_INPUT",
+    "CleanDemoWorkflowResult",
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
+    "ExternalValidationEvidencePackageResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
     "InputPreflightResult",
+    "LauncherScriptsPackageResult",
+    "MaterialVerificationClosureResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
     "PROTECTED_FILES",
@@ -101,29 +143,41 @@ __all__ = [
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
+    "ReleaseNotesPackageResult",
+    "SprintStepSpec",
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
+    "V09FinalAuditResult",
     "V09ReadinessResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
+    "build_agent_sprint_guard",
     "build_engineering_gui_planning_decision",
+    "build_engineering_handoff_package",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
+    "build_external_validation_evidence_package",
     "build_release_candidate_report",
     "build_release_artifact_manifest",
+    "build_release_notes_package",
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
+    "build_launcher_scripts_package",
+    "build_material_verification_closure",
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
     "build_user_manual_index",
+    "build_v09_final_audit",
     "build_v09_readiness_gate",
     "render_docs_audit_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
+    "render_material_verification_closure_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
+    "run_clean_demo_workflow",
     "run_engineering_workflow_self_check",
     "run_input_preflight",
     "run_protected_files_guard",
