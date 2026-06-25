@@ -162,6 +162,10 @@ from sp63_core.workflows.v10_gap_report import (
     build_v10_gap_report,
     render_v10_gap_report_markdown,
 )
+from sp63_core.workflows.windows_smoke_plan import (
+    WindowsSmokePlanResult,
+    build_windows_smoke_plan,
+)
 
 __all__ = [
     "AgentSprintGuardResult",
@@ -204,6 +208,7 @@ __all__ = [
     "V09FreezeReportResult",
     "V09ReadinessResult",
     "V10GapReportResult",
+    "WindowsSmokePlanResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_agent_sprint_guard",
@@ -234,6 +239,7 @@ __all__ = [
     "build_v09_freeze_report",
     "build_v09_readiness_gate",
     "build_v10_gap_report",
+    "build_windows_smoke_plan",
     "render_docs_audit_markdown",
     "render_freeze_remediation_plan_markdown",
     "render_cli_status_contract_markdown",

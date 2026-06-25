@@ -140,6 +140,7 @@ from sp63_core.workflows import (
     build_v09_freeze_report,
     build_v09_readiness_gate,
     build_v10_gap_report,
+    build_windows_smoke_plan,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
     render_freeze_remediation_plan_markdown,
@@ -1129,6 +1130,18 @@ def build_parser() -> ArgumentParser:
         help="print Markdown remediation plan",
     )
     freeze_remediation_plan.set_defaults(handler=_handle_freeze_remediation_plan)
+
+    windows_smoke_plan = subparsers.add_parser(
+        "windows-smoke-plan",
+        help="build a manual Windows clean-machine smoke plan",
+    )
+    windows_smoke_plan.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for Windows smoke plan artifacts",
+    )
+    windows_smoke_plan.add_argument("--json", action="store_true", help="print JSON output")
+    windows_smoke_plan.set_defaults(handler=_handle_windows_smoke_plan)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3607,6 +3620,29 @@ def _handle_freeze_remediation_plan(args: Namespace) -> int:
     print(f"version: {result.version}")
     print(f"blocker_count: {result.blocker_count}")
     print(f"acceptable_review_gate_count: {result.acceptable_review_gate_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_windows_smoke_plan(args: Namespace) -> int:
+    result = build_windows_smoke_plan(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "windows-smoke-plan",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Windows smoke plan")
+    print(f"status: {result.status}")
+    print(f"command_count: {result.command_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)

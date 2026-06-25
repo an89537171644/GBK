@@ -36,3 +36,14 @@ python -m sp63_core portable-package --output-dir reports/portable_package_smoke
 - No binary files are generated.
 - No Streamlit, Gradio, PyQt, Tkinter, FastAPI, Flask, or Electron is added.
 - Generated reports and smoke artifacts must not be committed.
+
+## Windows clean-machine smoke
+
+K100 adds a manual Windows clean-machine smoke plan:
+
+```bash
+python -m sp63_core windows-smoke-plan --output-dir reports/windows_smoke_plan_smoke --json
+```
+
+The generated PowerShell/CMD files are reviewer aids. They do not create an
+executable, certify project use, or replace engineer review.
