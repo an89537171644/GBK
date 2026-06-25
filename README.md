@@ -1183,6 +1183,21 @@ SHA256 checksums for key release-review artifacts. It does not publish a
 release, certify designs, change formulas/materials, implement UI, or make ML
 project-ready.
 
+## K81 user acceptance smoke suite
+
+K81 adds an aggregated v0.9 smoke suite:
+
+```bash
+python -m sp63_core user-acceptance-smoke \
+  --output-dir reports/user_acceptance_smoke \
+  --json
+```
+
+The suite summarizes golden/manual/external/material/docs/protected/project
+template/batch-valid/release-manifest checks. `review_required` is expected
+while engineer material and workflow review gates remain open. The suite is
+review evidence only and does not certify designs or make ML project-ready.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

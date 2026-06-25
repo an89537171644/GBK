@@ -69,6 +69,10 @@ from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
 )
+from sp63_core.workflows.user_acceptance_smoke import (
+    UserAcceptanceSmokeResult,
+    run_user_acceptance_smoke,
+)
 from sp63_core.workflows.user_manual_index import (
     REQUIRED_USER_MANUAL_FILES,
     UserManualIndexResult,
@@ -94,6 +98,7 @@ __all__ = [
     "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
     "UserManualIndexResult",
+    "UserAcceptanceSmokeResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
@@ -116,4 +121,5 @@ __all__ = [
     "run_engineering_workflow_self_check",
     "run_input_preflight",
     "run_protected_files_guard",
+    "run_user_acceptance_smoke",
 ]

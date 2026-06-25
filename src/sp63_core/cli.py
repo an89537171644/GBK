@@ -131,6 +131,7 @@ from sp63_core.workflows import (
     run_engineering_workflow_self_check,
     run_input_preflight,
     run_protected_files_guard,
+    run_user_acceptance_smoke,
 )
 
 
@@ -810,6 +811,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release artifact manifest",
     )
     release_manifest.set_defaults(handler=_handle_release_manifest)
+
+    user_acceptance_smoke = subparsers.add_parser(
+        "user-acceptance-smoke",
+        help="run v0.9 user acceptance smoke suite",
+    )
+    user_acceptance_smoke.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for user acceptance smoke artifacts",
+    )
+    user_acceptance_smoke.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested release manifest smoke",
+    )
+    user_acceptance_smoke.add_argument("--json", action="store_true", help="print JSON output")
+    user_acceptance_smoke.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown user acceptance smoke summary",
+    )
+    user_acceptance_smoke.set_defaults(handler=_handle_user_acceptance_smoke)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2773,6 +2796,38 @@ def _handle_release_manifest(args: Namespace) -> int:
     print(f"version: {result.version}")
     print(f"git_commit: {result.git_commit}")
     print(f"artifact_count: {result.artifact_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_user_acceptance_smoke(args: Namespace) -> int:
+    result = run_user_acceptance_smoke(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "user-acceptance-smoke",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("User acceptance smoke")
+    print(f"status: {result.status}")
+    print(f"user_acceptance_status: {result.user_acceptance_status}")
+    print(f"smoke_count: {result.smoke_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
     print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:

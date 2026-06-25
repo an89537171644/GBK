@@ -1438,3 +1438,20 @@ flags, and absence of direct formula-module imports.
 K80 is reproducibility metadata only. It does not publish a release, certify
 designs, run calculations, change formulas, change material values, implement
 UI, or make ML a calculator.
+
+## K81 User Acceptance Smoke Validation
+
+K81 adds validation coverage for `user-acceptance-smoke`:
+
+```bash
+python -m sp63_core user-acceptance-smoke --output-dir reports/user_acceptance_smoke --json
+```
+
+The tests verify aggregated smoke results for golden validation, manual cases,
+external validation sample, material audit, protected-files guard, docs audit,
+project template package, clean batch workflow examples, and release manifest.
+They also cover CLI JSON/Markdown behavior, nested output creation, safety
+flags, and absence of direct formula-module imports.
+
+K81 is review evidence only. It does not certify designs, change formulas,
+change material values, implement UI, or make ML a calculator.

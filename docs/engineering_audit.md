@@ -1130,6 +1130,23 @@ K80 is reproducibility metadata only. It does not publish a release, execute
 calculations, change formulas, change material values, implement UI, or make ML
 a calculator.
 
+## K81 User Acceptance Smoke Suite
+
+K81 adds `user-acceptance-smoke` and `workflows/user_acceptance_smoke.py`:
+
+```bash
+python -m sp63_core user-acceptance-smoke --output-dir reports/user_acceptance_smoke --json
+```
+
+The suite aggregates golden validation, manual cases, external validation
+sample, material audit, protected-files guard, docs audit, project template
+package, clean batch workflow examples, and release artifact manifest. The
+expected result can remain `review_required` because material verification and
+engineering review gates remain open.
+
+K81 is review evidence only. It does not publish a release, certify designs,
+change formulas, change material values, implement UI, or make ML a calculator.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package
