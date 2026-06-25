@@ -113,6 +113,7 @@ from sp63_core.validation import (
 )
 from sp63_core.workflows import (
     build_agent_sprint_guard,
+    build_cli_status_contract,
     build_diagnostics_catalog,
     build_docs_audit_report,
     build_engineering_gui_planning_decision,
@@ -121,20 +122,32 @@ from sp63_core.workflows import (
     build_evidence_templates_package,
     build_external_validation_evidence_package,
     build_input_form_schema,
+    build_json_output_contract,
     build_launcher_scripts_package,
     build_material_verification_closure,
+    build_portable_package,
     build_project_template_package,
     build_release_artifact_manifest,
+    build_release_bundle,
     build_release_candidate_report,
     build_release_notes_package,
     build_static_input_form_preview,
     build_static_workflow_report_index,
+    build_traceability_matrix,
     build_user_manual_index,
     build_v09_final_audit,
+    build_v09_freeze_report,
     build_v09_readiness_gate,
+    build_v10_gap_report,
+    render_cli_status_contract_markdown,
     render_docs_audit_markdown,
+    render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
+    render_traceability_matrix_markdown,
+    render_v09_freeze_report_markdown,
+    render_v10_gap_report_markdown,
+    run_clean_demo_and_verify,
     run_clean_demo_workflow,
     run_engineering_workflow,
     run_engineering_workflow_batch,
@@ -142,6 +155,7 @@ from sp63_core.workflows import (
     run_input_preflight,
     run_protected_files_guard,
     run_user_acceptance_smoke,
+    verify_clean_demo_artifacts,
 )
 
 
@@ -565,6 +579,31 @@ def build_parser() -> ArgumentParser:
     )
     clean_demo_workflow.set_defaults(handler=_handle_clean_demo_workflow)
 
+    clean_demo_verify = subparsers.add_parser(
+        "clean-demo-verify",
+        help="verify clean demo generated user-facing artifacts",
+    )
+    clean_demo_verify.add_argument(
+        "--workflow-dir",
+        help="existing clean demo workflow directory to verify",
+    )
+    clean_demo_verify.add_argument(
+        "--run",
+        action="store_true",
+        help="run clean demo workflow before verification",
+    )
+    clean_demo_verify.add_argument(
+        "--output-dir",
+        help="output directory for --run mode",
+    )
+    clean_demo_verify.add_argument("--json", action="store_true", help="print JSON output")
+    clean_demo_verify.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown verification report",
+    )
+    clean_demo_verify.set_defaults(handler=_handle_clean_demo_verify)
+
     engineering_handoff_package = subparsers.add_parser(
         "engineering-handoff-package",
         help="create a portable engineering handoff package for review",
@@ -898,6 +937,44 @@ def build_parser() -> ArgumentParser:
     )
     release_manifest.set_defaults(handler=_handle_release_manifest)
 
+    release_bundle = subparsers.add_parser(
+        "release-bundle",
+        help="build review-only v0.9 release bundle ZIP",
+    )
+    release_bundle.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release bundle artifacts",
+    )
+    release_bundle.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release bundle version label",
+    )
+    release_bundle.add_argument("--json", action="store_true", help="print JSON output")
+    release_bundle.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release bundle report",
+    )
+    release_bundle.set_defaults(handler=_handle_release_bundle)
+
+    traceability_matrix = subparsers.add_parser(
+        "traceability-matrix",
+        help="write or print feature/CLI/docs/tests traceability matrix",
+    )
+    traceability_matrix.add_argument(
+        "--output-dir",
+        help="output directory for traceability_matrix.json/md",
+    )
+    traceability_matrix.add_argument("--json", action="store_true", help="print JSON output")
+    traceability_matrix.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown traceability matrix",
+    )
+    traceability_matrix.set_defaults(handler=_handle_traceability_matrix)
+
     release_notes = subparsers.add_parser(
         "release-notes",
         help="build v0.9 engineering release notes package",
@@ -986,6 +1063,45 @@ def build_parser() -> ArgumentParser:
     )
     v09_final_audit.set_defaults(handler=_handle_v09_final_audit)
 
+    v10_gap_report = subparsers.add_parser(
+        "v10-gap-report",
+        help="build v1.0 gap and risk report",
+    )
+    v10_gap_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v1.0 gap report artifacts",
+    )
+    v10_gap_report.add_argument("--json", action="store_true", help="print JSON output")
+    v10_gap_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v1.0 gap report",
+    )
+    v10_gap_report.set_defaults(handler=_handle_v10_gap_report)
+
+    v09_freeze_report = subparsers.add_parser(
+        "v09-freeze-report",
+        help="build final v0.9 freeze report",
+    )
+    v09_freeze_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 freeze report artifacts",
+    )
+    v09_freeze_report.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 freeze version label",
+    )
+    v09_freeze_report.add_argument("--json", action="store_true", help="print JSON output")
+    v09_freeze_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v0.9 freeze report",
+    )
+    v09_freeze_report.set_defaults(handler=_handle_v09_freeze_report)
+
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
         help="check local K-step artifact completeness for an agent sprint",
@@ -994,6 +1110,50 @@ def build_parser() -> ArgumentParser:
     agent_sprint_guard.add_argument("--to-k", type=int, required=True)
     agent_sprint_guard.add_argument("--json", action="store_true", help="print JSON output")
     agent_sprint_guard.set_defaults(handler=_handle_agent_sprint_guard)
+
+    cli_status_contract = subparsers.add_parser(
+        "cli-status-contract",
+        help="write or print the CLI status and exit-code contract",
+    )
+    cli_status_contract.add_argument(
+        "--output-dir",
+        help="output directory for cli_status_contract.json/md",
+    )
+    cli_status_contract.add_argument("--json", action="store_true", help="print JSON output")
+    cli_status_contract.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown contract",
+    )
+    cli_status_contract.set_defaults(handler=_handle_cli_status_contract)
+
+    json_output_contract = subparsers.add_parser(
+        "json-output-contract",
+        help="write or print lightweight JSON output schema contracts",
+    )
+    json_output_contract.add_argument(
+        "--output-dir",
+        help="output directory for json_output_contract.json/md",
+    )
+    json_output_contract.add_argument("--json", action="store_true", help="print JSON output")
+    json_output_contract.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown contract",
+    )
+    json_output_contract.set_defaults(handler=_handle_json_output_contract)
+
+    portable_package = subparsers.add_parser(
+        "portable-package",
+        help="create a portable Windows package skeleton without binaries",
+    )
+    portable_package.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for portable package skeleton",
+    )
+    portable_package.add_argument("--json", action="store_true", help="print JSON output")
+    portable_package.set_defaults(handler=_handle_portable_package)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2560,6 +2720,42 @@ def _handle_clean_demo_workflow(args: Namespace) -> int:
     return 0
 
 
+def _handle_clean_demo_verify(args: Namespace) -> int:
+    if args.run:
+        if not args.output_dir:
+            raise SystemExit("--output-dir is required with --run")
+        result = run_clean_demo_and_verify(output_dir=Path(args.output_dir))
+    else:
+        if not args.workflow_dir:
+            raise SystemExit("--workflow-dir is required unless --run is used")
+        result = verify_clean_demo_artifacts(workflow_dir=Path(args.workflow_dir))
+
+    payload = {
+        "command": "clean-demo-verify",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Clean demo verification")
+    print(f"status: {result.status}")
+    print(f"verification_status: {result.verification_status}")
+    print(f"workflow_dir: {result.workflow_dir}")
+    print(f"missing_artifacts: {len(result.missing_artifacts)}")
+    print(f"ml_ready_true_files: {len(result.ml_ready_true_files)}")
+    print(f"warning_artifacts_present: {result.warning_artifacts_present}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
 def _handle_engineering_handoff_package(args: Namespace) -> int:
     result = build_engineering_handoff_package(output_dir=Path(args.output_dir))
     payload = {
@@ -3114,6 +3310,66 @@ def _handle_release_manifest(args: Namespace) -> int:
     return 0
 
 
+def _handle_release_bundle(args: Namespace) -> int:
+    result = build_release_bundle(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-bundle",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(Path(result.report_markdown_path).read_text(encoding="utf-8"), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Release bundle")
+    print(f"status: {result.status}")
+    print(f"bundle_status: {result.bundle_status}")
+    print(f"version: {result.version}")
+    print(f"zip_path: {result.zip_path}")
+    print(f"file_count: {result.file_count}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_traceability_matrix(args: Namespace) -> int:
+    result = build_traceability_matrix(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "traceability-matrix",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_traceability_matrix_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Traceability matrix")
+    print(f"status: {result.status}")
+    print(f"matrix_status: {result.matrix_status}")
+    print(f"row_count: {result.row_count}")
+    print(f"output_dir: {result.output_dir}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
 def _handle_release_notes(args: Namespace) -> int:
     result = build_release_notes_package(
         output_dir=Path(args.output_dir),
@@ -3241,6 +3497,66 @@ def _handle_v09_final_audit(args: Namespace) -> int:
     return 0
 
 
+def _handle_v10_gap_report(args: Namespace) -> int:
+    result = build_v10_gap_report(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "v10-gap-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v10_gap_report_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v1.0 gap report")
+    print(f"status: {result.status}")
+    print(f"report_status: {result.report_status}")
+    print(f"ready_for_v10: {result.ready_for_v10}")
+    print(f"remaining_steps_estimate: {result.remaining_steps_estimate}")
+    print(f"output_dir: {result.output_dir}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_freeze_report(args: Namespace) -> int:
+    result = build_v09_freeze_report(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-freeze-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_freeze_report_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 freeze report")
+    print(f"status: {result.status}")
+    print(f"freeze_status: {result.freeze_status}")
+    print(f"version: {result.version}")
+    print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
 def _handle_agent_sprint_guard(args: Namespace) -> int:
     result = build_agent_sprint_guard(from_k=args.from_k, to_k=args.to_k)
     payload = {
@@ -3266,6 +3582,91 @@ def _handle_agent_sprint_guard(args: Namespace) -> int:
         for error in result.errors:
             print(f"- {error}")
     return 0
+
+
+def _handle_cli_status_contract(args: Namespace) -> int:
+    result = build_cli_status_contract(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "cli-status-contract",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_cli_status_contract_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("CLI status contract")
+    print(f"status: {result.status}")
+    print(f"contract_status: {result.contract_status}")
+    print(f"command_count: {result.command_count}")
+    print(f"output_dir: {result.output_dir}")
+    print("exit_code_mapping:")
+    for status, exit_code in result.exit_code_mapping.items():
+        print(f"- {status}: {exit_code}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_json_output_contract(args: Namespace) -> int:
+    result = build_json_output_contract(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "json-output-contract",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_json_output_contract_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("JSON output contract")
+    print(f"status: {result.status}")
+    print(f"contract_status: {result.contract_status}")
+    print(f"contract_count: {result.contract_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_portable_package(args: Namespace) -> int:
+    result = build_portable_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "portable-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Portable package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"file_count: {result.file_count}")
+    print(f"script_count: {result.script_count}")
+    print(f"manifest_path: {result.manifest_path}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_report_dataset_export(args: Namespace) -> int:
