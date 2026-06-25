@@ -134,6 +134,7 @@ from sp63_core.workflows import (
     build_release_candidate_report,
     build_release_notes_package,
     build_static_input_form_preview,
+    build_static_launcher_dashboard,
     build_static_workflow_report_index,
     build_traceability_matrix,
     build_user_manual_index,
@@ -1165,6 +1166,22 @@ def build_parser() -> ArgumentParser:
         help="print Markdown packet report",
     )
     engineer_review_packet.set_defaults(handler=_handle_engineer_review_packet)
+
+    static_launcher_dashboard = subparsers.add_parser(
+        "static-launcher-dashboard",
+        help="build a static local launcher dashboard",
+    )
+    static_launcher_dashboard.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for static launcher dashboard artifacts",
+    )
+    static_launcher_dashboard.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    static_launcher_dashboard.set_defaults(handler=_handle_static_launcher_dashboard)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3695,6 +3712,31 @@ def _handle_engineer_review_packet(args: Namespace) -> int:
     print(f"evidence_count: {result.evidence_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_static_launcher_dashboard(args: Namespace) -> int:
+    result = build_static_launcher_dashboard(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "static-launcher-dashboard",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Static launcher dashboard")
+    print(f"status: {result.status}")
+    print(f"command_count: {result.command_count}")
+    print("web_server_required: false")
+    print("javascript_calculations_present: false")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)

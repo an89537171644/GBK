@@ -131,6 +131,10 @@ from sp63_core.workflows.static_input_form_preview import (
     StaticInputFormPreviewResult,
     build_static_input_form_preview,
 )
+from sp63_core.workflows.static_launcher_dashboard import (
+    StaticLauncherDashboardResult,
+    build_static_launcher_dashboard,
+)
 from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
@@ -198,6 +202,7 @@ __all__ = [
     "PortablePackageResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
+    "StaticLauncherDashboardResult",
     "PROTECTED_FILES",
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
@@ -240,6 +245,7 @@ __all__ = [
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
+    "build_static_launcher_dashboard",
     "build_traceability_matrix",
     "build_user_manual_index",
     "build_v09_final_audit",
