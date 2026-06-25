@@ -1287,3 +1287,18 @@ generation, archive validation, ZIP creation, and static report indexing. It is
 review evidence only: engineer review remains mandatory, deterministic checks
 remain required, ML remains advisory-only, and `ml_ready_for_project_use`
 remains `false`.
+
+## K85 engineering handoff package
+
+K85 adds a portable handoff package command:
+
+```bash
+python -m sp63_core engineering-handoff-package \
+  --output-dir reports/engineering_handoff_package_smoke \
+  --json
+```
+
+The package gathers editable input JSON, clean demo input, evidence templates,
+review docs, static input preview, run commands, and a SHA256 manifest. It is a
+scaffold only: it does not run calculations, approve project use, change
+material values, add UI dependencies, or make ML a calculator.

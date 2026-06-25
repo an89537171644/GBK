@@ -14,6 +14,10 @@ from sp63_core.workflows.docs_audit import (
     build_docs_audit_report,
     render_docs_audit_markdown,
 )
+from sp63_core.workflows.engineering_handoff_package import (
+    EngineeringHandoffPackageResult,
+    build_engineering_handoff_package,
+)
 from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
     run_engineering_workflow,
@@ -95,6 +99,7 @@ from sp63_core.workflows.v09_readiness import (
 
 __all__ = [
     "EngineeringGUIPlanningResult",
+    "EngineeringHandoffPackageResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
     "CLEAN_DEMO_INPUT",
@@ -120,6 +125,7 @@ __all__ = [
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
+    "build_engineering_handoff_package",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_release_candidate_report",

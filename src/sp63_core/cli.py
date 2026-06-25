@@ -115,6 +115,7 @@ from sp63_core.workflows import (
     build_diagnostics_catalog,
     build_docs_audit_report,
     build_engineering_gui_planning_decision,
+    build_engineering_handoff_package,
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
@@ -558,6 +559,22 @@ def build_parser() -> ArgumentParser:
         help="print Markdown clean demo workflow summary",
     )
     clean_demo_workflow.set_defaults(handler=_handle_clean_demo_workflow)
+
+    engineering_handoff_package = subparsers.add_parser(
+        "engineering-handoff-package",
+        help="create a portable engineering handoff package for review",
+    )
+    engineering_handoff_package.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for handoff package files",
+    )
+    engineering_handoff_package.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineering_handoff_package.set_defaults(handler=_handle_engineering_handoff_package)
 
     engineering_interface_contract = subparsers.add_parser(
         "engineering-interface-contract",
@@ -2433,6 +2450,31 @@ def _handle_clean_demo_workflow(args: Namespace) -> int:
     print(f"zip_status: {result.zip_status}")
     print(f"index_status: {result.index_status}")
     print(f"output_dir: {result.output_dir}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_handoff_package(args: Namespace) -> int:
+    result = build_engineering_handoff_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "engineering-handoff-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Engineering handoff package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"file_count: {result.file_count}")
+    print(f"manifest_path: {result.manifest_path}")
     print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
     _print_warnings(result.warnings)
     if result.errors:

@@ -1506,3 +1506,18 @@ flags are covered.
 K84 is workflow review evidence only. It does not certify designs, change
 formulas, change material values, change reinforcement selection, implement UI,
 or make ML a calculator.
+
+## K85 Engineering Handoff Package Validation
+
+K85 adds validation coverage for `engineering-handoff-package`:
+
+```bash
+python -m sp63_core engineering-handoff-package --output-dir reports/engineering_handoff_package_smoke --json
+```
+
+The tests verify package generation, input/demo/evidence/docs/preview files,
+SHA256 manifest entries, CLI JSON output, scaffold-only README/RUN_COMMANDS
+content, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K85 does not run calculations, change formulas, change material values,
+implement UI, include private documents, or make ML a calculator.
