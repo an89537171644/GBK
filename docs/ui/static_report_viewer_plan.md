@@ -15,6 +15,8 @@ interface.
 - `workflow_summary.json`;
 - `workflow_summary.md`;
 - `README_WORKFLOW.md`;
+- optional `input_preflight_report.json`;
+- optional `input_preflight_report.md`;
 - deterministic report `report.html`, `report.md`, `report.json`;
 - archive `manifest.json` and ZIP validation output;
 - optional engineering ML readiness bundle;
@@ -88,3 +90,16 @@ python -m sp63_core input-preflight --input-json <input.json> --output-dir <pref
 
 The launcher should display the preflight status and issues, but deterministic
 SP63 checks and engineer review remain mandatory.
+
+## K68 Input Form Preview
+
+K68 adds a static `input_form_preview.html` generator. It can help engineers
+inspect the expected input fields before preparing JSON files, while keeping
+all calculation and validation authority in CLI/workflow commands.
+
+## K69 Workflow Preflight Integration
+
+K69 connects the preflight step to `engineering-workflow --with-preflight` and
+adds optional static index links to preflight JSON/Markdown reports. A future
+viewer should surface `preflight_status`, warning/error counts, and links to the
+preflight reports before showing deterministic report artifacts.

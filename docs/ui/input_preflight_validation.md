@@ -50,6 +50,24 @@ Both files keep:
 - `deterministic_checks_required = true`;
 - `ml_ready_for_project_use = false`.
 
+## K69 Workflow Integration
+
+The engineering workflow can run this preflight step before deterministic
+report generation:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_full_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+If preflight fails, deterministic report generation is skipped and the workflow
+returns `workflow_status = fail`. If preflight requires review, the workflow may
+continue, but the summary remains `review_required`.
+
 ## Safety
 
 Preflight is not a substitute for deterministic SP63 checks, material

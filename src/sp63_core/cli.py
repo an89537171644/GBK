@@ -112,14 +112,21 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_diagnostics_catalog,
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
+    build_evidence_templates_package,
     build_input_form_schema,
+    build_release_candidate_report,
+    build_static_input_form_preview,
     build_static_workflow_report_index,
+    build_user_manual_index,
     render_self_check_markdown,
     run_engineering_workflow,
+    run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
     run_input_preflight,
+    run_protected_files_guard,
 )
 
 
@@ -407,6 +414,11 @@ def build_parser() -> ArgumentParser:
         action="store_true",
         help="create a static HTML index for generated workflow files",
     )
+    engineering_workflow.add_argument(
+        "--with-preflight",
+        action="store_true",
+        help="run input JSON preflight before deterministic workflow",
+    )
     engineering_workflow.add_argument("--json", action="store_true", help="print JSON output")
     engineering_workflow.add_argument(
         "--markdown",
@@ -414,6 +426,43 @@ def build_parser() -> ArgumentParser:
         help="print Markdown workflow summary",
     )
     engineering_workflow.set_defaults(handler=_handle_engineering_workflow)
+
+    engineering_workflow_batch = subparsers.add_parser(
+        "engineering-workflow-batch",
+        help="run engineering workflow for every JSON file in an input directory",
+    )
+    engineering_workflow_batch.add_argument(
+        "--input-dir",
+        required=True,
+        help="directory containing input JSON files",
+    )
+    engineering_workflow_batch.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for batch workflow files",
+    )
+    engineering_workflow_batch.add_argument(
+        "--with-preflight",
+        action="store_true",
+        help="run preflight for each case before deterministic workflow",
+    )
+    engineering_workflow_batch.add_argument(
+        "--with-index",
+        action="store_true",
+        help="create static HTML indexes for each case",
+    )
+    engineering_workflow_batch.add_argument(
+        "--no-zip",
+        action="store_true",
+        help="skip deterministic report ZIP creation for each case",
+    )
+    engineering_workflow_batch.add_argument("--json", action="store_true", help="print JSON output")
+    engineering_workflow_batch.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown batch workflow summary",
+    )
+    engineering_workflow_batch.set_defaults(handler=_handle_engineering_workflow_batch)
 
     engineering_report_index = subparsers.add_parser(
         "engineering-report-index",
@@ -588,6 +637,129 @@ def build_parser() -> ArgumentParser:
         help="print Markdown preflight report",
     )
     input_preflight.set_defaults(handler=_handle_input_preflight)
+
+    input_form_preview = subparsers.add_parser(
+        "input-form-preview",
+        help="write or print a static HTML preview of the engineering input form schema",
+    )
+    input_form_preview.add_argument(
+        "--output-dir",
+        help="output directory for input_form_preview artifacts",
+    )
+    input_form_preview.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write preview files even when --output-dir is provided",
+    )
+    input_form_preview.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON summary",
+    )
+    input_form_preview.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown review note",
+    )
+    input_form_preview.set_defaults(handler=_handle_input_form_preview)
+
+    diagnostics_catalog = subparsers.add_parser(
+        "diagnostics-catalog",
+        help="write or print human-friendly workflow diagnostics catalog",
+    )
+    diagnostics_catalog.add_argument(
+        "--output-dir",
+        help="output directory for diagnostics_catalog.json and diagnostics_catalog.md",
+    )
+    diagnostics_catalog.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write catalog files even when --output-dir is provided",
+    )
+    diagnostics_catalog.add_argument("--json", action="store_true", help="print JSON summary")
+    diagnostics_catalog.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown diagnostics catalog",
+    )
+    diagnostics_catalog.set_defaults(handler=_handle_diagnostics_catalog)
+
+    evidence_templates = subparsers.add_parser(
+        "evidence-templates",
+        help="create external validation and material verification template package",
+    )
+    evidence_templates.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for evidence template package",
+    )
+    evidence_templates.add_argument("--json", action="store_true", help="print JSON output")
+    evidence_templates.set_defaults(handler=_handle_evidence_templates)
+
+    protected_files_check = subparsers.add_parser(
+        "protected-files-check",
+        help="check whether protected calculation/material files changed",
+    )
+    protected_files_check.add_argument(
+        "--base-ref",
+        default="main",
+        help="base git ref for protected-files diff",
+    )
+    protected_files_check.add_argument(
+        "--head-ref",
+        default="HEAD",
+        help="head git ref for protected-files diff",
+    )
+    protected_files_check.add_argument(
+        "--allow-review-required",
+        action="store_true",
+        help="record review_required as explicitly allowed by caller",
+    )
+    protected_files_check.add_argument("--json", action="store_true", help="print JSON output")
+    protected_files_check.set_defaults(handler=_handle_protected_files_check)
+
+    user_manual_index = subparsers.add_parser(
+        "user-manual-index",
+        help="check and print the user manual package index",
+    )
+    user_manual_index.add_argument(
+        "--manual-dir",
+        default="docs/user_manual",
+        help="manual directory to check",
+    )
+    user_manual_index.add_argument(
+        "--output-dir",
+        help="output directory for user_manual_index.json and user_manual_index.md",
+    )
+    user_manual_index.add_argument("--json", action="store_true", help="print JSON output")
+    user_manual_index.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown manual index",
+    )
+    user_manual_index.set_defaults(handler=_handle_user_manual_index)
+
+    release_candidate_report = subparsers.add_parser(
+        "release-candidate-report",
+        help="build a draft release candidate review report",
+    )
+    release_candidate_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release candidate report files",
+    )
+    release_candidate_report.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release candidate version label",
+    )
+    release_candidate_report.add_argument("--json", action="store_true", help="print JSON output")
+    release_candidate_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release candidate report",
+    )
+    release_candidate_report.set_defaults(handler=_handle_release_candidate_report)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -1930,6 +2102,7 @@ def _handle_engineering_workflow(args: Namespace) -> int:
         include_ml_readiness=args.include_ml_readiness,
         create_zip=not args.no_zip,
         with_index=args.with_index,
+        with_preflight=args.with_preflight,
     )
     payload = {
         "command": "engineering-workflow",
@@ -1946,10 +2119,47 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print("Engineering workflow")
     print(f"status: {result.status}")
     print(f"workflow_status: {result.workflow_status}")
+    print(f"preflight_status: {result.preflight_status}")
     print(f"deterministic_report_status: {result.deterministic_report_status}")
     print(f"archive_validation_status: {result.archive_validation_status}")
     print(f"zip_status: {result.zip_status}")
     print(f"ml_readiness_status: {result.ml_readiness_status}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_workflow_batch(args: Namespace) -> int:
+    result = run_engineering_workflow_batch(
+        input_dir=Path(args.input_dir),
+        output_dir=Path(args.output_dir),
+        with_preflight=args.with_preflight,
+        with_index=args.with_index,
+        create_zip=not args.no_zip,
+    )
+    payload = {
+        "command": "engineering-workflow-batch",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        summary_path = Path(result.batch_summary_markdown_path)
+        print(summary_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Batch engineering workflow")
+    print(f"status: {result.status}")
+    print(f"batch_status: {result.batch_status}")
+    print(f"case_count: {result.case_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
     print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:
@@ -2214,6 +2424,211 @@ def _handle_input_preflight(args: Namespace) -> int:
     print(f"error_count: {result.error_count}")
     print(f"warning_count: {result.warning_count}")
     print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_input_form_preview(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_static_input_form_preview(output_dir=output_dir)
+    payload = {
+        "command": "input-form-preview",
+        "status": result.status,
+        "preview_status": result.preview_status,
+        "output_dir": result.output_dir,
+        "output_path": result.output_path,
+        "schema_field_count": result.schema_field_count,
+        "generated_files": result.generated_files,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Input form preview")
+    print(f"status: {result.status}")
+    print(f"preview_status: {result.preview_status}")
+    print(f"schema_field_count: {result.schema_field_count}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"output_path: {result.output_path}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_diagnostics_catalog(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_diagnostics_catalog(output_dir=output_dir)
+    payload = {
+        "command": "diagnostics-catalog",
+        "status": result.status,
+        "catalog_status": result.catalog_status,
+        "diagnostics_count": result.diagnostics_count,
+        "categories": result.categories,
+        "diagnostics": result.json_data["diagnostics"],
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Diagnostics catalog")
+    print(f"status: {result.status}")
+    print(f"catalog_status: {result.catalog_status}")
+    print(f"diagnostics_count: {result.diagnostics_count}")
+    print(f"categories: {', '.join(result.categories)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_evidence_templates(args: Namespace) -> int:
+    result = build_evidence_templates_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "evidence-templates",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Evidence templates package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"external_validation_template_path: {result.external_validation_template_path}")
+    print(f"material_verification_template_path: {result.material_verification_template_path}")
+    print(f"manifest_path: {result.manifest_path}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_protected_files_check(args: Namespace) -> int:
+    result = run_protected_files_guard(
+        base_ref=args.base_ref,
+        head_ref=args.head_ref,
+        allow_review_required=args.allow_review_required,
+    )
+    payload = {
+        "command": "protected-files-check",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Protected files check")
+    print(f"status: {result.status}")
+    print(f"guard_status: {result.guard_status}")
+    print(f"checked_git_ref: {result.checked_git_ref}")
+    print(f"changed_protected_files: {len(result.changed_protected_files)}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_user_manual_index(args: Namespace) -> int:
+    result = build_user_manual_index(
+        manual_dir=Path(args.manual_dir),
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "user-manual-index",
+        "status": result.status,
+        "manual_status": result.manual_status,
+        "manual_dir": result.manual_dir,
+        "required_files": result.required_files,
+        "existing_files": result.existing_files,
+        "missing_files": result.missing_files,
+        "output_dir": result.output_dir,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("User manual index")
+    print(f"status: {result.status}")
+    print(f"manual_status: {result.manual_status}")
+    print(f"manual_dir: {result.manual_dir}")
+    print(f"required_files: {len(result.required_files)}")
+    print(f"missing_files: {len(result.missing_files)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_release_candidate_report(args: Namespace) -> int:
+    result = build_release_candidate_report(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-candidate-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        report_path = Path(result.output_dir) / "release_candidate_report.md"
+        print(report_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release candidate report")
+    print(f"status: {result.status}")
+    print(f"release_candidate_status: {result.release_candidate_status}")
+    print(f"version: {result.version}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"protected_files_guard_status: {result.protected_files_guard_status}")
+    print(f"user_manual_status: {result.user_manual_status}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

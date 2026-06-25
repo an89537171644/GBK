@@ -991,3 +991,143 @@ K67 is reporting only. It does not execute design calculations, change
 formulas, change material values, change reinforcement selection, implement UI,
 or make ML a calculator. Deterministic SP63 checks, material verification,
 external validation, and engineer review remain mandatory.
+
+## K68 Static Input Form Preview
+
+K68 adds `input-form-preview` and `workflows/static_input_form_preview.py` to
+render a static HTML preview from the input form schema:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview --json
+```
+
+The preview displays fields, units, defaults, validation hints, and safety
+warnings only. It does not perform calculations, does not add JavaScript
+calculators, does not start a web server, does not implement a GUI framework,
+and does not approve project use. `ml_ready_for_project_use` remains false.
+
+## K69 Workflow Preflight Index Integration
+
+K69 adds `engineering-workflow --with-preflight` so the K67 preflight report can
+run inside the reproducible engineering workflow before deterministic report
+generation:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_full_smoke --with-preflight --with-index --json
+```
+
+If preflight fails, deterministic calculation is skipped and the workflow
+summary records `deterministic_report_status = skipped`,
+`archive_validation_status = skipped`, and `zip_status = skipped`. If preflight
+requires review, deterministic workflow may run but the workflow remains
+`review_required`.
+
+The static index links to `input_preflight_report.json` and
+`input_preflight_report.md` when they exist. K69 does not change formulas,
+materials, reinforcement selection, validation/external.py, UI policy, or ML
+safety policy. Engineer review remains mandatory and ML remains advisory-only.
+
+## K70 User-Friendly Diagnostics Catalog
+
+K70 adds `diagnostics-catalog` and `workflows/diagnostics_catalog.py` as a
+static EN/RU catalog of workflow-facing diagnostics:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+```
+
+The catalog covers input preflight, geometry, materials, loads, workflow,
+archive, ZIP, ML-readiness, protected files, and release-candidate review. Each
+entry includes severity, messages, recommended actions, and a related CLI
+command.
+
+K70 is guidance metadata only. It does not execute calculations, change
+formulas, change material values, change reinforcement selection, implement UI,
+or make ML a calculator.
+
+## K71 Batch Engineering Workflow Runner
+
+K71 adds `engineering-workflow-batch` and
+`workflows/engineering_workflow_batch.py` to run the existing single-case
+workflow across an input JSON folder:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/form_templates --output-dir reports/engineering_workflow_batch --with-preflight --with-index --json
+```
+
+The batch runner creates one case folder per input JSON, a batch summary,
+static batch index, and review README. Invalid cases are reported as failed
+case results and do not stop the remaining cases.
+
+K71 is orchestration only. It does not execute new formulas, change
+calculation modules, change material values, change reinforcement selection,
+implement UI, or make ML a calculator. Engineer review remains mandatory for
+every case.
+
+## K72 External/Material Evidence Templates Package
+
+K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package
+blank engineer-input templates:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates --json
+```
+
+The package contains external-validation and material-verification CSV
+templates, a README, and a SHA256 manifest. It reuses existing schemas and does
+not invent incompatible formats.
+
+K72 does not add real external values, closed SCAD/LIRA files, personal data,
+full SP 63 text, formula changes, material value changes, or automatic catalog
+updates. Engineer review remains mandatory.
+
+## K73 Protected Files Guard
+
+K73 adds `protected-files-check` and
+`workflows/protected_files_guard.py` to detect protected file changes before a
+release or sprint PR is reviewed:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The protected set includes deterministic formula modules,
+`validation/external.py`, and the concrete/rebar material catalog files. A
+changed protected file produces `fail`; unavailable git diff produces
+`review_required`.
+
+K73 is a review aid only. It does not approve merge, certify designs, change
+formulas, change materials, or make ML a calculator.
+
+## K74 User Manual Package
+
+K74 adds `docs/user_manual/` and `user-manual-index`:
+
+```bash
+python -m sp63_core user-manual-index --json
+```
+
+The manual covers quickstart, input data, preflight validation, workflow runs,
+report indexes, batch workflow, ML advisory limits, evidence templates,
+troubleshooting, and acceptance checklist.
+
+K74 is documentation only. It does not change formulas, material values,
+reinforcement selection, external validation logic, UI behavior, or ML safety
+policy. Engineer review remains mandatory.
+
+## K75 Release Candidate Report
+
+K75 adds `release-candidate-report` and `workflows/release_candidate.py`:
+
+```bash
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_v0_9 --json
+```
+
+The report gathers golden validation, manual verification, material audit,
+external validation sample, workflow self-check, input schema/preflight, static
+index, protected-files guard, and user manual statuses.
+
+K75 does not publish a release, certify designs, change formulas, change
+material values, change reinforcement selection, implement UI, or make ML a
+calculator. The report remains `review_required` while material audit and
+external validation remain engineer gates.

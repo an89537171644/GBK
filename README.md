@@ -1036,3 +1036,134 @@ conditions such as `Mser > M`.
 Preflight is reporting only. It does not run calculations, does not approve
 project use, does not change formulas or materials, and keeps
 `ml_ready_for_project_use = false`.
+
+## K68 static input form preview
+
+K68 adds a static HTML preview of the input form schema:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview --json
+```
+
+The command writes `input_form_preview.html`, `input_form_preview.json`, and
+`README_INPUT_FORM_PREVIEW.md`. The HTML shows fields, units, defaults,
+required flags, validation hints, and warnings only. It contains no JavaScript
+calculations, does not start a web server, does not approve a design, and keeps
+`ml_ready_for_project_use = false`.
+
+## K69 workflow preflight integration
+
+K69 allows the engineering workflow runner to run input preflight before
+deterministic report generation:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_full_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+When `--with-preflight` is used, the workflow writes
+`input_preflight_report.json` and `input_preflight_report.md`, records
+`preflight_status` in `workflow_summary.json`, and links the preflight reports
+from `index.html`. A failing preflight stops deterministic report generation
+and marks archive validation and ZIP export as `skipped`.
+
+This is a safety gate only. It does not change formulas, materials, selection
+logic, or ML policy. Engineer review and deterministic SP63 checks remain
+mandatory.
+
+## K70 diagnostics catalog
+
+K70 adds a workflow-facing diagnostics catalog:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+python -m sp63_core diagnostics-catalog --markdown
+python -m sp63_core diagnostics-catalog --output-dir reports/diagnostics_catalog --json
+```
+
+The catalog contains human-readable EN/RU diagnostic messages, severity,
+recommended actions, categories, and related CLI commands for preflight,
+geometry, materials, loads, workflow, archive, ZIP, ML-readiness, protected
+files, and release-candidate review. It is metadata only and does not perform
+calculations or approve project use.
+
+## K71 batch engineering workflow runner
+
+K71 adds `engineering-workflow-batch` for running the existing single-case
+workflow over a directory of input JSON files:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/form_templates \
+  --output-dir reports/engineering_workflow_batch \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+The batch runner creates one `case_####/` workflow folder per input file plus
+`batch_workflow_summary.json`, `batch_workflow_summary.md`,
+`batch_index.html`, and `README_BATCH_WORKFLOW.md`. Invalid cases do not stop
+the whole batch; they are reported as failed cases. The batch index is static
+HTML only and performs no calculations.
+
+## K72 evidence templates package
+
+K72 adds an engineer handoff package for blank external-validation and
+material-verification templates:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates --json
+```
+
+The package writes `external_validation_template.csv`,
+`material_verification_template.csv`, `README_EVIDENCE_TEMPLATES.md`, and
+`evidence_templates_manifest.json` with SHA256 checksums. These are templates
+only: they do not provide real SCAD/LIRA values, do not update the material
+catalog, and do not approve project use.
+
+## K73 protected files guard
+
+K73 adds a release safety check for protected files:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The guard checks git diff for protected calculation modules,
+`validation/external.py`, and material catalog files. It returns `fail` when a
+protected file changed and `review_required` when git diff cannot be checked.
+It is a review aid only and never approves merge or project use.
+
+## K74 user manual package
+
+K74 adds a user manual under `docs/user_manual/` and a completeness check:
+
+```bash
+python -m sp63_core user-manual-index --json
+python -m sp63_core user-manual-index --markdown
+```
+
+The manual covers quickstart, input data, preflight, workflow runs, static
+indexes, batch workflow, ML advisory limits, evidence templates,
+troubleshooting, and acceptance checklist. It is documentation only and does
+not certify designs or approve project use.
+
+## K75 release candidate report
+
+K75 adds a draft release candidate report:
+
+```bash
+python -m sp63_core release-candidate-report \
+  --output-dir reports/release_candidate_v0_9 \
+  --json
+```
+
+The report gathers golden validation, manual cases, material audit, external
+validation sample, workflow self-check, input schema/preflight, static index,
+protected files guard, and user manual statuses. It is review evidence only:
+it does not publish a release, certify designs, or approve project use.

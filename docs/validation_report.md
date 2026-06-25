@@ -1220,3 +1220,135 @@ preflight templates; and the invariant `ml_ready_for_project_use = false`.
 
 K67 does not import or run deterministic formula modules. It does not change
 formulas, material values, reinforcement selection, UI, or ML safety policy.
+
+## K68 Static Input Form Preview Validation
+
+K68 adds validation coverage for `input-form-preview`:
+
+```bash
+python -m sp63_core input-form-preview --output-dir reports/input_form_preview_smoke --json
+```
+
+The tests verify generated HTML/JSON/README artifacts, mandatory warning text,
+geometry/material/load fields, `ml_ready_for_project_use = false`, CLI JSON and
+Markdown output, `--no-output-files`, and the absence of formula-module
+imports.
+
+K68 is static preview work only. It does not implement a GUI, web server,
+JavaScript calculations, project approval, formula changes, or material value
+changes.
+
+## K69 Workflow Preflight Index Integration Validation
+
+K69 adds validation coverage for `engineering-workflow --with-preflight`:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_full_smoke --with-preflight --with-index --json
+```
+
+The tests verify that preflight JSON and Markdown reports are created,
+`workflow_summary.json` records `preflight_status` and preflight issue counts,
+`index.html` links to preflight reports, invalid input stops deterministic
+report generation, and workflow behavior without `--with-preflight` remains
+compatible.
+
+K69 does not change formulas, material values, reinforcement selection,
+deterministic checks, UI policy, or ML safety policy.
+
+## K70 Diagnostics Catalog Validation
+
+K70 adds validation coverage for `diagnostics-catalog`:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+python -m sp63_core diagnostics-catalog --markdown
+python -m sp63_core diagnostics-catalog --output-dir reports/diagnostics_catalog_smoke --json
+```
+
+The tests verify required diagnostic codes, required categories, severity
+values, EN/RU messages, recommended actions, output JSON/Markdown files, CLI
+JSON/Markdown behavior, safety flags, and absence of formula-module imports.
+
+K70 is diagnostics metadata only. It does not change formulas, material values,
+reinforcement selection, deterministic checks, UI policy, or ML safety policy.
+
+## K71 Batch Engineering Workflow Validation
+
+K71 adds validation coverage for `engineering-workflow-batch`:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/form_templates --output-dir reports/engineering_workflow_batch_smoke --with-preflight --with-index --json
+```
+
+The tests verify that the batch runner processes all JSON files in the input
+directory, creates case folders, writes `batch_workflow_summary.json`,
+`batch_workflow_summary.md`, `batch_index.html`, and
+`README_BATCH_WORKFLOW.md`, records failed/review cases, preserves operation
+when one case is invalid, provides CLI JSON output, and does not import formula
+modules.
+
+K71 is orchestration only. It does not change formulas, material values,
+reinforcement selection, deterministic checks, UI policy, or ML safety policy.
+
+## K72 Evidence Templates Package Validation
+
+K72 adds validation coverage for `evidence-templates`:
+
+```bash
+python -m sp63_core evidence-templates --output-dir reports/evidence_templates_smoke --json
+```
+
+The tests verify that external validation and material verification templates
+are copied from existing schemas, `README_EVIDENCE_TEMPLATES.md` is created,
+`evidence_templates_manifest.json` records SHA256 checksums, CLI JSON works,
+required safety warnings are present, and formula modules are not imported.
+
+K72 does not create real external validation values, does not change formulas,
+does not change material values, does not update the material catalog, and does
+not make ML a calculator.
+
+## K73 Protected Files Guard Validation
+
+K73 adds validation coverage for `protected-files-check`:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The tests verify the protected file list, simulated pass/fail paths, non-git
+`review_required` behavior, CLI JSON output, and absence of formula-module
+imports.
+
+K73 does not change protected files. It is a review aid only and does not
+approve merge, project use, formulas, materials, or ML output.
+
+## K74 User Manual Package Validation
+
+K74 adds validation coverage for `user-manual-index`:
+
+```bash
+python -m sp63_core user-manual-index --json
+python -m sp63_core user-manual-index --markdown
+```
+
+The tests verify that all required `docs/user_manual/` files exist, output
+JSON/Markdown can be written, missing-file simulation fails, CLI JSON/Markdown
+works, safety flags remain present, and formula modules are not imported.
+
+K74 is documentation only. It does not change formulas, materials,
+deterministic checks, external validation logic, or ML safety policy.
+
+## K75 Release Candidate Report Validation
+
+K75 adds validation coverage for `release-candidate-report`:
+
+```bash
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_v0_9_smoke --json
+```
+
+The tests verify JSON/Markdown/README creation, collected status fields, known
+limitations, `ml_ready_for_project_use = false`, CLI JSON/Markdown behavior,
+and absence of direct formula-module imports.
+
+K75 creates review evidence only. It does not publish a release, certify
+designs, change formulas, change material values, or make ML a calculator.
