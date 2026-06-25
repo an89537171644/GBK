@@ -16,6 +16,10 @@ docs/reports/examples/form_templates/
   crack formation, crack width, and deflection flags.
 - `rectangular_ml_readiness_workflow_template.json` - future workflow-form
   values for report output, static index, and optional ML-readiness inputs.
+- `rectangular_preflight_invalid_input.json` - anonymized invalid input used to
+  demonstrate preflight `fail` output.
+- `rectangular_preflight_review_input.json` - anonymized input used to
+  demonstrate preflight `review_required` output.
 
 The workflow template is a form example, not a direct `design-report
 --input-json` payload. It may include workflow fields such as `output_dir`,
@@ -29,3 +33,15 @@ text.
 
 `ml_ready_for_project_use` is intentionally not an input template field. It is a
 result/status flag and must remain false.
+
+## K67 Preflight Usage
+
+Use `input-preflight` to check direct rectangular design input templates before
+running report/workflow commands:
+
+```bash
+python -m sp63_core input-preflight --input-json docs/reports/examples/form_templates/rectangular_serviceability_input_template.json --output-dir reports/input_preflight --json
+```
+
+The preflight examples are synthetic and intentionally limited to input
+validation. They are not project calculations.

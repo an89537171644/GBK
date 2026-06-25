@@ -49,3 +49,16 @@ This schema is for future UI/input forms only. It does not perform design calcul
 
 Future UI layers must keep deterministic SP63 status, archive validation,
 material verification, external validation, and engineer-review warnings visible.
+
+## K67 Preflight Follow-Up
+
+K67 turns the K66 schema and validation hints into an executable preflight
+report:
+
+```bash
+python -m sp63_core input-preflight --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/input_preflight --json
+```
+
+The preflight command still does not calculate a design. It checks input JSON
+shape and engineering sanity before workflow execution, writes JSON/Markdown
+reports, and keeps `ml_ready_for_project_use = false`.

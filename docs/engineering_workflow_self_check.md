@@ -95,3 +95,7 @@ archive validation, or engineer review.
 K66 adds input-form schema metadata for future UI/wrapper validation hints. The
 self-check remains the executable workflow smoke test; the schema is not a
 calculation or approval mechanism.
+
+K67 adds `input-preflight` as the executable input JSON screening step. It can
+be run before self-check or workflow commands, but it remains a report-only
+gate and does not certify calculations or project use.

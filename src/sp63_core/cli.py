@@ -119,6 +119,7 @@ from sp63_core.workflows import (
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_self_check,
+    run_input_preflight,
 )
 
 
@@ -557,6 +558,36 @@ def build_parser() -> ArgumentParser:
         help="print Markdown schema",
     )
     input_form_schema.set_defaults(handler=_handle_input_form_schema)
+
+    input_preflight = subparsers.add_parser(
+        "input-preflight",
+        help="validate an engineering input JSON before running workflow commands",
+    )
+    input_preflight.add_argument(
+        "--input-json",
+        required=True,
+        help="engineering input JSON file to validate",
+    )
+    input_preflight.add_argument(
+        "--output-dir",
+        help="output directory for input_preflight_report.json and input_preflight_report.md",
+    )
+    input_preflight.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write preflight files even when --output-dir is provided",
+    )
+    input_preflight.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON summary",
+    )
+    input_preflight.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown preflight report",
+    )
+    input_preflight.set_defaults(handler=_handle_input_preflight)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2133,6 +2164,61 @@ def _handle_input_form_schema(args: Namespace) -> int:
     print(f"output_dir: {result.output_dir}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_input_preflight(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = run_input_preflight(
+        Path(args.input_json),
+        output_dir=output_dir,
+    )
+    payload = {
+        "command": "input-preflight",
+        "status": result.status,
+        "preflight_status": result.preflight_status,
+        "input_json_path": result.input_json_path,
+        "output_dir": result.output_dir,
+        "checked_fields": result.checked_fields,
+        "required_fields": result.required_fields,
+        "optional_fields": result.optional_fields,
+        "missing_required_fields": result.missing_required_fields,
+        "unknown_fields": result.unknown_fields,
+        "issue_count": result.issue_count,
+        "error_count": result.error_count,
+        "warning_count": result.warning_count,
+        "issues": [asdict(issue) for issue in result.issues],
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Input JSON preflight")
+    print(f"status: {result.status}")
+    print(f"preflight_status: {result.preflight_status}")
+    print(f"input_json_path: {result.input_json_path}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"checked_fields: {len(result.checked_fields)}")
+    print(f"issue_count: {result.issue_count}")
+    print(f"error_count: {result.error_count}")
+    print(f"warning_count: {result.warning_count}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     return 0
 
 

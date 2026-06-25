@@ -86,3 +86,15 @@ K66 adds `input-form-schema` as metadata for a future form that could launch the
 static-report workflow. The schema defines fields, validation hints, and
 mandatory warnings, but it does not implement a UI and does not perform
 calculations.
+
+## K67 Input Preflight Link
+
+K67 adds `input-preflight` as a report-only input screening step before the
+workflow creates report folders and static indexes:
+
+```bash
+python -m sp63_core input-preflight --input-json <input.json> --output-dir <preflight-dir> --json
+```
+
+The static index may link to preflight artifacts in a future step, but K67 does
+not alter index generation.

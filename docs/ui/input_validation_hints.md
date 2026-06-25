@@ -40,3 +40,15 @@ inside `sp63_core`.
 The future form must never show advisory ML output as a design decision. Any UI
 or wrapper must keep deterministic SP63 verification and engineer review
 visually primary.
+
+## K67 Executable Preflight
+
+K67 adds `input-preflight` as an executable report over these hints:
+
+```bash
+python -m sp63_core input-preflight --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/input_preflight --json
+```
+
+Preflight can return `pass`, `review_required`, or `fail` before the engineering
+workflow starts. It is still not a calculation and does not approve project
+use.

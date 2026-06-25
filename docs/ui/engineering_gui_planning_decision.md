@@ -93,6 +93,13 @@ fields, validation hints, and mandatory warnings while keeping the CLI/workflow
 layer authoritative. It does not implement UI and keeps
 `ml_ready_for_project_use = false`.
 
+## K67 Preflight Follow-Up
+
+K67 adds `input-preflight`, an executable input validation report that can be
+called by a future launcher before `engineering-workflow`. It writes
+`input_preflight_report.json` and `input_preflight_report.md`, but still does
+not implement UI or perform design calculations.
+
 ## Limitations
 
 K64 does not implement an interface, does not certify design decisions, does

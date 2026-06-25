@@ -973,3 +973,21 @@ K66 does not implement UI, start a server, run calculations, change formulas,
 change material values, change reinforcement selection, or approve ML for
 project use. `ml_ready_for_project_use` remains false and engineer review
 remains mandatory.
+
+## K67 Input JSON Preflight
+
+K67 adds `input-preflight` and `workflows/input_preflight.py` as an early
+engineering validation report for input JSON files:
+
+```bash
+python -m sp63_core input-preflight --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/input_preflight --json
+```
+
+The preflight report checks JSON shape, required fields, unknown fields,
+numeric input sanity, catalog material class names, optional ML-readiness
+paths, and review conditions such as `Mser > M`.
+
+K67 is reporting only. It does not execute design calculations, change
+formulas, change material values, change reinforcement selection, implement UI,
+or make ML a calculator. Deterministic SP63 checks, material verification,
+external validation, and engineer review remain mandatory.

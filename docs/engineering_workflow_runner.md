@@ -164,3 +164,18 @@ python -m sp63_core input-form-schema --output-dir reports/input_form_schema --j
 
 The schema documents input fields and validation hints only. It does not change
 the engineering workflow runner and does not approve ML for project use.
+
+## K67 Input Preflight
+
+Run preflight before launching the workflow when reviewing a new input JSON:
+
+```bash
+python -m sp63_core input-preflight \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/input_preflight \
+  --json
+```
+
+Preflight catches missing fields, unknown fields, invalid numeric values,
+unsupported material classes, and review warnings before the deterministic
+workflow starts. It does not perform calculations or certify the input.
