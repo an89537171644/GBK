@@ -143,6 +143,11 @@ from sp63_core.workflows.v09_final_audit import (
     V09FinalAuditResult,
     build_v09_final_audit,
 )
+from sp63_core.workflows.v09_freeze_report import (
+    V09FreezeReportResult,
+    build_v09_freeze_report,
+    render_v09_freeze_report_markdown,
+)
 from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
@@ -190,6 +195,7 @@ __all__ = [
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
     "V09FinalAuditResult",
+    "V09FreezeReportResult",
     "V09ReadinessResult",
     "V10GapReportResult",
     "EngineeringWorkflowResult",
@@ -218,12 +224,14 @@ __all__ = [
     "build_traceability_matrix",
     "build_user_manual_index",
     "build_v09_final_audit",
+    "build_v09_freeze_report",
     "build_v09_readiness_gate",
     "build_v10_gap_report",
     "render_docs_audit_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
+    "render_v09_freeze_report_markdown",
     "render_v10_gap_report_markdown",
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",

@@ -136,6 +136,7 @@ from sp63_core.workflows import (
     build_traceability_matrix,
     build_user_manual_index,
     build_v09_final_audit,
+    build_v09_freeze_report,
     build_v09_readiness_gate,
     build_v10_gap_report,
     render_cli_status_contract_markdown,
@@ -144,6 +145,7 @@ from sp63_core.workflows import (
     render_material_verification_closure_markdown,
     render_self_check_markdown,
     render_traceability_matrix_markdown,
+    render_v09_freeze_report_markdown,
     render_v10_gap_report_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
@@ -1077,6 +1079,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown v1.0 gap report",
     )
     v10_gap_report.set_defaults(handler=_handle_v10_gap_report)
+
+    v09_freeze_report = subparsers.add_parser(
+        "v09-freeze-report",
+        help="build final v0.9 freeze report",
+    )
+    v09_freeze_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 freeze report artifacts",
+    )
+    v09_freeze_report.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 freeze version label",
+    )
+    v09_freeze_report.add_argument("--json", action="store_true", help="print JSON output")
+    v09_freeze_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v0.9 freeze report",
+    )
+    v09_freeze_report.set_defaults(handler=_handle_v09_freeze_report)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3492,6 +3516,38 @@ def _handle_v10_gap_report(args: Namespace) -> int:
     print(f"ready_for_v10: {result.ready_for_v10}")
     print(f"remaining_steps_estimate: {result.remaining_steps_estimate}")
     print(f"output_dir: {result.output_dir}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_freeze_report(args: Namespace) -> int:
+    result = build_v09_freeze_report(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-freeze-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_freeze_report_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 freeze report")
+    print(f"status: {result.status}")
+    print(f"freeze_status: {result.freeze_status}")
+    print(f"version: {result.version}")
+    print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     if result.errors:
