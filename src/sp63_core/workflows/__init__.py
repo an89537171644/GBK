@@ -49,6 +49,11 @@ from sp63_core.workflows.external_validation_evidence_package import (
     ExternalValidationEvidencePackageResult,
     build_external_validation_evidence_package,
 )
+from sp63_core.workflows.freeze_remediation_plan import (
+    FreezeRemediationPlanResult,
+    build_freeze_remediation_plan,
+    render_freeze_remediation_plan_markdown,
+)
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
     build_engineering_gui_planning_decision,
@@ -171,6 +176,7 @@ __all__ = [
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "ExternalValidationEvidencePackageResult",
+    "FreezeRemediationPlanResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
@@ -207,6 +213,7 @@ __all__ = [
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_external_validation_evidence_package",
+    "build_freeze_remediation_plan",
     "build_release_candidate_report",
     "build_release_artifact_manifest",
     "build_release_bundle",
@@ -228,6 +235,7 @@ __all__ = [
     "build_v09_readiness_gate",
     "build_v10_gap_report",
     "render_docs_audit_markdown",
+    "render_freeze_remediation_plan_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",

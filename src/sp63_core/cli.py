@@ -121,6 +121,7 @@ from sp63_core.workflows import (
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_external_validation_evidence_package,
+    build_freeze_remediation_plan,
     build_input_form_schema,
     build_json_output_contract,
     build_launcher_scripts_package,
@@ -141,6 +142,7 @@ from sp63_core.workflows import (
     build_v10_gap_report,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
+    render_freeze_remediation_plan_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
@@ -1101,6 +1103,32 @@ def build_parser() -> ArgumentParser:
         help="print Markdown v0.9 freeze report",
     )
     v09_freeze_report.set_defaults(handler=_handle_v09_freeze_report)
+
+    freeze_remediation_plan = subparsers.add_parser(
+        "freeze-remediation-plan",
+        help="build a v0.9 freeze remediation plan",
+    )
+    freeze_remediation_plan.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for freeze remediation artifacts",
+    )
+    freeze_remediation_plan.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by current freeze report",
+    )
+    freeze_remediation_plan.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    freeze_remediation_plan.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown remediation plan",
+    )
+    freeze_remediation_plan.set_defaults(handler=_handle_freeze_remediation_plan)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3547,6 +3575,38 @@ def _handle_v09_freeze_report(args: Namespace) -> int:
     print(f"version: {result.version}")
     print(f"critical_failed_count: {result.critical_failed_count}")
     print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_freeze_remediation_plan(args: Namespace) -> int:
+    result = build_freeze_remediation_plan(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "freeze-remediation-plan",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_freeze_remediation_plan_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Freeze remediation plan")
+    print(f"status: {result.status}")
+    print(f"plan_status: {result.plan_status}")
+    print(f"version: {result.version}")
+    print(f"blocker_count: {result.blocker_count}")
+    print(f"acceptable_review_gate_count: {result.acceptable_review_gate_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
