@@ -72,6 +72,7 @@
 | `workflows/input_form_schema.py` | implemented future UI input JSON form schema and validation hints | yes | yes | use as metadata only; no UI implementation, no calculations, and no ML project-use approval |
 | `workflows/input_preflight.py` | implemented input JSON preflight validator and engineering validation report | yes | yes | run before engineering workflow or future GUI launcher; report only and no calculations |
 | `workflows/static_input_form_preview.py` | implemented static HTML preview of the input form schema | yes | yes | use as read-only preview only; no calculations, JavaScript calculator, server, or project approval |
+| `workflows/diagnostics_catalog.py` | implemented human-friendly EN/RU diagnostics catalog for workflow errors and warnings | yes | yes | use as guidance metadata only; deterministic checks and engineer review remain mandatory |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

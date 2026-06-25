@@ -1074,3 +1074,19 @@ and marks archive validation and ZIP export as `skipped`.
 This is a safety gate only. It does not change formulas, materials, selection
 logic, or ML policy. Engineer review and deterministic SP63 checks remain
 mandatory.
+
+## K70 diagnostics catalog
+
+K70 adds a workflow-facing diagnostics catalog:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+python -m sp63_core diagnostics-catalog --markdown
+python -m sp63_core diagnostics-catalog --output-dir reports/diagnostics_catalog --json
+```
+
+The catalog contains human-readable EN/RU diagnostic messages, severity,
+recommended actions, categories, and related CLI commands for preflight,
+geometry, materials, loads, workflow, archive, ZIP, ML-readiness, protected
+files, and release-candidate review. It is metadata only and does not perform
+calculations or approve project use.

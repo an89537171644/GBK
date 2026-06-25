@@ -1,5 +1,9 @@
 """Workflow orchestration helpers for SP63 engineering review flows."""
 
+from sp63_core.workflows.diagnostics_catalog import (
+    DiagnosticsCatalogResult,
+    build_diagnostics_catalog,
+)
 from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
     run_engineering_workflow,
@@ -39,6 +43,7 @@ from sp63_core.workflows.static_report_index import (
 __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
+    "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
     "InputPreflightResult",
@@ -48,6 +53,7 @@ __all__ = [
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
+    "build_diagnostics_catalog",
     "build_input_form_schema",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",

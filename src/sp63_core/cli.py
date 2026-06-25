@@ -112,6 +112,7 @@ from sp63_core.validation import (
     validate_dataset_cases,
 )
 from sp63_core.workflows import (
+    build_diagnostics_catalog,
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
     build_input_form_schema,
@@ -619,6 +620,27 @@ def build_parser() -> ArgumentParser:
         help="print Markdown review note",
     )
     input_form_preview.set_defaults(handler=_handle_input_form_preview)
+
+    diagnostics_catalog = subparsers.add_parser(
+        "diagnostics-catalog",
+        help="write or print human-friendly workflow diagnostics catalog",
+    )
+    diagnostics_catalog.add_argument(
+        "--output-dir",
+        help="output directory for diagnostics_catalog.json and diagnostics_catalog.md",
+    )
+    diagnostics_catalog.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write catalog files even when --output-dir is provided",
+    )
+    diagnostics_catalog.add_argument("--json", action="store_true", help="print JSON summary")
+    diagnostics_catalog.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown diagnostics catalog",
+    )
+    diagnostics_catalog.set_defaults(handler=_handle_diagnostics_catalog)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2290,6 +2312,46 @@ def _handle_input_form_preview(args: Namespace) -> int:
     print(f"output_path: {result.output_path}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
+    return 0
+
+
+def _handle_diagnostics_catalog(args: Namespace) -> int:
+    output_dir = None
+    if args.output_dir and not args.no_output_files:
+        output_dir = Path(args.output_dir)
+    result = build_diagnostics_catalog(output_dir=output_dir)
+    payload = {
+        "command": "diagnostics-catalog",
+        "status": result.status,
+        "catalog_status": result.catalog_status,
+        "diagnostics_count": result.diagnostics_count,
+        "categories": result.categories,
+        "diagnostics": result.json_data["diagnostics"],
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("Diagnostics catalog")
+    print(f"status: {result.status}")
+    print(f"catalog_status: {result.catalog_status}")
+    print(f"diagnostics_count: {result.diagnostics_count}")
+    print(f"categories: {', '.join(result.categories)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     return 0
 
 

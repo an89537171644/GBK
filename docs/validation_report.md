@@ -1254,3 +1254,20 @@ compatible.
 
 K69 does not change formulas, material values, reinforcement selection,
 deterministic checks, UI policy, or ML safety policy.
+
+## K70 Diagnostics Catalog Validation
+
+K70 adds validation coverage for `diagnostics-catalog`:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+python -m sp63_core diagnostics-catalog --markdown
+python -m sp63_core diagnostics-catalog --output-dir reports/diagnostics_catalog_smoke --json
+```
+
+The tests verify required diagnostic codes, required categories, severity
+values, EN/RU messages, recommended actions, output JSON/Markdown files, CLI
+JSON/Markdown behavior, safety flags, and absence of formula-module imports.
+
+K70 is diagnostics metadata only. It does not change formulas, material values,
+reinforcement selection, deterministic checks, UI policy, or ML safety policy.

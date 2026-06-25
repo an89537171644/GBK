@@ -206,3 +206,16 @@ workflow may continue, but `workflow_status` remains `review_required`.
 
 The static index links the preflight reports when they exist. Older workflow
 folders without preflight reports remain valid.
+
+## K70 Diagnostics Catalog
+
+Workflow-facing user messages can reference the K70 diagnostics catalog:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+```
+
+The catalog provides EN/RU titles, messages, recommended actions, and related
+commands for common workflow, archive, ZIP, preflight, material, ML-readiness,
+protected-file, and release-candidate diagnostics. It is guidance metadata only
+and does not perform calculations.

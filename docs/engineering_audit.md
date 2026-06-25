@@ -1026,3 +1026,21 @@ The static index links to `input_preflight_report.json` and
 `input_preflight_report.md` when they exist. K69 does not change formulas,
 materials, reinforcement selection, validation/external.py, UI policy, or ML
 safety policy. Engineer review remains mandatory and ML remains advisory-only.
+
+## K70 User-Friendly Diagnostics Catalog
+
+K70 adds `diagnostics-catalog` and `workflows/diagnostics_catalog.py` as a
+static EN/RU catalog of workflow-facing diagnostics:
+
+```bash
+python -m sp63_core diagnostics-catalog --json
+```
+
+The catalog covers input preflight, geometry, materials, loads, workflow,
+archive, ZIP, ML-readiness, protected files, and release-candidate review. Each
+entry includes severity, messages, recommended actions, and a related CLI
+command.
+
+K70 is guidance metadata only. It does not execute calculations, change
+formulas, change material values, change reinforcement selection, implement UI,
+or make ML a calculator.
