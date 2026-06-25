@@ -41,6 +41,11 @@ OPTIONAL_ML_READINESS_FILES = (
     "ml_readiness/README_REVIEW.md",
 )
 
+OPTIONAL_PREFLIGHT_FILES = (
+    "input_preflight_report.json",
+    "input_preflight_report.md",
+)
+
 ENGINEER_CHECKLIST = (
     "deterministic report reviewed",
     "archive validation pass",
@@ -116,7 +121,11 @@ def build_static_workflow_report_index(
     )
     linked_files = tuple(
         relative
-        for relative in (*EXPECTED_WORKFLOW_FILES, *OPTIONAL_ML_READINESS_FILES)
+        for relative in (
+            *OPTIONAL_PREFLIGHT_FILES,
+            *EXPECTED_WORKFLOW_FILES,
+            *OPTIONAL_ML_READINESS_FILES,
+        )
         if (workflow_path / relative).exists()
     )
 
@@ -282,6 +291,9 @@ def _render_static_index_html(
 def _status_rows(summary: dict[str, Any]) -> list[str]:
     fields = (
         "workflow_status",
+        "preflight_status",
+        "preflight_errors_count",
+        "preflight_warnings_count",
         "deterministic_report_status",
         "archive_validation_status",
         "zip_status",

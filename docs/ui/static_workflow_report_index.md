@@ -52,6 +52,8 @@ The index links to existing files when present:
 - `workflow_summary.json`;
 - `workflow_summary.md`;
 - `README_WORKFLOW.md`;
+- optional `input_preflight_report.json`;
+- optional `input_preflight_report.md`;
 - optional `ml_readiness/` review artifacts.
 
 Missing ML readiness files produce an informational warning and do not fail the
@@ -96,5 +98,7 @@ workflow creates report folders and static indexes:
 python -m sp63_core input-preflight --input-json <input.json> --output-dir <preflight-dir> --json
 ```
 
-The static index may link to preflight artifacts in a future step, but K67 does
-not alter index generation.
+K69 updates the workflow/index integration so `index.html` links to
+`input_preflight_report.json` and `input_preflight_report.md` when the workflow
+is run with `--with-preflight`. Missing preflight reports do not make older
+workflow folders invalid.

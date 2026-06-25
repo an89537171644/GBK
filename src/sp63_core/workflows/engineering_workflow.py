@@ -23,6 +23,7 @@ from sp63_core.report import (
     validate_report_bundle,
     write_report_manifest_json,
 )
+from sp63_core.workflows.input_preflight import run_input_preflight
 from sp63_core.workflows.static_report_index import build_static_workflow_report_index
 
 WORKFLOW_WARNING = (
@@ -55,6 +56,11 @@ class EngineeringWorkflowResult:
     deterministic_checks_required: bool = True
     index_status: str | None = None
     index_path: str | None = None
+    preflight_status: str | None = None
+    preflight_report_json_path: str | None = None
+    preflight_report_markdown_path: str | None = None
+    preflight_errors_count: int = 0
+    preflight_warnings_count: int = 0
 
 
 def run_engineering_workflow(
@@ -68,6 +74,7 @@ def run_engineering_workflow(
     include_ml_readiness: bool = False,
     create_zip: bool = True,
     with_index: bool = False,
+    with_preflight: bool = False,
 ) -> EngineeringWorkflowResult:
     """Run the deterministic report workflow and optional advisory ML readiness."""
     input_path = Path(input_json_path)
@@ -90,15 +97,43 @@ def run_engineering_workflow(
     ml_ready_for_engineering_review: bool | None = None
     ml_ready_for_project_use: bool | None = False
 
-    try:
-        report = _build_and_write_deterministic_report(
-            input_json_path=input_path,
-            output_dir=deterministic_dir,
-            files_created=files_created,
+    preflight_status: str | None = None
+    preflight_report_json_path: str | None = None
+    preflight_report_markdown_path: str | None = None
+    preflight_errors_count = 0
+    preflight_warnings_count = 0
+
+    if with_preflight:
+        preflight_result = run_input_preflight(input_path, output_dir=root_output)
+        preflight_status = preflight_result.preflight_status
+        preflight_report_json_path = str(root_output / "input_preflight_report.json")
+        preflight_report_markdown_path = str(root_output / "input_preflight_report.md")
+        preflight_errors_count = preflight_result.error_count
+        preflight_warnings_count = preflight_result.warning_count
+        _append_existing(
+            files_created,
+            (
+                root_output / "input_preflight_report.json",
+                root_output / "input_preflight_report.md",
+            ),
         )
-        deterministic_report_status = report.status
-    except (OSError, ValueError) as exc:
-        errors.append(f"deterministic report failed: {exc}")
+        warnings.extend(f"preflight: {warning}" for warning in preflight_result.warnings)
+        errors.extend(f"preflight: {error}" for error in preflight_result.errors)
+
+    if preflight_status == "fail":
+        deterministic_report_status = "skipped"
+        archive_validation_status = "skipped"
+        zip_status = "skipped"
+    else:
+        try:
+            report = _build_and_write_deterministic_report(
+                input_json_path=input_path,
+                output_dir=deterministic_dir,
+                files_created=files_created,
+            )
+            deterministic_report_status = report.status
+        except (OSError, ValueError) as exc:
+            errors.append(f"deterministic report failed: {exc}")
 
     if not errors:
         archive_validation = validate_report_bundle(deterministic_dir)
@@ -118,7 +153,9 @@ def run_engineering_workflow(
             files_created.append(str(zip_path))
 
     if include_ml_readiness:
-        if dataset_path is None:
+        if preflight_status == "fail":
+            ml_readiness_status = "skipped"
+        elif dataset_path is None:
             ml_readiness_status = "not_run"
             warnings.append(ML_DATASET_MISSING_WARNING)
         else:
@@ -152,6 +189,7 @@ def run_engineering_workflow(
         zip_status=zip_status,
         ml_readiness_status=ml_readiness_status,
         include_ml_readiness=include_ml_readiness,
+        preflight_status=preflight_status,
     )
 
     summary_json_path = root_output / "workflow_summary.json"
@@ -179,6 +217,11 @@ def run_engineering_workflow(
         requires_engineer_review=True,
         ml_is_advisory_only=True,
         deterministic_checks_required=True,
+        preflight_status=preflight_status,
+        preflight_report_json_path=preflight_report_json_path,
+        preflight_report_markdown_path=preflight_report_markdown_path,
+        preflight_errors_count=preflight_errors_count,
+        preflight_warnings_count=preflight_warnings_count,
     )
 
     summary_json_path.write_text(
@@ -356,9 +399,14 @@ def _workflow_status(
     zip_status: str,
     ml_readiness_status: str | None,
     include_ml_readiness: bool,
+    preflight_status: str | None,
 ) -> str:
+    if preflight_status == "fail":
+        return "fail"
     if errors or archive_validation_status == "fail" or zip_status == "fail":
         return "fail"
+    if preflight_status == "review_required":
+        return "review_required"
     if deterministic_report_status == "fail":
         return "review_required"
     if include_ml_readiness and ml_readiness_status in {"fail", "review_required", "not_run"}:
@@ -405,6 +453,11 @@ def _render_workflow_summary_markdown(result: EngineeringWorkflowResult) -> str:
         "## Statuses",
         "",
         f"- workflow_status: `{result.workflow_status}`",
+        f"- preflight_status: `{result.preflight_status}`",
+        f"- preflight_errors_count: `{result.preflight_errors_count}`",
+        f"- preflight_warnings_count: `{result.preflight_warnings_count}`",
+        f"- preflight_report_json_path: `{result.preflight_report_json_path}`",
+        f"- preflight_report_markdown_path: `{result.preflight_report_markdown_path}`",
         f"- deterministic_report_status: `{result.deterministic_report_status}`",
         f"- archive_validation_status: `{result.archive_validation_status}`",
         f"- zip_status: `{result.zip_status}`",
@@ -456,6 +509,8 @@ def _render_workflow_readme(
         "",
         f"- deterministic report bundle: `{deterministic_dir}`",
         f"- deterministic report ZIP: `{zip_path}`",
+        "- input preflight report: `input_preflight_report.json` and "
+        "`input_preflight_report.md` when `--with-preflight` is used",
         "- workflow summary: `workflow_summary.json` and `workflow_summary.md`",
         "- workflow review guide: `README_WORKFLOW.md`",
     ]
@@ -495,6 +550,9 @@ def _render_workflow_readme(
             "## Current Workflow Status",
             "",
             f"- workflow_status: `{result.workflow_status}`",
+            f"- preflight_status: `{result.preflight_status}`",
+            f"- preflight_errors_count: `{result.preflight_errors_count}`",
+            f"- preflight_warnings_count: `{result.preflight_warnings_count}`",
             f"- deterministic_report_status: `{result.deterministic_report_status}`",
             f"- archive_validation_status: `{result.archive_validation_status}`",
             f"- zip_status: `{result.zip_status}`",

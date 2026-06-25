@@ -58,3 +58,9 @@ use.
 K68 adds `input-form-preview`, which renders these fields and hints as static
 HTML. The preview is safe to open as a file and contains no JavaScript
 calculation logic.
+
+## K69 Workflow Gate
+
+K69 adds `engineering-workflow --with-preflight`, which runs the executable
+preflight before deterministic report generation. Blocking input errors stop
+the workflow before calculation and are recorded in `workflow_summary.json`.

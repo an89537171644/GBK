@@ -1237,3 +1237,20 @@ imports.
 K68 is static preview work only. It does not implement a GUI, web server,
 JavaScript calculations, project approval, formula changes, or material value
 changes.
+
+## K69 Workflow Preflight Index Integration Validation
+
+K69 adds validation coverage for `engineering-workflow --with-preflight`:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_full_smoke --with-preflight --with-index --json
+```
+
+The tests verify that preflight JSON and Markdown reports are created,
+`workflow_summary.json` records `preflight_status` and preflight issue counts,
+`index.html` links to preflight reports, invalid input stops deterministic
+report generation, and workflow behavior without `--with-preflight` remains
+compatible.
+
+K69 does not change formulas, material values, reinforcement selection,
+deterministic checks, UI policy, or ML safety policy.

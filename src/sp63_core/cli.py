@@ -408,6 +408,11 @@ def build_parser() -> ArgumentParser:
         action="store_true",
         help="create a static HTML index for generated workflow files",
     )
+    engineering_workflow.add_argument(
+        "--with-preflight",
+        action="store_true",
+        help="run input JSON preflight before deterministic workflow",
+    )
     engineering_workflow.add_argument("--json", action="store_true", help="print JSON output")
     engineering_workflow.add_argument(
         "--markdown",
@@ -1956,6 +1961,7 @@ def _handle_engineering_workflow(args: Namespace) -> int:
         include_ml_readiness=args.include_ml_readiness,
         create_zip=not args.no_zip,
         with_index=args.with_index,
+        with_preflight=args.with_preflight,
     )
     payload = {
         "command": "engineering-workflow",
@@ -1972,6 +1978,7 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print("Engineering workflow")
     print(f"status: {result.status}")
     print(f"workflow_status: {result.workflow_status}")
+    print(f"preflight_status: {result.preflight_status}")
     print(f"deterministic_report_status: {result.deterministic_report_status}")
     print(f"archive_validation_status: {result.archive_validation_status}")
     print(f"zip_status: {result.zip_status}")

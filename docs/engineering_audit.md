@@ -1005,3 +1005,24 @@ The preview displays fields, units, defaults, validation hints, and safety
 warnings only. It does not perform calculations, does not add JavaScript
 calculators, does not start a web server, does not implement a GUI framework,
 and does not approve project use. `ml_ready_for_project_use` remains false.
+
+## K69 Workflow Preflight Index Integration
+
+K69 adds `engineering-workflow --with-preflight` so the K67 preflight report can
+run inside the reproducible engineering workflow before deterministic report
+generation:
+
+```bash
+python -m sp63_core engineering-workflow --input-json docs/reports/examples/rectangular_design_input_example.json --output-dir reports/engineering_workflow_full_smoke --with-preflight --with-index --json
+```
+
+If preflight fails, deterministic calculation is skipped and the workflow
+summary records `deterministic_report_status = skipped`,
+`archive_validation_status = skipped`, and `zip_status = skipped`. If preflight
+requires review, deterministic workflow may run but the workflow remains
+`review_required`.
+
+The static index links to `input_preflight_report.json` and
+`input_preflight_report.md` when they exist. K69 does not change formulas,
+materials, reinforcement selection, validation/external.py, UI policy, or ML
+safety policy. Engineer review remains mandatory and ML remains advisory-only.

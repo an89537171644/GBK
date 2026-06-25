@@ -1050,3 +1050,27 @@ The command writes `input_form_preview.html`, `input_form_preview.json`, and
 required flags, validation hints, and warnings only. It contains no JavaScript
 calculations, does not start a web server, does not approve a design, and keeps
 `ml_ready_for_project_use = false`.
+
+## K69 workflow preflight integration
+
+K69 allows the engineering workflow runner to run input preflight before
+deterministic report generation:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_full_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+When `--with-preflight` is used, the workflow writes
+`input_preflight_report.json` and `input_preflight_report.md`, records
+`preflight_status` in `workflow_summary.json`, and links the preflight reports
+from `index.html`. A failing preflight stops deterministic report generation
+and marks archive validation and ZIP export as `skipped`.
+
+This is a safety gate only. It does not change formulas, materials, selection
+logic, or ML policy. Engineer review and deterministic SP63 checks remain
+mandatory.

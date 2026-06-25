@@ -64,11 +64,11 @@
 | `ml/external_readiness.py` | implemented external validation awareness for ML readiness | yes | yes | provide external validation and material verification CSVs before engineering ML review |
 | `ml/material_readiness.py` | implemented material verification coverage readiness for report-derived ML datasets | yes | yes | provide complete engineer-filled material verification CSV before engineering ML review |
 | `ml/engineering_readiness_bundle.py` | implemented aggregated engineering ML readiness bundle | yes | yes | review dataset, external validation, material verification, benchmark, and proposal evidence before ML research use |
-| `workflows/engineering_workflow.py` | implemented end-to-end engineering workflow runner for deterministic reports, archive validation, ZIP, and optional ML readiness | yes | yes | use only as review orchestration; engineer review and deterministic SP63 checks remain mandatory |
+| `workflows/engineering_workflow.py` | implemented end-to-end engineering workflow runner with optional input preflight, deterministic reports, archive validation, ZIP, static index, and optional ML readiness | yes | yes | use only as review orchestration; engineer review and deterministic SP63 checks remain mandatory |
 | `workflows/self_check.py` | implemented engineering workflow self-check and quickstart readiness layer | yes | yes | run before handoff; self-check does not certify calculations or approve project use |
 | `workflows/interface_contract.py` | implemented future GUI/desktop wrapper interface contract | yes | yes | use as planning contract only; no UI implementation and no project approval |
 | `workflows/gui_planning.py` | implemented planning-only GUI technology decision with CLI-first static report recommendation | yes | yes | K65 may add static report index/launcher planning without heavy UI dependencies |
-| `workflows/static_report_index.py` | implemented static HTML workflow report index over generated engineering workflow artifacts | yes | yes | use as static navigation only; no calculations, server, GUI framework, or project approval |
+| `workflows/static_report_index.py` | implemented static HTML workflow report index over generated engineering workflow artifacts, including optional preflight report links | yes | yes | use as static navigation only; no calculations, server, GUI framework, or project approval |
 | `workflows/input_form_schema.py` | implemented future UI input JSON form schema and validation hints | yes | yes | use as metadata only; no UI implementation, no calculations, and no ML project-use approval |
 | `workflows/input_preflight.py` | implemented input JSON preflight validator and engineering validation report | yes | yes | run before engineering workflow or future GUI launcher; report only and no calculations |
 | `workflows/static_input_form_preview.py` | implemented static HTML preview of the input form schema | yes | yes | use as read-only preview only; no calculations, JavaScript calculator, server, or project approval |
@@ -77,4 +77,4 @@
 | `validation_report.md` | draft validation report | yes | yes | engineer review |
 | transverse reinforcement selection | implemented draft | yes | yes | engineer review of selected schemes |
 | ML | experimental baseline sandbox implemented | yes | yes | advisory only; deterministic checks mandatory |
-| UI | planning contract, technology decision, static report index, input form schema, input preflight reporting, and static input form preview only | yes | yes | K68 adds static preview only; full UI implementation remains a separate approved step |
+| UI | planning contract, technology decision, static report index, input form schema, input preflight reporting, workflow preflight integration, and static input form preview only | yes | yes | full UI implementation remains a separate approved step |

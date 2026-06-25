@@ -179,3 +179,30 @@ python -m sp63_core input-preflight \
 Preflight catches missing fields, unknown fields, invalid numeric values,
 unsupported material classes, and review warnings before the deterministic
 workflow starts. It does not perform calculations or certify the input.
+
+## K69 Integrated Preflight Gate
+
+K69 connects preflight to the engineering workflow runner:
+
+```bash
+python -m sp63_core engineering-workflow \
+  --input-json docs/reports/examples/rectangular_design_input_example.json \
+  --output-dir reports/engineering_workflow_full_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+When enabled, the workflow writes `input_preflight_report.json` and
+`input_preflight_report.md` in the workflow output folder before deterministic
+report generation. `workflow_summary.json` records `preflight_status`,
+`preflight_report_json_path`, `preflight_report_markdown_path`,
+`preflight_errors_count`, and `preflight_warnings_count`.
+
+If preflight returns `fail`, deterministic calculation is not run and
+`deterministic_report_status`, `archive_validation_status`, and `zip_status`
+are marked `skipped`. If preflight returns `review_required`, deterministic
+workflow may continue, but `workflow_status` remains `review_required`.
+
+The static index links the preflight reports when they exist. Older workflow
+folders without preflight reports remain valid.
