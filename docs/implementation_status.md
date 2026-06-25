@@ -75,6 +75,7 @@
 | `workflows/input_preflight.py` | implemented input JSON preflight validator and engineering validation report | yes | yes | run before engineering workflow or future GUI launcher; report only and no calculations |
 | `workflows/static_input_form_preview.py` | implemented static HTML preview of the input form schema | yes | yes | use as read-only preview only; no calculations, JavaScript calculator, server, or project approval |
 | `workflows/diagnostics_catalog.py` | implemented human-friendly EN/RU diagnostics catalog for workflow errors and warnings | yes | yes | use as guidance metadata only; deterministic checks and engineer review remain mandatory |
+| `workflows/docs_audit.py` | implemented documentation link and CLI command audit for v0.9 readiness documentation | yes | yes | use as completeness check only; audit does not approve project use |
 | `workflows/evidence_templates.py` | implemented external/material evidence templates package with SHA256 manifest | yes | yes | engineer must fill templates manually; package does not approve project use |
 | `workflows/protected_files_guard.py` | implemented protected files guard for formula/material/external validation release checks with GitHub Actions ref handling | yes | yes | use as review aid only; guard does not approve merge or project use |
 | `.github/workflows/safety.yml` | implemented CI safety workflow for pytest, ruff, golden/manual/external validation, protected-files guard, and release-candidate smoke | yes | yes | keep fetch-depth 0 so protected-files guard has reliable base refs |

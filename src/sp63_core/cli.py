@@ -113,6 +113,7 @@ from sp63_core.validation import (
 )
 from sp63_core.workflows import (
     build_diagnostics_catalog,
+    build_docs_audit_report,
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
     build_evidence_templates_package,
@@ -122,6 +123,7 @@ from sp63_core.workflows import (
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
+    render_docs_audit_markdown,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_batch,
@@ -684,6 +686,18 @@ def build_parser() -> ArgumentParser:
         help="print Markdown diagnostics catalog",
     )
     diagnostics_catalog.set_defaults(handler=_handle_diagnostics_catalog)
+
+    docs_audit = subparsers.add_parser(
+        "docs-audit",
+        help="audit local documentation links and required CLI examples",
+    )
+    docs_audit.add_argument(
+        "--output-dir",
+        help="optional output directory for docs_audit_report.json/md",
+    )
+    docs_audit.add_argument("--json", action="store_true", help="print JSON output")
+    docs_audit.add_argument("--markdown", action="store_true", help="print Markdown output")
+    docs_audit.set_defaults(handler=_handle_docs_audit)
 
     evidence_templates = subparsers.add_parser(
         "evidence-templates",
@@ -2520,6 +2534,37 @@ def _handle_diagnostics_catalog(args: Namespace) -> int:
     print(f"catalog_status: {result.catalog_status}")
     print(f"diagnostics_count: {result.diagnostics_count}")
     print(f"categories: {', '.join(result.categories)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_docs_audit(args: Namespace) -> int:
+    result = build_docs_audit_report(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "docs-audit",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(render_docs_audit_markdown(result), end="")
+        return 0
+
+    print("Documentation audit")
+    print(f"status: {result.status}")
+    print(f"docs_audit_status: {result.docs_audit_status}")
+    print(f"markdown_files_count: {result.markdown_files_count}")
+    print(f"local_link_count: {result.local_link_count}")
+    print(f"missing_local_links: {len(result.missing_local_links)}")
+    print(f"required_commands_missing: {len(result.required_commands_missing)}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     if result.errors:

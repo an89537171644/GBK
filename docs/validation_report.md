@@ -1406,3 +1406,19 @@ covered.
 K78 is a project handoff scaffold only. It does not run calculations, change
 formulas, change material values, update the material catalog, include full
 SP 63 text, include private documents, implement UI, or make ML a calculator.
+
+## K79 Documentation Audit Validation
+
+K79 adds validation coverage for `docs-audit`:
+
+```bash
+python -m sp63_core docs-audit --json
+python -m sp63_core docs-audit --output-dir reports/docs_audit_smoke --json
+```
+
+The tests verify that required documentation files exist, local Markdown links
+resolve, required CLI examples are present, JSON/Markdown report files can be
+written, CLI JSON works, and direct formula-module imports are absent.
+
+K79 is documentation infrastructure only. It does not run calculations, change
+formulas, change material values, implement UI, or make ML a calculator.

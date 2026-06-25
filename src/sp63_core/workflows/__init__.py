@@ -4,6 +4,11 @@ from sp63_core.workflows.diagnostics_catalog import (
     DiagnosticsCatalogResult,
     build_diagnostics_catalog,
 )
+from sp63_core.workflows.docs_audit import (
+    DocsAuditResult,
+    build_docs_audit_report,
+    render_docs_audit_markdown,
+)
 from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
     run_engineering_workflow,
@@ -70,6 +75,7 @@ __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
+    "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
@@ -90,11 +96,13 @@ __all__ = [
     "build_evidence_templates_package",
     "build_release_candidate_report",
     "build_diagnostics_catalog",
+    "build_docs_audit_report",
     "build_input_form_schema",
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
     "build_user_manual_index",
+    "render_docs_audit_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "run_engineering_workflow",

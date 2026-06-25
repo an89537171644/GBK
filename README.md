@@ -1152,6 +1152,20 @@ evidence CSV templates, `RUN_COMMANDS.md`, `acceptance_checklist.md`, and
 it does not run calculations, certify designs, update materials, include full
 SP 63 text, include private SCAD/LIRA files, or make ML project-ready.
 
+## K79 documentation link and command audit
+
+K79 adds a static documentation audit:
+
+```bash
+python -m sp63_core docs-audit --json
+python -m sp63_core docs-audit --output-dir reports/docs_audit_smoke --json
+```
+
+The audit checks required documentation files, local Markdown links, and key
+CLI example snippets. It is a completeness check only and does not certify
+designs, run calculations, change formulas/materials, implement UI, or make ML
+project-ready.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

@@ -1099,6 +1099,22 @@ change material values, auto-update catalogs, implement UI, add private
 SCAD/LIRA files, include full SP 63 text, or make ML a calculator. Engineer
 review remains mandatory.
 
+## K79 Documentation Link and Command Audit
+
+K79 adds `docs-audit` and `workflows/docs_audit.py`:
+
+```bash
+python -m sp63_core docs-audit --json
+```
+
+The audit checks required documentation files, local Markdown links, and key
+CLI example snippets so v0.9 readiness documentation remains navigable and
+reproducible.
+
+K79 is documentation infrastructure only. It does not execute calculations,
+change formulas, change material values, update catalogs, implement UI, or make
+ML a calculator.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package
