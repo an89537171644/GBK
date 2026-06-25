@@ -1098,3 +1098,19 @@ changed protected file produces `fail`; unavailable git diff produces
 
 K73 is a review aid only. It does not approve merge, certify designs, change
 formulas, change materials, or make ML a calculator.
+
+## K74 User Manual Package
+
+K74 adds `docs/user_manual/` and `user-manual-index`:
+
+```bash
+python -m sp63_core user-manual-index --json
+```
+
+The manual covers quickstart, input data, preflight validation, workflow runs,
+report indexes, batch workflow, ML advisory limits, evidence templates,
+troubleshooting, and acceptance checklist.
+
+K74 is documentation only. It does not change formulas, material values,
+reinforcement selection, external validation logic, UI behavior, or ML safety
+policy. Engineer review remains mandatory.

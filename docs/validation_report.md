@@ -1321,3 +1321,19 @@ imports.
 
 K73 does not change protected files. It is a review aid only and does not
 approve merge, project use, formulas, materials, or ML output.
+
+## K74 User Manual Package Validation
+
+K74 adds validation coverage for `user-manual-index`:
+
+```bash
+python -m sp63_core user-manual-index --json
+python -m sp63_core user-manual-index --markdown
+```
+
+The tests verify that all required `docs/user_manual/` files exist, output
+JSON/Markdown can be written, missing-file simulation fails, CLI JSON/Markdown
+works, safety flags remain present, and formula modules are not imported.
+
+K74 is documentation only. It does not change formulas, materials,
+deterministic checks, external validation logic, or ML safety policy.

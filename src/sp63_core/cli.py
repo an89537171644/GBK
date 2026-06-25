@@ -119,6 +119,7 @@ from sp63_core.workflows import (
     build_input_form_schema,
     build_static_input_form_preview,
     build_static_workflow_report_index,
+    build_user_manual_index,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_batch,
@@ -715,6 +716,27 @@ def build_parser() -> ArgumentParser:
     )
     protected_files_check.add_argument("--json", action="store_true", help="print JSON output")
     protected_files_check.set_defaults(handler=_handle_protected_files_check)
+
+    user_manual_index = subparsers.add_parser(
+        "user-manual-index",
+        help="check and print the user manual package index",
+    )
+    user_manual_index.add_argument(
+        "--manual-dir",
+        default="docs/user_manual",
+        help="manual directory to check",
+    )
+    user_manual_index.add_argument(
+        "--output-dir",
+        help="output directory for user_manual_index.json and user_manual_index.md",
+    )
+    user_manual_index.add_argument("--json", action="store_true", help="print JSON output")
+    user_manual_index.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown manual index",
+    )
+    user_manual_index.set_defaults(handler=_handle_user_manual_index)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2509,6 +2531,49 @@ def _handle_protected_files_check(args: Namespace) -> int:
     print(f"guard_status: {result.guard_status}")
     print(f"checked_git_ref: {result.checked_git_ref}")
     print(f"changed_protected_files: {len(result.changed_protected_files)}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_user_manual_index(args: Namespace) -> int:
+    result = build_user_manual_index(
+        manual_dir=Path(args.manual_dir),
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "user-manual-index",
+        "status": result.status,
+        "manual_status": result.manual_status,
+        "manual_dir": result.manual_dir,
+        "required_files": result.required_files,
+        "existing_files": result.existing_files,
+        "missing_files": result.missing_files,
+        "output_dir": result.output_dir,
+        "requires_engineer_review": result.requires_engineer_review,
+        "ml_is_advisory_only": result.ml_is_advisory_only,
+        "deterministic_checks_required": result.deterministic_checks_required,
+        "ml_ready_for_project_use": result.ml_ready_for_project_use,
+        "warnings": result.warnings,
+        "errors": result.errors,
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(result.markdown, end="")
+        return 0
+
+    print("User manual index")
+    print(f"status: {result.status}")
+    print(f"manual_status: {result.manual_status}")
+    print(f"manual_dir: {result.manual_dir}")
+    print(f"required_files: {len(result.required_files)}")
+    print(f"missing_files: {len(result.missing_files)}")
+    print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -261,3 +261,15 @@ python -m sp63_core protected-files-check --json
 The guard checks whether protected formula, material catalog, or
 external-validation files changed in the branch diff. It is a review aid only
 and does not approve a merge or project use.
+
+## K74 User Manual
+
+The user manual package is indexed by:
+
+```bash
+python -m sp63_core user-manual-index --json
+```
+
+The manual collects quickstart, input data, preflight, workflow, report index,
+batch workflow, ML advisory limits, evidence templates, troubleshooting, and
+acceptance checklist pages for engineer review.

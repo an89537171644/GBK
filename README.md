@@ -1138,3 +1138,17 @@ The guard checks git diff for protected calculation modules,
 `validation/external.py`, and material catalog files. It returns `fail` when a
 protected file changed and `review_required` when git diff cannot be checked.
 It is a review aid only and never approves merge or project use.
+
+## K74 user manual package
+
+K74 adds a user manual under `docs/user_manual/` and a completeness check:
+
+```bash
+python -m sp63_core user-manual-index --json
+python -m sp63_core user-manual-index --markdown
+```
+
+The manual covers quickstart, input data, preflight, workflow runs, static
+indexes, batch workflow, ML advisory limits, evidence templates,
+troubleshooting, and acceptance checklist. It is documentation only and does
+not certify designs or approve project use.

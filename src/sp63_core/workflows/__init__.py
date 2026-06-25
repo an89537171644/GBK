@@ -52,6 +52,11 @@ from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
 )
+from sp63_core.workflows.user_manual_index import (
+    REQUIRED_USER_MANUAL_FILES,
+    UserManualIndexResult,
+    build_user_manual_index,
+)
 
 __all__ = [
     "EngineeringGUIPlanningResult",
@@ -65,7 +70,9 @@ __all__ = [
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
     "PROTECTED_FILES",
+    "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
+    "UserManualIndexResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
@@ -75,6 +82,7 @@ __all__ = [
     "build_input_form_schema",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
+    "build_user_manual_index",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "run_engineering_workflow",
