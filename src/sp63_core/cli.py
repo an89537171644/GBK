@@ -119,6 +119,7 @@ from sp63_core.workflows import (
     build_evidence_templates_package,
     build_input_form_schema,
     build_project_template_package,
+    build_release_artifact_manifest,
     build_release_candidate_report,
     build_static_input_form_preview,
     build_static_workflow_report_index,
@@ -787,6 +788,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release candidate report",
     )
     release_candidate_report.set_defaults(handler=_handle_release_candidate_report)
+
+    release_manifest = subparsers.add_parser(
+        "release-manifest",
+        help="build release artifact manifest and version metadata",
+    )
+    release_manifest.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release artifact manifest files",
+    )
+    release_manifest.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release version label",
+    )
+    release_manifest.add_argument("--json", action="store_true", help="print JSON output")
+    release_manifest.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release artifact manifest",
+    )
+    release_manifest.set_defaults(handler=_handle_release_manifest)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2720,6 +2743,37 @@ def _handle_release_candidate_report(args: Namespace) -> int:
     print(f"output_dir: {result.output_dir}")
     print(f"protected_files_guard_status: {result.protected_files_guard_status}")
     print(f"user_manual_status: {result.user_manual_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_release_manifest(args: Namespace) -> int:
+    result = build_release_artifact_manifest(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-manifest",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release artifact manifest")
+    print(f"status: {result.status}")
+    print(f"manifest_status: {result.manifest_status}")
+    print(f"version: {result.version}")
+    print(f"git_commit: {result.git_commit}")
+    print(f"artifact_count: {result.artifact_count}")
+    print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

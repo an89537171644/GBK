@@ -1115,6 +1115,21 @@ K79 is documentation infrastructure only. It does not execute calculations,
 change formulas, change material values, update catalogs, implement UI, or make
 ML a calculator.
 
+## K80 Release Artifact Manifest
+
+K80 adds `release-manifest` and `workflows/release_manifest.py`:
+
+```bash
+python -m sp63_core release-manifest --output-dir reports/release_manifest_smoke --version 0.9.0-rc1 --json
+```
+
+The command records version metadata, git branch, git commit, generation time,
+release-review artifact paths, file sizes, and SHA256 checksums.
+
+K80 is reproducibility metadata only. It does not publish a release, execute
+calculations, change formulas, change material values, implement UI, or make ML
+a calculator.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package

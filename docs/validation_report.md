@@ -1422,3 +1422,19 @@ written, CLI JSON works, and direct formula-module imports are absent.
 
 K79 is documentation infrastructure only. It does not run calculations, change
 formulas, change material values, implement UI, or make ML a calculator.
+
+## K80 Release Artifact Manifest Validation
+
+K80 adds validation coverage for `release-manifest`:
+
+```bash
+python -m sp63_core release-manifest --output-dir reports/release_manifest_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify JSON/Markdown/VERSION output, git/version metadata, artifact
+SHA256 checksums, CLI JSON/Markdown behavior, missing artifact failure, safety
+flags, and absence of direct formula-module imports.
+
+K80 is reproducibility metadata only. It does not publish a release, certify
+designs, run calculations, change formulas, change material values, implement
+UI, or make ML a calculator.

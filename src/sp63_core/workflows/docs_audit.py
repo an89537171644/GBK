@@ -23,6 +23,7 @@ REQUIRED_DOCUMENTATION_FILES: tuple[str, ...] = (
     "docs/engineering_workflow_batch_valid_examples.md",
     "docs/project_template_package.md",
     "docs/docs_audit.md",
+    "docs/release_artifact_manifest.md",
     "docs/ci_safety_workflow.md",
     "docs/protected_files_guard.md",
     "docs/user_manual/README.md",
@@ -58,6 +59,7 @@ REQUIRED_CLI_EXAMPLES: tuple[str, ...] = (
     "python -m sp63_core protected-files-check --json",
     "python -m sp63_core user-manual-index --json",
     "python -m sp63_core release-candidate-report",
+    "python -m sp63_core release-manifest",
     "python -m sp63_core project-template",
 )
 

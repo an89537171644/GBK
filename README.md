@@ -1166,6 +1166,23 @@ CLI example snippets. It is a completeness check only and does not certify
 designs, run calculations, change formulas/materials, implement UI, or make ML
 project-ready.
 
+## K80 release artifact manifest
+
+K80 adds release artifact metadata:
+
+```bash
+python -m sp63_core release-manifest \
+  --output-dir reports/release_manifest_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The command writes `release_artifact_manifest.json`,
+`release_artifact_manifest.md`, and `VERSION.txt` with git/version metadata and
+SHA256 checksums for key release-review artifacts. It does not publish a
+release, certify designs, change formulas/materials, implement UI, or make ML
+project-ready.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

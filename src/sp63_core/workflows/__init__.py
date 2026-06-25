@@ -52,6 +52,10 @@ from sp63_core.workflows.release_candidate import (
     ReleaseCandidateReportResult,
     build_release_candidate_report,
 )
+from sp63_core.workflows.release_manifest import (
+    ReleaseArtifactManifestResult,
+    build_release_artifact_manifest,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -87,6 +91,7 @@ __all__ = [
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
     "ProjectTemplatePackageResult",
+    "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
     "UserManualIndexResult",
     "EngineeringWorkflowResult",
@@ -95,6 +100,7 @@ __all__ = [
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_release_candidate_report",
+    "build_release_artifact_manifest",
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
