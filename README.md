@@ -1317,3 +1317,18 @@ The generated `.cmd` and `.sh` files call existing `python -m sp63_core`
 commands for clean demo, single workflow, batch workflow, and opening the static
 index. They do not contain formulas, start a server, implement UI, or approve
 project use.
+
+## K87 external validation evidence package
+
+K87 adds an external validation evidence package:
+
+```bash
+python -m sp63_core external-validation-evidence-package \
+  --output-dir reports/external_validation_evidence_smoke \
+  --json
+```
+
+Without an engineer-filled CSV the command returns `review_required`. When a CSV
+is provided, it summarizes accepted/review/failed rows and writes JSON,
+Markdown, and SHA256 manifest files. It does not change formulas, material
+values, or `validation/external.py`.

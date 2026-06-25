@@ -30,6 +30,10 @@ from sp63_core.workflows.evidence_templates import (
     EvidenceTemplatesPackageResult,
     build_evidence_templates_package,
 )
+from sp63_core.workflows.external_validation_evidence_package import (
+    ExternalValidationEvidencePackageResult,
+    build_external_validation_evidence_package,
+)
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
     build_engineering_gui_planning_decision,
@@ -110,6 +114,7 @@ __all__ = [
     "CleanDemoWorkflowResult",
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
+    "ExternalValidationEvidencePackageResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
@@ -133,6 +138,7 @@ __all__ = [
     "build_engineering_handoff_package",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
+    "build_external_validation_evidence_package",
     "build_release_candidate_report",
     "build_release_artifact_manifest",
     "build_diagnostics_catalog",

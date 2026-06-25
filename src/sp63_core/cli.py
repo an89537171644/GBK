@@ -118,6 +118,7 @@ from sp63_core.workflows import (
     build_engineering_handoff_package,
     build_engineering_interface_contract,
     build_evidence_templates_package,
+    build_external_validation_evidence_package,
     build_input_form_schema,
     build_launcher_scripts_package,
     build_material_verification_closure,
@@ -586,8 +587,39 @@ def build_parser() -> ArgumentParser:
         required=True,
         help="output directory for launcher scripts",
     )
-    launcher_scripts.add_argument("--json", action="store_true", help="print JSON output")
+    launcher_scripts.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
     launcher_scripts.set_defaults(handler=_handle_launcher_scripts)
+
+    external_validation_evidence = subparsers.add_parser(
+        "external-validation-evidence-package",
+        help="create an external validation evidence package and optional CSV summary",
+    )
+    external_validation_evidence.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for external validation evidence package",
+    )
+    external_validation_evidence.add_argument(
+        "--external-validation-csv",
+        help="engineer-filled external validation CSV to summarize",
+    )
+    external_validation_evidence.add_argument(
+        "--strict",
+        action="store_true",
+        help="run strict summary checks when a CSV is provided",
+    )
+    external_validation_evidence.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    external_validation_evidence.set_defaults(
+        handler=_handle_external_validation_evidence_package
+    )
 
     engineering_interface_contract = subparsers.add_parser(
         "engineering-interface-contract",
@@ -2511,6 +2543,40 @@ def _handle_launcher_scripts(args: Namespace) -> int:
     print(f"status: {result.status}")
     print(f"package_status: {result.package_status}")
     print(f"script_count: {result.script_count}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"manifest_path: {result.manifest_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_external_validation_evidence_package(args: Namespace) -> int:
+    result = build_external_validation_evidence_package(
+        output_dir=Path(args.output_dir),
+        external_validation_csv=(
+            Path(args.external_validation_csv) if args.external_validation_csv else None
+        ),
+        strict_mode=args.strict,
+    )
+    payload = {
+        "command": "external-validation-evidence-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("External validation evidence package")
+    print(f"status: {result.status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"total_cases: {result.total_cases}")
+    print(f"accepted_cases: {result.accepted_cases}")
+    print(f"review_cases: {result.review_cases}")
+    print(f"failed_cases: {result.failed_cases}")
     print(f"output_dir: {result.output_dir}")
     print(f"manifest_path: {result.manifest_path}")
     print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")

@@ -1536,3 +1536,18 @@ CLI JSON output, mandatory safety flags, and that scripts remain wrappers around
 
 K86 does not add a GUI, start a server, change formulas, change material
 values, or make ML a calculator.
+
+## K87 External Validation Evidence Package Validation
+
+K87 adds validation coverage for `external-validation-evidence-package`:
+
+```bash
+python -m sp63_core external-validation-evidence-package --output-dir reports/external_validation_evidence_smoke --json
+```
+
+The tests verify no-CSV `review_required` behavior, filled sample summary,
+template/checklist copying, JSON/Markdown summary generation, manifest SHA256
+checksums, CLI JSON behavior, and mandatory safety flags.
+
+K87 does not change formulas, material values, protected calculation files,
+`validation/external.py`, or ML safety behavior.
