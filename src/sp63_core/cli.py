@@ -133,6 +133,7 @@ from sp63_core.workflows import (
     build_release_notes_package,
     build_static_input_form_preview,
     build_static_workflow_report_index,
+    build_traceability_matrix,
     build_user_manual_index,
     build_v09_final_audit,
     build_v09_readiness_gate,
@@ -141,6 +142,7 @@ from sp63_core.workflows import (
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
+    render_traceability_matrix_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
     run_engineering_workflow,
@@ -952,6 +954,22 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release bundle report",
     )
     release_bundle.set_defaults(handler=_handle_release_bundle)
+
+    traceability_matrix = subparsers.add_parser(
+        "traceability-matrix",
+        help="write or print feature/CLI/docs/tests traceability matrix",
+    )
+    traceability_matrix.add_argument(
+        "--output-dir",
+        help="output directory for traceability_matrix.json/md",
+    )
+    traceability_matrix.add_argument("--json", action="store_true", help="print JSON output")
+    traceability_matrix.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown traceability matrix",
+    )
+    traceability_matrix.set_defaults(handler=_handle_traceability_matrix)
 
     release_notes = subparsers.add_parser(
         "release-notes",
@@ -3271,6 +3289,35 @@ def _handle_release_bundle(args: Namespace) -> int:
     print(f"version: {result.version}")
     print(f"zip_path: {result.zip_path}")
     print(f"file_count: {result.file_count}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_traceability_matrix(args: Namespace) -> int:
+    result = build_traceability_matrix(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "traceability-matrix",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_traceability_matrix_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Traceability matrix")
+    print(f"status: {result.status}")
+    print(f"matrix_status: {result.matrix_status}")
+    print(f"row_count: {result.row_count}")
+    print(f"output_dir: {result.output_dir}")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     if result.errors:

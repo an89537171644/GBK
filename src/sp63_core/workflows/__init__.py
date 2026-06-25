@@ -125,6 +125,11 @@ from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
 )
+from sp63_core.workflows.traceability_matrix import (
+    TraceabilityMatrixResult,
+    build_traceability_matrix,
+    render_traceability_matrix_markdown,
+)
 from sp63_core.workflows.user_acceptance_smoke import (
     UserAcceptanceSmokeResult,
     run_user_acceptance_smoke,
@@ -176,6 +181,7 @@ __all__ = [
     "ReleaseCandidateReportResult",
     "ReleaseNotesPackageResult",
     "SprintStepSpec",
+    "TraceabilityMatrixResult",
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
     "V09FinalAuditResult",
@@ -203,12 +209,14 @@ __all__ = [
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
+    "build_traceability_matrix",
     "build_user_manual_index",
     "build_v09_final_audit",
     "build_v09_readiness_gate",
     "render_docs_audit_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
+    "render_traceability_matrix_markdown",
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",
