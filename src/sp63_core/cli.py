@@ -145,6 +145,7 @@ from sp63_core.workflows import (
     build_v09_freeze_report,
     build_v09_readiness_gate,
     build_v09_review_build,
+    build_v09_review_closure,
     build_v10_gap_report,
     build_windows_smoke_plan,
     render_cli_status_contract_markdown,
@@ -159,6 +160,7 @@ from sp63_core.workflows import (
     render_traceability_matrix_markdown,
     render_v09_freeze_report_markdown,
     render_v09_review_build_markdown,
+    render_v09_review_closure_markdown,
     render_v10_gap_report_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
@@ -1248,6 +1250,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown review build report",
     )
     v09_review_build.set_defaults(handler=_handle_v09_review_build)
+
+    v09_review_closure = subparsers.add_parser(
+        "v09-review-closure",
+        help="build the v0.9 manual review closure report",
+    )
+    v09_review_closure.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 review closure artifacts",
+    )
+    v09_review_closure.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 review closure version label",
+    )
+    v09_review_closure.add_argument("--json", action="store_true", help="print JSON output")
+    v09_review_closure.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown review closure report",
+    )
+    v09_review_closure.set_defaults(handler=_handle_v09_review_closure)
 
     next_release_roadmap = subparsers.add_parser(
         "next-release-roadmap",
@@ -3907,6 +3931,39 @@ def _handle_v09_review_build(args: Namespace) -> int:
     print(f"review_required_count: {result.review_required_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_review_closure(args: Namespace) -> int:
+    result = build_v09_review_closure(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-review-closure",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_review_closure_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 review closure")
+    print(f"status: {result.status}")
+    print(f"closure_status: {result.closure_status}")
+    print(f"ready_for_v09_review_build: {result.ready_for_v09_review_build}")
+    print(f"ready_for_v09_release_candidate: {result.ready_for_v09_release_candidate}")
+    print("ready_for_project_use: false")
+    print("ml_ready_for_project_use: false")
+    print(f"critical_failures: {len(result.critical_failures)}")
+    print(f"blocking_review_gates: {len(result.blocking_review_gates)}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

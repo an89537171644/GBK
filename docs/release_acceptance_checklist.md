@@ -11,3 +11,11 @@ The checklist does not approve project use.
 ```bash
 python -m sp63_core release-acceptance-checklist --output-dir reports/release_acceptance_checklist_smoke --json
 ```
+
+K107 includes the checklist in the v0.9 review closure report:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+Manual signoff rows remain open and are not auto-closed by the closure report.

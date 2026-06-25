@@ -32,3 +32,12 @@ python -m sp63_core v09-freeze-report \
 
 The freeze report is review evidence only. It does not certify designs or approve
 project use.
+
+K107 consumes this report in the v0.9 review closure command:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+The closure output remains review evidence only and does not close material,
+external validation, or manual signoff gates.

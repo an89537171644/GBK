@@ -31,3 +31,12 @@ Safety flags:
 - `ml_is_advisory_only = true`
 - `deterministic_checks_required = true`
 - `ml_ready_for_project_use = false`
+
+K107 uses the final audit as one input to the review closure report:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+The closure report may allow manual v0.9 review handoff evidence, but it keeps
+`ready_for_project_use = false`.
