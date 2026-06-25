@@ -1198,6 +1198,23 @@ template/batch-valid/release-manifest checks. `review_required` is expected
 while engineer material and workflow review gates remain open. The suite is
 review evidence only and does not certify designs or make ML project-ready.
 
+## K82 v0.9 readiness gate
+
+K82 adds a final aggregated readiness command:
+
+```bash
+python -m sp63_core v09-readiness \
+  --output-dir reports/v09_readiness_smoke \
+  --json
+```
+
+The gate summarizes protected-files, documentation audit, release manifest,
+user acceptance smoke, and release candidate report statuses into
+`v09_readiness_report.json` and `v09_readiness_report.md`. `review_required` is
+expected while engineer approval gates remain open. The gate does not publish a
+release, certify designs, change formulas/materials, implement UI, or make ML
+project-ready; `ml_ready_for_project_use` remains `false`.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

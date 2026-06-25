@@ -1147,6 +1147,24 @@ engineering review gates remain open.
 K81 is review evidence only. It does not publish a release, certify designs,
 change formulas, change material values, implement UI, or make ML a calculator.
 
+## K82 v0.9 Readiness Gate
+
+K82 adds `v09-readiness` and `workflows/v09_readiness.py`:
+
+```bash
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_smoke --json
+```
+
+The gate aggregates protected-files guard, documentation audit, release
+manifest, user acceptance smoke, and release candidate report statuses. It
+writes JSON and Markdown summaries plus nested review artifacts for release
+discussion.
+
+K82 is readiness evidence only. It does not publish a release, certify designs,
+change formulas, change material values, change reinforcement selection,
+implement UI, or make ML a calculator. `ml_ready_for_project_use` remains
+`false`.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package

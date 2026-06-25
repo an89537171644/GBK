@@ -1455,3 +1455,21 @@ flags, and absence of direct formula-module imports.
 
 K81 is review evidence only. It does not certify designs, change formulas,
 change material values, implement UI, or make ML a calculator.
+
+## K82 v0.9 Readiness Gate Validation
+
+K82 adds validation coverage for `v09-readiness`:
+
+```bash
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_smoke --json
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_markdown_smoke --markdown
+```
+
+The tests verify that the command builds `v09_readiness_report.json`,
+`v09_readiness_report.md`, nested release manifest, user acceptance smoke, and
+release candidate artifacts. They also cover CLI JSON/Markdown behavior,
+mandatory safety flags, `ml_ready_for_project_use = false`, and absence of
+direct formula-module imports.
+
+K82 is review evidence only. It does not publish a release, certify designs,
+change formulas, change material values, implement UI, or make ML a calculator.

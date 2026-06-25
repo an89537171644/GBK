@@ -124,6 +124,7 @@ from sp63_core.workflows import (
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
+    build_v09_readiness_gate,
     render_docs_audit_markdown,
     render_self_check_markdown,
     run_engineering_workflow,
@@ -833,6 +834,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown user acceptance smoke summary",
     )
     user_acceptance_smoke.set_defaults(handler=_handle_user_acceptance_smoke)
+
+    v09_readiness = subparsers.add_parser(
+        "v09-readiness",
+        help="build v0.9 readiness gate report",
+    )
+    v09_readiness.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 readiness artifacts",
+    )
+    v09_readiness.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested release artifacts",
+    )
+    v09_readiness.add_argument("--json", action="store_true", help="print JSON output")
+    v09_readiness.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v0.9 readiness report",
+    )
+    v09_readiness.set_defaults(handler=_handle_v09_readiness)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2825,6 +2848,38 @@ def _handle_user_acceptance_smoke(args: Namespace) -> int:
     print(f"status: {result.status}")
     print(f"user_acceptance_status: {result.user_acceptance_status}")
     print(f"smoke_count: {result.smoke_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_v09_readiness(args: Namespace) -> int:
+    result = build_v09_readiness_gate(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-readiness",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("v0.9 readiness gate")
+    print(f"status: {result.status}")
+    print(f"readiness_status: {result.readiness_status}")
+    print(f"gate_count: {result.gate_count}")
     print(f"passed_count: {result.passed_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")

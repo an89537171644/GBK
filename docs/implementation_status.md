@@ -83,6 +83,7 @@
 | `workflows/user_acceptance_smoke.py` | implemented aggregated user acceptance smoke suite for v0.9 readiness review | yes | yes | use as review evidence only; smoke suite does not certify project use |
 | `workflows/release_candidate.py` | implemented draft v0.9 release candidate report across validation/workflow/manual guard statuses | yes | yes | review report before any release; report does not certify project use |
 | `workflows/release_manifest.py` | implemented release artifact manifest with version, git metadata, and SHA256 checksums | yes | yes | use as reproducibility metadata only; manifest does not publish or certify a release |
+| `workflows/v09_readiness.py` | implemented final aggregated v0.9 readiness gate across protected files, docs, release manifest, user acceptance smoke, and release candidate report | yes | yes | review readiness gate output before any release; gate does not publish, certify, or approve project use |
 | `cli.py` | implemented with subcommands including crack formation, crack width, deflection, separated design statuses, and input-driven design report export | yes | no | keep report/export commands smoke-tested |
 | `automation/codex workflow` | implemented issue/PR workflow docs and templates | no | no | protect main branch in GitHub settings |
 | `validation_report.md` | draft validation report | yes | yes | engineer review |

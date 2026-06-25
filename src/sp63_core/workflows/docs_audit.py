@@ -25,6 +25,7 @@ REQUIRED_DOCUMENTATION_FILES: tuple[str, ...] = (
     "docs/docs_audit.md",
     "docs/release_artifact_manifest.md",
     "docs/user_acceptance_smoke.md",
+    "docs/v09_readiness_gate.md",
     "docs/ci_safety_workflow.md",
     "docs/protected_files_guard.md",
     "docs/user_manual/README.md",
@@ -63,6 +64,7 @@ REQUIRED_CLI_EXAMPLES: tuple[str, ...] = (
     "python -m sp63_core release-manifest",
     "python -m sp63_core user-acceptance-smoke",
     "python -m sp63_core project-template",
+    "python -m sp63_core v09-readiness",
 )
 
 _MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
