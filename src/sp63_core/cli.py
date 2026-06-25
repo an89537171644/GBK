@@ -2156,11 +2156,17 @@ def _handle_engineering_workflow_batch(args: Namespace) -> int:
     print("Batch engineering workflow")
     print(f"status: {result.status}")
     print(f"batch_status: {result.batch_status}")
+    print(f"command_exit_status: {result.command_exit_status}")
     print(f"case_count: {result.case_count}")
     print(f"passed_count: {result.passed_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
+    print(f"failed_cases: {', '.join(result.failed_cases) or 'none'}")
     print(f"output_dir: {result.output_dir}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -1111,6 +1111,31 @@ The batch runner creates one `case_####/` workflow folder per input file plus
 the whole batch; they are reported as failed cases. The batch index is static
 HTML only and performs no calculations.
 
+## K77 clean batch examples and summary UX
+
+K77 adds a clean batch smoke input folder:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/batch_valid \
+  --output-dir reports/engineering_workflow_batch_valid_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+The JSON/Markdown/HTML batch summary now separates command completion from
+engineering status:
+
+- `command_exit_status` records whether the batch command completed.
+- `batch_status` records aggregated engineering status.
+- `passed_cases`, `review_required_cases`, and `failed_cases` list case ids.
+- recommendations explain how to handle invalid or review-required cases.
+
+The existing `form_templates` folder remains a diagnostic set with intentional
+invalid/review inputs. K77 does not change formulas, materials, reinforcement
+selection, external validation, UI policy, or ML safety.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

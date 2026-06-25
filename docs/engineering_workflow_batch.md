@@ -11,6 +11,19 @@ reinforcement selection.
 
 ## CLI
 
+Clean valid batch smoke examples:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/batch_valid \
+  --output-dir reports/engineering_workflow_batch_valid_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+Diagnostic form templates with intentional invalid/review cases:
+
 ```bash
 python -m sp63_core engineering-workflow-batch \
   --input-dir docs/reports/examples/form_templates \
@@ -46,13 +59,27 @@ case and the batch continues to the next input file.
 
 ## Status Logic
 
+- `command_exit_status`: whether the batch command completed as an
+  orchestration command.
+- `batch_status`: engineering status aggregated from case results.
 - `pass`: all cases pass.
 - `review_required`: at least one case requires review and no case fails.
 - `fail`: at least one case fails.
 
-The current form templates intentionally include invalid/review examples, so
-the smoke batch is expected to complete as a process and report failed cases in
-the summary.
+The `docs/reports/examples/batch_valid/` folder is the clean smoke dataset and
+is expected to have no failed cases. The `form_templates/` folder intentionally
+includes invalid/review examples, so that diagnostic batch is expected to
+complete as a process and report failed cases in the summary.
+
+`batch_workflow_summary.json`, `batch_workflow_summary.md`, and
+`batch_index.html` expose:
+
+- `command_exit_status`;
+- `batch_status`;
+- `passed_cases`;
+- `review_required_cases`;
+- `failed_cases`;
+- recommendations for failed or review-required cases.
 
 ## HTML Safety
 

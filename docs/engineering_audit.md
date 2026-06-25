@@ -1064,6 +1064,24 @@ calculation modules, change material values, change reinforcement selection,
 implement UI, or make ML a calculator. Engineer review remains mandatory for
 every case.
 
+## K77 Clean Batch Examples and Summary UX
+
+K77 adds `docs/reports/examples/batch_valid/` for clean batch smoke validation:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/batch_valid --output-dir reports/engineering_workflow_batch_valid_smoke --with-preflight --with-index --json
+```
+
+The batch summary now separates command completion from engineering aggregate
+status through `command_exit_status` and `batch_status`, lists passed,
+review-required, and failed case ids, and includes recommendations for fixing
+invalid cases. The existing `form_templates` folder remains a diagnostic set
+with intentional invalid/review examples.
+
+K77 is workflow UX and example-data hardening only. It does not change
+formulas, material values, reinforcement selection, deterministic checks,
+external validation logic, UI behavior, or ML safety policy.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package

@@ -238,6 +238,24 @@ The batch output contains one `case_####/` folder per input file plus
 and `README_BATCH_WORKFLOW.md`. Invalid cases are recorded as failed cases and
 do not prevent remaining inputs from being processed.
 
+## K77 Clean Batch Examples
+
+K77 adds a clean valid batch example folder:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/batch_valid \
+  --output-dir reports/engineering_workflow_batch_valid_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+The batch summary separates `command_exit_status` from `batch_status` and lists
+`passed_cases`, `review_required_cases`, and `failed_cases`. The existing
+`form_templates` folder remains a diagnostic set with intentional invalid and
+review-required cases.
+
 ## K72 Evidence Templates Package
 
 Use K72 when handing off blank evidence templates to an engineer:

@@ -1369,3 +1369,21 @@ refs, protected-file pass/fail behavior, and CLI output. The workflow uses
 
 K76 does not change formulas, material values, reinforcement selection,
 external validation logic, or ML safety policy.
+
+## K77 Clean Batch Examples Validation
+
+K77 adds validation coverage for clean batch workflow examples and clearer batch
+summary UX:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/batch_valid --output-dir reports/engineering_workflow_batch_valid_smoke --with-preflight --with-index --json
+```
+
+The tests verify that `docs/reports/examples/batch_valid/` runs with no failed
+cases, that `command_exit_status` is separate from `batch_status`, that
+`passed_cases`, `review_required_cases`, `failed_cases`, and recommendations
+are present in the summary, and that the older `form_templates` diagnostic set
+still records intentional failed/review cases.
+
+K77 does not change formulas, material values, reinforcement selection,
+external validation logic, UI policy, or ML safety policy.
