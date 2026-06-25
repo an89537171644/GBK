@@ -113,6 +113,7 @@ from sp63_core.validation import (
 )
 from sp63_core.workflows import (
     build_agent_sprint_guard,
+    build_cli_status_contract,
     build_diagnostics_catalog,
     build_docs_audit_report,
     build_engineering_gui_planning_decision,
@@ -132,6 +133,7 @@ from sp63_core.workflows import (
     build_user_manual_index,
     build_v09_final_audit,
     build_v09_readiness_gate,
+    render_cli_status_contract_markdown,
     render_docs_audit_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
@@ -994,6 +996,22 @@ def build_parser() -> ArgumentParser:
     agent_sprint_guard.add_argument("--to-k", type=int, required=True)
     agent_sprint_guard.add_argument("--json", action="store_true", help="print JSON output")
     agent_sprint_guard.set_defaults(handler=_handle_agent_sprint_guard)
+
+    cli_status_contract = subparsers.add_parser(
+        "cli-status-contract",
+        help="write or print the CLI status and exit-code contract",
+    )
+    cli_status_contract.add_argument(
+        "--output-dir",
+        help="output directory for cli_status_contract.json/md",
+    )
+    cli_status_contract.add_argument("--json", action="store_true", help="print JSON output")
+    cli_status_contract.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown contract",
+    )
+    cli_status_contract.set_defaults(handler=_handle_cli_status_contract)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -3266,6 +3284,37 @@ def _handle_agent_sprint_guard(args: Namespace) -> int:
         for error in result.errors:
             print(f"- {error}")
     return 0
+
+
+def _handle_cli_status_contract(args: Namespace) -> int:
+    result = build_cli_status_contract(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "cli-status-contract",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_cli_status_contract_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("CLI status contract")
+    print(f"status: {result.status}")
+    print(f"contract_status: {result.contract_status}")
+    print(f"command_count: {result.command_count}")
+    print(f"output_dir: {result.output_dir}")
+    print("exit_code_mapping:")
+    for status, exit_code in result.exit_code_mapping.items():
+        print(f"- {status}: {exit_code}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_report_dataset_export(args: Namespace) -> int:

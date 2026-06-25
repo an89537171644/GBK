@@ -10,6 +10,11 @@ from sp63_core.workflows.clean_demo_workflow import (
     CleanDemoWorkflowResult,
     run_clean_demo_workflow,
 )
+from sp63_core.workflows.cli_status_contract import (
+    CliStatusContractResult,
+    build_cli_status_contract,
+    render_cli_status_contract_markdown,
+)
 from sp63_core.workflows.diagnostics_catalog import (
     DiagnosticsCatalogResult,
     build_diagnostics_catalog,
@@ -126,6 +131,7 @@ __all__ = [
     "BatchEngineeringWorkflowResult",
     "CLEAN_DEMO_INPUT",
     "CleanDemoWorkflowResult",
+    "CliStatusContractResult",
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "ExternalValidationEvidencePackageResult",
@@ -152,6 +158,7 @@ __all__ = [
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_agent_sprint_guard",
+    "build_cli_status_contract",
     "build_engineering_gui_planning_decision",
     "build_engineering_handoff_package",
     "build_engineering_interface_contract",
@@ -172,6 +179,7 @@ __all__ = [
     "build_v09_final_audit",
     "build_v09_readiness_gate",
     "render_docs_audit_markdown",
+    "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "render_material_verification_closure_markdown",

@@ -13,4 +13,11 @@ Common actions:
 - rerun ZIP export when ZIP output is missing;
 - provide engineer-filled material/external validation CSVs before final
   review;
-- run `protected-files-check` before release-candidate review.
+- run `protected-files-check` before release-candidate review;
+- use `cli-status-contract` to check which CLI statuses are shell failures.
+
+CLI status contract:
+
+```bash
+python -m sp63_core cli-status-contract --json
+```
