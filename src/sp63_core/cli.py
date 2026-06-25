@@ -118,6 +118,7 @@ from sp63_core.workflows import (
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
+    build_material_verification_closure,
     build_project_template_package,
     build_release_artifact_manifest,
     build_release_candidate_report,
@@ -126,6 +127,7 @@ from sp63_core.workflows import (
     build_user_manual_index,
     build_v09_readiness_gate,
     render_docs_audit_markdown,
+    render_material_verification_closure_markdown,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_batch,
@@ -1165,6 +1167,37 @@ def build_parser() -> ArgumentParser:
         help="print JSON output",
     )
     material_verification_report.set_defaults(handler=_handle_material_verification_report)
+
+    material_verification_closure = subparsers.add_parser(
+        "material-verification-closure",
+        help="build material verification closure evidence",
+    )
+    material_verification_closure.add_argument(
+        "--material-verification-csv",
+        help="engineer-filled material verification CSV",
+    )
+    material_verification_closure.add_argument(
+        "--output-dir",
+        help="optional output directory for closure report files",
+    )
+    material_verification_closure.add_argument(
+        "--no-output-files",
+        action="store_true",
+        help="do not write closure report files",
+    )
+    material_verification_closure.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown output",
+    )
+    material_verification_closure.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    material_verification_closure.set_defaults(
+        handler=_handle_material_verification_closure
+    )
 
     manual_cases = subparsers.add_parser(
         "manual-cases",
@@ -3830,6 +3863,51 @@ def _handle_material_verification_report(args: Namespace) -> int:
     print(document.markdown, end="")
     if output_path is not None:
         print(f"\nreport_output: {output_path}")
+    return 0
+
+
+def _handle_material_verification_closure(args: Namespace) -> int:
+    csv_path = (
+        None
+        if args.material_verification_csv is None
+        else Path(args.material_verification_csv)
+    )
+    output_dir = None
+    if not args.no_output_files and args.output_dir is not None:
+        output_dir = Path(args.output_dir)
+    result = build_material_verification_closure(
+        material_verification_csv=csv_path,
+        output_dir=output_dir,
+    )
+    payload = {
+        "command": "material-verification-closure",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(render_material_verification_closure_markdown(result), end="")
+        return 0
+
+    print("Material verification closure")
+    print(f"status: {result.status}")
+    print(f"closure_status: {result.closure_status}")
+    print(f"material_verification_csv: {result.material_verification_csv}")
+    print(f"coverage_ratio: {result.coverage_ratio:.6g}")
+    print(
+        "material_ready_for_engineering_review: "
+        f"{result.material_ready_for_engineering_review}"
+    )
+    print(f"material_ready_for_project_use: {result.material_ready_for_project_use}")
+    print(f"missing_material_keys: {len(result.missing_material_keys)}")
+    print(f"rejected_material_keys: {len(result.rejected_material_keys)}")
+    print(f"review_required_material_keys: {len(result.review_required_material_keys)}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
     return 0
 
 

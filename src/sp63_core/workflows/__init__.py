@@ -39,6 +39,11 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.material_verification_closure import (
+    MaterialVerificationClosureResult,
+    build_material_verification_closure,
+    render_material_verification_closure_markdown,
+)
 from sp63_core.workflows.project_template import (
     ProjectTemplatePackageResult,
     build_project_template_package,
@@ -93,6 +98,7 @@ __all__ = [
     "InputFormSchemaResult",
     "InputPreflightIssue",
     "InputPreflightResult",
+    "MaterialVerificationClosureResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
     "PROTECTED_FILES",
@@ -114,6 +120,7 @@ __all__ = [
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
+    "build_material_verification_closure",
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
@@ -122,6 +129,7 @@ __all__ = [
     "render_docs_audit_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
+    "render_material_verification_closure_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
     "run_engineering_workflow_self_check",

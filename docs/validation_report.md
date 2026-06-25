@@ -1473,3 +1473,19 @@ direct formula-module imports.
 
 K82 is review evidence only. It does not publish a release, certify designs,
 change formulas, change material values, implement UI, or make ML a calculator.
+
+## K83 Material Verification Closure Validation
+
+K83 adds validation coverage for `material-verification-closure`:
+
+```bash
+python -m sp63_core material-verification-closure --material-verification-csv tests/fixtures/material_verification_sample.csv --output-dir reports/material_verification_closure_smoke --json
+```
+
+The tests verify no-CSV review-required behavior, complete fixture readiness
+for engineering review, missing material coverage, rejected material failure,
+CLI JSON/Markdown behavior, `material_ready_for_project_use = false`, and
+absence of direct formula-module imports.
+
+K83 does not change formulas, material values, material catalogs,
+reinforcement selection, external validation logic, or ML safety policy.
