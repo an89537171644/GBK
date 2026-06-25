@@ -29,6 +29,11 @@ from sp63_core.workflows.docs_audit import (
     build_docs_audit_report,
     render_docs_audit_markdown,
 )
+from sp63_core.workflows.engineer_review_packet import (
+    EngineerReviewPacketResult,
+    build_engineer_review_packet,
+    render_engineer_review_packet_markdown,
+)
 from sp63_core.workflows.engineering_handoff_package import (
     EngineeringHandoffPackageResult,
     build_engineering_handoff_package,
@@ -171,6 +176,7 @@ __all__ = [
     "AgentSprintGuardResult",
     "EngineeringGUIPlanningResult",
     "EngineeringHandoffPackageResult",
+    "EngineerReviewPacketResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
     "CLEAN_DEMO_INPUT",
@@ -215,6 +221,7 @@ __all__ = [
     "build_cli_status_contract",
     "build_engineering_gui_planning_decision",
     "build_engineering_handoff_package",
+    "build_engineer_review_packet",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_external_validation_evidence_package",
@@ -242,6 +249,7 @@ __all__ = [
     "build_windows_smoke_plan",
     "render_docs_audit_markdown",
     "render_freeze_remediation_plan_markdown",
+    "render_engineer_review_packet_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",

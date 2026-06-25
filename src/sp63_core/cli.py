@@ -116,6 +116,7 @@ from sp63_core.workflows import (
     build_cli_status_contract,
     build_diagnostics_catalog,
     build_docs_audit_report,
+    build_engineer_review_packet,
     build_engineering_gui_planning_decision,
     build_engineering_handoff_package,
     build_engineering_interface_contract,
@@ -143,6 +144,7 @@ from sp63_core.workflows import (
     build_windows_smoke_plan,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
+    render_engineer_review_packet_markdown,
     render_freeze_remediation_plan_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
@@ -1142,6 +1144,27 @@ def build_parser() -> ArgumentParser:
     )
     windows_smoke_plan.add_argument("--json", action="store_true", help="print JSON output")
     windows_smoke_plan.set_defaults(handler=_handle_windows_smoke_plan)
+
+    engineer_review_packet = subparsers.add_parser(
+        "engineer-review-packet",
+        help="build an engineer review packet",
+    )
+    engineer_review_packet.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for engineer review packet artifacts",
+    )
+    engineer_review_packet.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineer_review_packet.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown packet report",
+    )
+    engineer_review_packet.set_defaults(handler=_handle_engineer_review_packet)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3643,6 +3666,35 @@ def _handle_windows_smoke_plan(args: Namespace) -> int:
     print("Windows smoke plan")
     print(f"status: {result.status}")
     print(f"command_count: {result.command_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_engineer_review_packet(args: Namespace) -> int:
+    result = build_engineer_review_packet(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "engineer-review-packet",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_engineer_review_packet_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Engineer review packet")
+    print(f"status: {result.status}")
+    print(f"packet_status: {result.packet_status}")
+    print(f"evidence_count: {result.evidence_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
