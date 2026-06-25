@@ -122,6 +122,7 @@ from sp63_core.workflows import (
     build_evidence_templates_package,
     build_external_validation_evidence_package,
     build_input_form_schema,
+    build_json_output_contract,
     build_launcher_scripts_package,
     build_material_verification_closure,
     build_project_template_package,
@@ -135,6 +136,7 @@ from sp63_core.workflows import (
     build_v09_readiness_gate,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
+    render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
     run_clean_demo_workflow,
@@ -1012,6 +1014,22 @@ def build_parser() -> ArgumentParser:
         help="print Markdown contract",
     )
     cli_status_contract.set_defaults(handler=_handle_cli_status_contract)
+
+    json_output_contract = subparsers.add_parser(
+        "json-output-contract",
+        help="write or print lightweight JSON output schema contracts",
+    )
+    json_output_contract.add_argument(
+        "--output-dir",
+        help="output directory for json_output_contract.json/md",
+    )
+    json_output_contract.add_argument("--json", action="store_true", help="print JSON output")
+    json_output_contract.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown contract",
+    )
+    json_output_contract.set_defaults(handler=_handle_json_output_contract)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -3309,6 +3327,34 @@ def _handle_cli_status_contract(args: Namespace) -> int:
     print("exit_code_mapping:")
     for status, exit_code in result.exit_code_mapping.items():
         print(f"- {status}: {exit_code}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_json_output_contract(args: Namespace) -> int:
+    result = build_json_output_contract(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "json-output-contract",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_json_output_contract_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("JSON output contract")
+    print(f"status: {result.status}")
+    print(f"contract_status: {result.contract_status}")
+    print(f"contract_count: {result.contract_count}")
+    print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

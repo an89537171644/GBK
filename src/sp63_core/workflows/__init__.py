@@ -62,6 +62,13 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.json_output_contract import (
+    JsonContractValidationResult,
+    JsonOutputContractResult,
+    build_json_output_contract,
+    render_json_output_contract_markdown,
+    validate_payload_against_json_contract,
+)
 from sp63_core.workflows.launcher_scripts import (
     LauncherScriptsPackageResult,
     build_launcher_scripts_package,
@@ -139,6 +146,8 @@ __all__ = [
     "InputFormSchemaResult",
     "InputPreflightIssue",
     "InputPreflightResult",
+    "JsonContractValidationResult",
+    "JsonOutputContractResult",
     "LauncherScriptsPackageResult",
     "MaterialVerificationClosureResult",
     "StaticWorkflowReportIndexResult",
@@ -170,6 +179,7 @@ __all__ = [
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
+    "build_json_output_contract",
     "build_launcher_scripts_package",
     "build_material_verification_closure",
     "build_project_template_package",
@@ -182,6 +192,7 @@ __all__ = [
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
+    "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
@@ -190,4 +201,5 @@ __all__ = [
     "run_input_preflight",
     "run_protected_files_guard",
     "run_user_acceptance_smoke",
+    "validate_payload_against_json_contract",
 ]
