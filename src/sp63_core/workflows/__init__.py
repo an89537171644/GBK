@@ -4,6 +4,11 @@ from sp63_core.workflows.diagnostics_catalog import (
     DiagnosticsCatalogResult,
     build_diagnostics_catalog,
 )
+from sp63_core.workflows.docs_audit import (
+    DocsAuditResult,
+    build_docs_audit_report,
+    render_docs_audit_markdown,
+)
 from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
     run_engineering_workflow,
@@ -34,6 +39,10 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.project_template import (
+    ProjectTemplatePackageResult,
+    build_project_template_package,
+)
 from sp63_core.workflows.protected_files_guard import (
     PROTECTED_FILES,
     ProtectedFilesGuardResult,
@@ -42,6 +51,10 @@ from sp63_core.workflows.protected_files_guard import (
 from sp63_core.workflows.release_candidate import (
     ReleaseCandidateReportResult,
     build_release_candidate_report,
+)
+from sp63_core.workflows.release_manifest import (
+    ReleaseArtifactManifestResult,
+    build_release_artifact_manifest,
 )
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
@@ -56,16 +69,25 @@ from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
     build_static_workflow_report_index,
 )
+from sp63_core.workflows.user_acceptance_smoke import (
+    UserAcceptanceSmokeResult,
+    run_user_acceptance_smoke,
+)
 from sp63_core.workflows.user_manual_index import (
     REQUIRED_USER_MANUAL_FILES,
     UserManualIndexResult,
     build_user_manual_index,
+)
+from sp63_core.workflows.v09_readiness import (
+    V09ReadinessResult,
+    build_v09_readiness_gate,
 )
 
 __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
+    "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
@@ -76,19 +98,28 @@ __all__ = [
     "PROTECTED_FILES",
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
+    "ProjectTemplatePackageResult",
+    "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
     "UserManualIndexResult",
+    "UserAcceptanceSmokeResult",
+    "V09ReadinessResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_release_candidate_report",
+    "build_release_artifact_manifest",
     "build_diagnostics_catalog",
+    "build_docs_audit_report",
     "build_input_form_schema",
+    "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
     "build_user_manual_index",
+    "build_v09_readiness_gate",
+    "render_docs_audit_markdown",
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "run_engineering_workflow",
@@ -96,4 +127,5 @@ __all__ = [
     "run_engineering_workflow_self_check",
     "run_input_preflight",
     "run_protected_files_guard",
+    "run_user_acceptance_smoke",
 ]

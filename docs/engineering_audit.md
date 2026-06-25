@@ -1064,6 +1064,107 @@ calculation modules, change material values, change reinforcement selection,
 implement UI, or make ML a calculator. Engineer review remains mandatory for
 every case.
 
+## K77 Clean Batch Examples and Summary UX
+
+K77 adds `docs/reports/examples/batch_valid/` for clean batch smoke validation:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/batch_valid --output-dir reports/engineering_workflow_batch_valid_smoke --with-preflight --with-index --json
+```
+
+The batch summary now separates command completion from engineering aggregate
+status through `command_exit_status` and `batch_status`, lists passed,
+review-required, and failed case ids, and includes recommendations for fixing
+invalid cases. The existing `form_templates` folder remains a diagnostic set
+with intentional invalid/review examples.
+
+K77 is workflow UX and example-data hardening only. It does not change
+formulas, material values, reinforcement selection, deterministic checks,
+external validation logic, UI behavior, or ML safety policy.
+
+## K78 Project Template Package
+
+K78 adds `project-template` and `workflows/project_template.py`:
+
+```bash
+python -m sp63_core project-template --output-dir reports/project_template_smoke --json
+```
+
+The command creates a handoff scaffold with an editable rectangular input JSON,
+blank external validation and material verification templates, recommended run
+commands, an acceptance checklist, and a SHA256 manifest.
+
+K78 is packaging only. It does not execute calculations, change formulas,
+change material values, auto-update catalogs, implement UI, add private
+SCAD/LIRA files, include full SP 63 text, or make ML a calculator. Engineer
+review remains mandatory.
+
+## K79 Documentation Link and Command Audit
+
+K79 adds `docs-audit` and `workflows/docs_audit.py`:
+
+```bash
+python -m sp63_core docs-audit --json
+```
+
+The audit checks required documentation files, local Markdown links, and key
+CLI example snippets so v0.9 readiness documentation remains navigable and
+reproducible.
+
+K79 is documentation infrastructure only. It does not execute calculations,
+change formulas, change material values, update catalogs, implement UI, or make
+ML a calculator.
+
+## K80 Release Artifact Manifest
+
+K80 adds `release-manifest` and `workflows/release_manifest.py`:
+
+```bash
+python -m sp63_core release-manifest --output-dir reports/release_manifest_smoke --version 0.9.0-rc1 --json
+```
+
+The command records version metadata, git branch, git commit, generation time,
+release-review artifact paths, file sizes, and SHA256 checksums.
+
+K80 is reproducibility metadata only. It does not publish a release, execute
+calculations, change formulas, change material values, implement UI, or make ML
+a calculator.
+
+## K81 User Acceptance Smoke Suite
+
+K81 adds `user-acceptance-smoke` and `workflows/user_acceptance_smoke.py`:
+
+```bash
+python -m sp63_core user-acceptance-smoke --output-dir reports/user_acceptance_smoke --json
+```
+
+The suite aggregates golden validation, manual cases, external validation
+sample, material audit, protected-files guard, docs audit, project template
+package, clean batch workflow examples, and release artifact manifest. The
+expected result can remain `review_required` because material verification and
+engineering review gates remain open.
+
+K81 is review evidence only. It does not publish a release, certify designs,
+change formulas, change material values, implement UI, or make ML a calculator.
+
+## K82 v0.9 Readiness Gate
+
+K82 adds `v09-readiness` and `workflows/v09_readiness.py`:
+
+```bash
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_smoke --json
+```
+
+The gate aggregates protected-files guard, documentation audit, release
+manifest, user acceptance smoke, and release candidate report statuses. It
+writes JSON and Markdown summaries plus nested review artifacts for release
+discussion.
+
+K82 is readiness evidence only. It does not publish a release, certify designs,
+change formulas, change material values, change reinforcement selection,
+implement UI, or make ML a calculator. `ml_ready_for_project_use` remains
+`false`.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package

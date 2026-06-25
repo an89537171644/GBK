@@ -23,6 +23,7 @@ class BatchEngineeringWorkflowResult:
 
     status: str
     batch_status: str
+    command_exit_status: str
     input_dir: str
     output_dir: str
     case_count: int
@@ -30,10 +31,15 @@ class BatchEngineeringWorkflowResult:
     review_required_count: int
     failed_count: int
     skipped_count: int
+    passed_cases: tuple[str, ...]
+    review_required_cases: tuple[str, ...]
+    failed_cases: tuple[str, ...]
+    skipped_cases: tuple[str, ...]
     case_results: tuple[dict[str, Any], ...]
     batch_index_path: str
     batch_summary_json_path: str
     batch_summary_markdown_path: str
+    recommendations: tuple[str, ...]
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
     requires_engineer_review: bool = True
@@ -117,18 +123,36 @@ def run_engineering_workflow_batch(
                 }
             )
 
-    passed_count = sum(1 for case in case_results if case["workflow_status"] == "pass")
-    review_required_count = sum(
-        1 for case in case_results if case["workflow_status"] == "review_required"
+    passed_cases = tuple(
+        case["case_id"] for case in case_results if case["workflow_status"] == "pass"
     )
-    failed_count = sum(1 for case in case_results if case["workflow_status"] == "fail")
-    skipped_count = sum(1 for case in case_results if case["workflow_status"] == "skipped")
+    review_required_cases = tuple(
+        case["case_id"] for case in case_results if case["workflow_status"] == "review_required"
+    )
+    failed_cases = tuple(
+        case["case_id"] for case in case_results if case["workflow_status"] == "fail"
+    )
+    skipped_cases = tuple(
+        case["case_id"] for case in case_results if case["workflow_status"] == "skipped"
+    )
+    passed_count = len(passed_cases)
+    review_required_count = len(review_required_cases)
+    failed_count = len(failed_cases)
+    skipped_count = len(skipped_cases)
     batch_status = _batch_status(
         errors=errors,
         failed_count=failed_count,
         review_required_count=review_required_count,
         case_count=len(case_results),
         skipped_count=skipped_count,
+    )
+    command_exit_status = "completed" if not errors else "failed"
+    recommendations = _batch_recommendations(
+        batch_status=batch_status,
+        failed_count=failed_count,
+        review_required_count=review_required_count,
+        skipped_count=skipped_count,
+        case_count=len(case_results),
     )
 
     batch_summary_json_path = output_path / "batch_workflow_summary.json"
@@ -138,6 +162,7 @@ def run_engineering_workflow_batch(
     result = BatchEngineeringWorkflowResult(
         status=batch_status,
         batch_status=batch_status,
+        command_exit_status=command_exit_status,
         input_dir=str(input_path),
         output_dir=str(output_path),
         case_count=len(case_results),
@@ -145,10 +170,15 @@ def run_engineering_workflow_batch(
         review_required_count=review_required_count,
         failed_count=failed_count,
         skipped_count=skipped_count,
+        passed_cases=passed_cases,
+        review_required_cases=review_required_cases,
+        failed_cases=failed_cases,
+        skipped_cases=skipped_cases,
         case_results=tuple(case_results),
         batch_index_path=str(batch_index_path),
         batch_summary_json_path=str(batch_summary_json_path),
         batch_summary_markdown_path=str(batch_summary_markdown_path),
+        recommendations=recommendations,
         warnings=tuple(dict.fromkeys(warnings)),
         errors=tuple(errors),
         requires_engineer_review=True,
@@ -183,6 +213,29 @@ def _batch_status(
     return "pass"
 
 
+def _batch_recommendations(
+    *,
+    batch_status: str,
+    failed_count: int,
+    review_required_count: int,
+    skipped_count: int,
+    case_count: int,
+) -> tuple[str, ...]:
+    recommendations: list[str] = []
+    if case_count == 0:
+        recommendations.append("add valid input JSON files before running batch workflow")
+    if failed_count:
+        recommendations.append("open failed case folders and fix input/preflight errors first")
+    if skipped_count:
+        recommendations.append("review skipped cases before relying on the batch summary")
+    if review_required_count:
+        recommendations.append("perform engineer review for review_required cases")
+    if batch_status == "pass":
+        recommendations.append("archive batch outputs only after engineer review")
+    recommendations.append("keep deterministic SP63 verification as the authority for every case")
+    return tuple(dict.fromkeys(recommendations))
+
+
 def _batch_summary_payload(result: BatchEngineeringWorkflowResult) -> dict[str, Any]:
     payload = asdict(result)
     payload["report_type"] = "batch_engineering_workflow_summary"
@@ -203,6 +256,7 @@ def _render_batch_summary_markdown(result: BatchEngineeringWorkflowResult) -> st
         "## Summary",
         "",
         f"- batch_status: `{result.batch_status}`",
+        f"- command_exit_status: `{result.command_exit_status}`",
         f"- input_dir: `{result.input_dir}`",
         f"- output_dir: `{result.output_dir}`",
         f"- case_count: `{result.case_count}`",
@@ -210,6 +264,9 @@ def _render_batch_summary_markdown(result: BatchEngineeringWorkflowResult) -> st
         f"- review_required_count: `{result.review_required_count}`",
         f"- failed_count: `{result.failed_count}`",
         f"- skipped_count: `{result.skipped_count}`",
+        f"- passed_cases: `{', '.join(result.passed_cases) or 'none'}`",
+        f"- review_required_cases: `{', '.join(result.review_required_cases) or 'none'}`",
+        f"- failed_cases: `{', '.join(result.failed_cases) or 'none'}`",
         f"- batch_index_path: `{result.batch_index_path}`",
         "",
         "## Cases",
@@ -230,6 +287,10 @@ def _render_batch_summary_markdown(result: BatchEngineeringWorkflowResult) -> st
         )
     lines.extend(
         [
+            "",
+            "## Recommendations",
+            "",
+            *_bullet_lines(result.recommendations),
             "",
             "## Warnings",
             "",
@@ -255,11 +316,15 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
     for case in result.case_results:
         link_target = case["index_path"] or str(Path(case["output_dir"]) / "workflow_summary.md")
         href = _relative_href(Path(link_target), Path(result.batch_index_path).parent)
+        status = str(case["workflow_status"])
         rows.append(
             "<tr>"
             f"<td><code>{html.escape(case['case_id'])}</code></td>"
-            f"<td><code>{html.escape(case['workflow_status'])}</code></td>"
-            f"<td><code>{html.escape(str(case['preflight_status']))}</code></td>"
+            '<td><code class="status status-{status_class}">{status}</code></td>'.format(
+                status_class=html.escape(status),
+                status=html.escape(status),
+            )
+            + f"<td><code>{html.escape(str(case['preflight_status']))}</code></td>"
             f"<td><code>{html.escape(case['deterministic_report_status'])}</code></td>"
             f'<td><a href="{html.escape(href, quote=True)}">case report</a></td>'
             "</tr>"
@@ -280,6 +345,9 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
             "    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }",
             "    th, td { border: 1px solid #ccc; padding: 0.4rem; }",
             "    code { background: #f4f4f4; padding: 0.1rem 0.25rem; }",
+            "    .status-pass { color: #075d2a; font-weight: 700; }",
+            "    .status-review_required { color: #8a4b00; font-weight: 700; }",
+            "    .status-fail { color: #8a1f11; font-weight: 700; }",
             "  </style>",
             "</head>",
             "<body>",
@@ -291,7 +359,10 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
             "<h2>Summary</h2>",
             "<ul>",
             f"<li>batch_status: <code>{html.escape(result.batch_status)}</code></li>",
+            f"<li>command_exit_status: <code>{html.escape(result.command_exit_status)}</code></li>",
             f"<li>case_count: <code>{result.case_count}</code></li>",
+            f"<li>passed_count: <code>{result.passed_count}</code></li>",
+            f"<li>review_required_count: <code>{result.review_required_count}</code></li>",
             f"<li>failed_count: <code>{result.failed_count}</code></li>",
             "<li>ml_ready_for_project_use: <code>false</code></li>",
             "</ul>",
@@ -304,6 +375,18 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
             *(rows or ["<tr><td colspan=\"5\">No cases found.</td></tr>"]),
             "</tbody>",
             "</table>",
+            "</section>",
+            "<section>",
+            "<h2>Recommendations</h2>",
+            "<ul>",
+            *(
+                [
+                    f"<li>{html.escape(recommendation)}</li>"
+                    for recommendation in result.recommendations
+                ]
+                or ["<li>none</li>"]
+            ),
+            "</ul>",
             "</section>",
             "<section>",
             "<h2>Warnings</h2>",
@@ -336,9 +419,16 @@ def _render_batch_readme(result: BatchEngineeringWorkflowResult) -> str:
         "## Status",
         "",
         f"- batch_status: `{result.batch_status}`",
+        f"- command_exit_status: `{result.command_exit_status}`",
         f"- case_count: `{result.case_count}`",
+        f"- passed_count: `{result.passed_count}`",
         f"- failed_count: `{result.failed_count}`",
         f"- review_required_count: `{result.review_required_count}`",
+        f"- failed_cases: `{', '.join(result.failed_cases) or 'none'}`",
+        "",
+        "## Recommendations",
+        "",
+        *_bullet_lines(result.recommendations),
         "",
         "## Safety",
         "",

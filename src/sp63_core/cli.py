@@ -113,20 +113,26 @@ from sp63_core.validation import (
 )
 from sp63_core.workflows import (
     build_diagnostics_catalog,
+    build_docs_audit_report,
     build_engineering_gui_planning_decision,
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
+    build_project_template_package,
+    build_release_artifact_manifest,
     build_release_candidate_report,
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
+    build_v09_readiness_gate,
+    render_docs_audit_markdown,
     render_self_check_markdown,
     run_engineering_workflow,
     run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
     run_input_preflight,
     run_protected_files_guard,
+    run_user_acceptance_smoke,
 )
 
 
@@ -684,6 +690,18 @@ def build_parser() -> ArgumentParser:
     )
     diagnostics_catalog.set_defaults(handler=_handle_diagnostics_catalog)
 
+    docs_audit = subparsers.add_parser(
+        "docs-audit",
+        help="audit local documentation links and required CLI examples",
+    )
+    docs_audit.add_argument(
+        "--output-dir",
+        help="optional output directory for docs_audit_report.json/md",
+    )
+    docs_audit.add_argument("--json", action="store_true", help="print JSON output")
+    docs_audit.add_argument("--markdown", action="store_true", help="print Markdown output")
+    docs_audit.set_defaults(handler=_handle_docs_audit)
+
     evidence_templates = subparsers.add_parser(
         "evidence-templates",
         help="create external validation and material verification template package",
@@ -695,6 +713,18 @@ def build_parser() -> ArgumentParser:
     )
     evidence_templates.add_argument("--json", action="store_true", help="print JSON output")
     evidence_templates.set_defaults(handler=_handle_evidence_templates)
+
+    project_template = subparsers.add_parser(
+        "project-template",
+        help="create a project handoff template with input and evidence files",
+    )
+    project_template.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for project template package",
+    )
+    project_template.add_argument("--json", action="store_true", help="print JSON output")
+    project_template.set_defaults(handler=_handle_project_template)
 
     protected_files_check = subparsers.add_parser(
         "protected-files-check",
@@ -760,6 +790,72 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release candidate report",
     )
     release_candidate_report.set_defaults(handler=_handle_release_candidate_report)
+
+    release_manifest = subparsers.add_parser(
+        "release-manifest",
+        help="build release artifact manifest and version metadata",
+    )
+    release_manifest.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release artifact manifest files",
+    )
+    release_manifest.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release version label",
+    )
+    release_manifest.add_argument("--json", action="store_true", help="print JSON output")
+    release_manifest.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release artifact manifest",
+    )
+    release_manifest.set_defaults(handler=_handle_release_manifest)
+
+    user_acceptance_smoke = subparsers.add_parser(
+        "user-acceptance-smoke",
+        help="run v0.9 user acceptance smoke suite",
+    )
+    user_acceptance_smoke.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for user acceptance smoke artifacts",
+    )
+    user_acceptance_smoke.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested release manifest smoke",
+    )
+    user_acceptance_smoke.add_argument("--json", action="store_true", help="print JSON output")
+    user_acceptance_smoke.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown user acceptance smoke summary",
+    )
+    user_acceptance_smoke.set_defaults(handler=_handle_user_acceptance_smoke)
+
+    v09_readiness = subparsers.add_parser(
+        "v09-readiness",
+        help="build v0.9 readiness gate report",
+    )
+    v09_readiness.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 readiness artifacts",
+    )
+    v09_readiness.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by nested release artifacts",
+    )
+    v09_readiness.add_argument("--json", action="store_true", help="print JSON output")
+    v09_readiness.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v0.9 readiness report",
+    )
+    v09_readiness.set_defaults(handler=_handle_v09_readiness)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2156,11 +2252,17 @@ def _handle_engineering_workflow_batch(args: Namespace) -> int:
     print("Batch engineering workflow")
     print(f"status: {result.status}")
     print(f"batch_status: {result.batch_status}")
+    print(f"command_exit_status: {result.command_exit_status}")
     print(f"case_count: {result.case_count}")
     print(f"passed_count: {result.passed_count}")
     print(f"review_required_count: {result.review_required_count}")
     print(f"failed_count: {result.failed_count}")
+    print(f"failed_cases: {', '.join(result.failed_cases) or 'none'}")
     print(f"output_dir: {result.output_dir}")
+    if result.recommendations:
+        print("recommendations:")
+        for recommendation in result.recommendations:
+            print(f"- {recommendation}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
@@ -2510,6 +2612,37 @@ def _handle_diagnostics_catalog(args: Namespace) -> int:
     return 0
 
 
+def _handle_docs_audit(args: Namespace) -> int:
+    result = build_docs_audit_report(
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    payload = {
+        "command": "docs-audit",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(render_docs_audit_markdown(result), end="")
+        return 0
+
+    print("Documentation audit")
+    print(f"status: {result.status}")
+    print(f"docs_audit_status: {result.docs_audit_status}")
+    print(f"markdown_files_count: {result.markdown_files_count}")
+    print(f"local_link_count: {result.local_link_count}")
+    print(f"missing_local_links: {len(result.missing_local_links)}")
+    print(f"required_commands_missing: {len(result.required_commands_missing)}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_evidence_templates(args: Namespace) -> int:
     result = build_evidence_templates_package(output_dir=Path(args.output_dir))
     payload = {
@@ -2535,6 +2668,30 @@ def _handle_evidence_templates(args: Namespace) -> int:
     return 0
 
 
+def _handle_project_template(args: Namespace) -> int:
+    result = build_project_template_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "project-template",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Project template package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"generated_files: {len(result.generated_files)}")
+    print(f"manifest_path: {result.manifest_path}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
 def _handle_protected_files_check(args: Namespace) -> int:
     result = run_protected_files_guard(
         base_ref=args.base_ref,
@@ -2547,19 +2704,22 @@ def _handle_protected_files_check(args: Namespace) -> int:
     }
     if args.json:
         print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
-        return 0
+        return 1 if result.status == "fail" else 0
 
     print("Protected files check")
     print(f"status: {result.status}")
     print(f"guard_status: {result.guard_status}")
     print(f"checked_git_ref: {result.checked_git_ref}")
+    print(f"base_ref: {result.base_ref}")
+    print(f"head_ref: {result.head_ref}")
+    print(f"github_actions_detected: {result.github_actions_detected}")
     print(f"changed_protected_files: {len(result.changed_protected_files)}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")
         for error in result.errors:
             print(f"- {error}")
-    return 0
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_user_manual_index(args: Namespace) -> int:
@@ -2629,6 +2789,101 @@ def _handle_release_candidate_report(args: Namespace) -> int:
     print(f"output_dir: {result.output_dir}")
     print(f"protected_files_guard_status: {result.protected_files_guard_status}")
     print(f"user_manual_status: {result.user_manual_status}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_release_manifest(args: Namespace) -> int:
+    result = build_release_artifact_manifest(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-manifest",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release artifact manifest")
+    print(f"status: {result.status}")
+    print(f"manifest_status: {result.manifest_status}")
+    print(f"version: {result.version}")
+    print(f"git_commit: {result.git_commit}")
+    print(f"artifact_count: {result.artifact_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_user_acceptance_smoke(args: Namespace) -> int:
+    result = run_user_acceptance_smoke(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "user-acceptance-smoke",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("User acceptance smoke")
+    print(f"status: {result.status}")
+    print(f"user_acceptance_status: {result.user_acceptance_status}")
+    print(f"smoke_count: {result.smoke_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_v09_readiness(args: Namespace) -> int:
+    result = build_v09_readiness_gate(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-readiness",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("v0.9 readiness gate")
+    print(f"status: {result.status}")
+    print(f"readiness_status: {result.readiness_status}")
+    print(f"gate_count: {result.gate_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

@@ -1352,3 +1352,124 @@ and absence of direct formula-module imports.
 
 K75 creates review evidence only. It does not publish a release, certify
 designs, change formulas, change material values, or make ML a calculator.
+
+## K76 CI Safety Workflow Validation
+
+K76 adds `.github/workflows/safety.yml` and strengthens
+`protected-files-check` for GitHub Actions ref handling:
+
+```bash
+python -m sp63_core protected-files-check --json
+python -m sp63_core release-candidate-report --output-dir reports/release_candidate_ci_smoke --json
+```
+
+The tests verify GitHub Actions base-ref detection, JSON fields for resolved
+refs, protected-file pass/fail behavior, and CLI output. The workflow uses
+`fetch-depth: 0` so `origin/main` is available in CI.
+
+K76 does not change formulas, material values, reinforcement selection,
+external validation logic, or ML safety policy.
+
+## K77 Clean Batch Examples Validation
+
+K77 adds validation coverage for clean batch workflow examples and clearer batch
+summary UX:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/batch_valid --output-dir reports/engineering_workflow_batch_valid_smoke --with-preflight --with-index --json
+```
+
+The tests verify that `docs/reports/examples/batch_valid/` runs with no failed
+cases, that `command_exit_status` is separate from `batch_status`, that
+`passed_cases`, `review_required_cases`, `failed_cases`, and recommendations
+are present in the summary, and that the older `form_templates` diagnostic set
+still records intentional failed/review cases.
+
+K77 does not change formulas, material values, reinforcement selection,
+external validation logic, UI policy, or ML safety policy.
+
+## K78 Project Template Package Validation
+
+K78 adds validation coverage for `project-template`:
+
+```bash
+python -m sp63_core project-template --output-dir reports/project_template_smoke --json
+```
+
+The tests verify that the package creates `input/rectangular_input.json`,
+external/material evidence templates, `README_PROJECT_TEMPLATE.md`,
+`RUN_COMMANDS.md`, `acceptance_checklist.md`, and
+`project_template_manifest.json` with SHA256 checksums. CLI JSON output,
+mandatory safety flags, and absence of direct formula-module imports are also
+covered.
+
+K78 is a project handoff scaffold only. It does not run calculations, change
+formulas, change material values, update the material catalog, include full
+SP 63 text, include private documents, implement UI, or make ML a calculator.
+
+## K79 Documentation Audit Validation
+
+K79 adds validation coverage for `docs-audit`:
+
+```bash
+python -m sp63_core docs-audit --json
+python -m sp63_core docs-audit --output-dir reports/docs_audit_smoke --json
+```
+
+The tests verify that required documentation files exist, local Markdown links
+resolve, required CLI examples are present, JSON/Markdown report files can be
+written, CLI JSON works, and direct formula-module imports are absent.
+
+K79 is documentation infrastructure only. It does not run calculations, change
+formulas, change material values, implement UI, or make ML a calculator.
+
+## K80 Release Artifact Manifest Validation
+
+K80 adds validation coverage for `release-manifest`:
+
+```bash
+python -m sp63_core release-manifest --output-dir reports/release_manifest_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify JSON/Markdown/VERSION output, git/version metadata, artifact
+SHA256 checksums, CLI JSON/Markdown behavior, missing artifact failure, safety
+flags, and absence of direct formula-module imports.
+
+K80 is reproducibility metadata only. It does not publish a release, certify
+designs, run calculations, change formulas, change material values, implement
+UI, or make ML a calculator.
+
+## K81 User Acceptance Smoke Validation
+
+K81 adds validation coverage for `user-acceptance-smoke`:
+
+```bash
+python -m sp63_core user-acceptance-smoke --output-dir reports/user_acceptance_smoke --json
+```
+
+The tests verify aggregated smoke results for golden validation, manual cases,
+external validation sample, material audit, protected-files guard, docs audit,
+project template package, clean batch workflow examples, and release manifest.
+They also cover CLI JSON/Markdown behavior, nested output creation, safety
+flags, and absence of direct formula-module imports.
+
+K81 is review evidence only. It does not certify designs, change formulas,
+change material values, implement UI, or make ML a calculator.
+
+## K82 v0.9 Readiness Gate Validation
+
+K82 adds validation coverage for `v09-readiness`:
+
+```bash
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_smoke --json
+python -m sp63_core v09-readiness --output-dir reports/v09_readiness_markdown_smoke --markdown
+```
+
+The tests verify that the command builds `v09_readiness_report.json`,
+`v09_readiness_report.md`, nested release manifest, user acceptance smoke, and
+release candidate artifacts. They also cover CLI JSON/Markdown behavior,
+mandatory safety flags, `ml_ready_for_project_use = false`, and absence of
+direct formula-module imports.
+
+K82 is review evidence only. It does not publish a release, certify designs,
+change formulas, change material values, implement UI, or make ML a calculator.

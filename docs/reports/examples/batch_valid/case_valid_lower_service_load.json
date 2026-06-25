@@ -1,0 +1,18 @@
+{
+  "b": 300,
+  "h": 500,
+  "cover": 32,
+  "stirrup_diameter_for_geometry": 8,
+  "concrete_class": "B25",
+  "longitudinal_rebar_class": "A500",
+  "stirrup_rebar_class": "A240",
+  "M": 120000000,
+  "Q": 70000,
+  "Mser": 20000000,
+  "check_cracks": true,
+  "check_crack_width": true,
+  "check_deflection": true,
+  "span": 5500,
+  "acrc_limit": 0.3,
+  "deflection_limit_ratio": 250
+}

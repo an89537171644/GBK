@@ -1111,6 +1111,110 @@ The batch runner creates one `case_####/` workflow folder per input file plus
 the whole batch; they are reported as failed cases. The batch index is static
 HTML only and performs no calculations.
 
+## K77 clean batch examples and summary UX
+
+K77 adds a clean batch smoke input folder:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/batch_valid \
+  --output-dir reports/engineering_workflow_batch_valid_smoke \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+The JSON/Markdown/HTML batch summary now separates command completion from
+engineering status:
+
+- `command_exit_status` records whether the batch command completed.
+- `batch_status` records aggregated engineering status.
+- `passed_cases`, `review_required_cases`, and `failed_cases` list case ids.
+- recommendations explain how to handle invalid or review-required cases.
+
+The existing `form_templates` folder remains a diagnostic set with intentional
+invalid/review inputs. K77 does not change formulas, materials, reinforcement
+selection, external validation, UI policy, or ML safety.
+
+## K78 project template package
+
+K78 adds a project handoff scaffold:
+
+```bash
+python -m sp63_core project-template \
+  --output-dir reports/project_template_smoke \
+  --json
+```
+
+The package writes `input/rectangular_input.json`, blank external/material
+evidence CSV templates, `RUN_COMMANDS.md`, `acceptance_checklist.md`, and
+`project_template_manifest.json` with SHA256 checksums. It is a scaffold only:
+it does not run calculations, certify designs, update materials, include full
+SP 63 text, include private SCAD/LIRA files, or make ML project-ready.
+
+## K79 documentation link and command audit
+
+K79 adds a static documentation audit:
+
+```bash
+python -m sp63_core docs-audit --json
+python -m sp63_core docs-audit --output-dir reports/docs_audit_smoke --json
+```
+
+The audit checks required documentation files, local Markdown links, and key
+CLI example snippets. It is a completeness check only and does not certify
+designs, run calculations, change formulas/materials, implement UI, or make ML
+project-ready.
+
+## K80 release artifact manifest
+
+K80 adds release artifact metadata:
+
+```bash
+python -m sp63_core release-manifest \
+  --output-dir reports/release_manifest_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The command writes `release_artifact_manifest.json`,
+`release_artifact_manifest.md`, and `VERSION.txt` with git/version metadata and
+SHA256 checksums for key release-review artifacts. It does not publish a
+release, certify designs, change formulas/materials, implement UI, or make ML
+project-ready.
+
+## K81 user acceptance smoke suite
+
+K81 adds an aggregated v0.9 smoke suite:
+
+```bash
+python -m sp63_core user-acceptance-smoke \
+  --output-dir reports/user_acceptance_smoke \
+  --json
+```
+
+The suite summarizes golden/manual/external/material/docs/protected/project
+template/batch-valid/release-manifest checks. `review_required` is expected
+while engineer material and workflow review gates remain open. The suite is
+review evidence only and does not certify designs or make ML project-ready.
+
+## K82 v0.9 readiness gate
+
+K82 adds a final aggregated readiness command:
+
+```bash
+python -m sp63_core v09-readiness \
+  --output-dir reports/v09_readiness_smoke \
+  --json
+```
+
+The gate summarizes protected-files, documentation audit, release manifest,
+user acceptance smoke, and release candidate report statuses into
+`v09_readiness_report.json` and `v09_readiness_report.md`. `review_required` is
+expected while engineer approval gates remain open. The gate does not publish a
+release, certify designs, change formulas/materials, implement UI, or make ML
+project-ready; `ml_ready_for_project_use` remains `false`.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

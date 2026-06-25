@@ -5,6 +5,7 @@ from sp63_core.cli import main
 from sp63_core.workflows import run_engineering_workflow_batch
 
 FORM_TEMPLATES = Path("docs/reports/examples/form_templates")
+BATCH_VALID = Path("docs/reports/examples/batch_valid")
 
 
 def test_engineering_workflow_batch_runs_form_templates(tmp_path):
@@ -51,6 +52,50 @@ def test_engineering_workflow_batch_summary_contains_case_statuses(tmp_path):
         case["deterministic_report_status"] == "pass" for case in payload["case_results"]
     )
     assert payload["failed_count"] >= 1
+    assert payload["command_exit_status"] == "completed"
+    assert payload["failed_cases"]
+    assert payload["recommendations"]
+
+
+def test_engineering_workflow_batch_valid_examples_have_no_failed_cases(tmp_path):
+    output_dir = tmp_path / "batch_valid"
+
+    result = run_engineering_workflow_batch(
+        input_dir=BATCH_VALID,
+        output_dir=output_dir,
+        with_preflight=True,
+        with_index=True,
+    )
+
+    expected_case_count = len(tuple(BATCH_VALID.glob("*.json")))
+    assert result.case_count == expected_case_count
+    assert result.command_exit_status == "completed"
+    assert result.failed_count == 0
+    assert result.failed_cases == ()
+    assert result.passed_count + result.review_required_count == expected_case_count
+    assert result.recommendations
+    assert result.requires_engineer_review is True
+    assert result.ml_ready_for_project_use is False
+    assert (output_dir / "batch_workflow_summary.json").exists()
+    assert (output_dir / "batch_index.html").exists()
+
+
+def test_engineering_workflow_batch_valid_summary_exposes_case_lists(tmp_path):
+    output_dir = tmp_path / "batch_valid_summary"
+
+    run_engineering_workflow_batch(
+        input_dir=BATCH_VALID,
+        output_dir=output_dir,
+        with_preflight=True,
+        with_index=True,
+    )
+
+    payload = json.loads((output_dir / "batch_workflow_summary.json").read_text(encoding="utf-8"))
+    assert payload["command_exit_status"] == "completed"
+    assert payload["failed_cases"] == []
+    assert payload["passed_cases"] or payload["review_required_cases"]
+    assert payload["report_type"] == "batch_engineering_workflow_summary"
+    assert payload["recommendations"]
 
 
 def test_engineering_workflow_batch_index_links_case_indexes(tmp_path):
@@ -68,8 +113,26 @@ def test_engineering_workflow_batch_index_links_case_indexes(tmp_path):
     assert "case_0001" in html
     assert "case report" in html
     assert "ml_ready_for_project_use" in html
+    assert "command_exit_status" in html
     assert "<script" not in html.lower()
     assert "Approve design" not in html
+
+
+def test_engineering_workflow_batch_valid_index_shows_status_counts(tmp_path):
+    output_dir = tmp_path / "batch_valid_index"
+
+    result = run_engineering_workflow_batch(
+        input_dir=BATCH_VALID,
+        output_dir=output_dir,
+        with_preflight=True,
+        with_index=True,
+    )
+
+    html = (output_dir / "batch_index.html").read_text(encoding="utf-8")
+    assert f"case_count: <code>{result.case_count}</code>" in html
+    assert "review_required_count" in html
+    assert "failed_count" in html
+    assert "Recommendations" in html
 
 
 def test_engineering_workflow_batch_invalid_case_does_not_break_batch(tmp_path):
@@ -110,9 +173,35 @@ def test_cli_engineering_workflow_batch_json(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "engineering-workflow-batch"
     assert payload["batch_status"] == "fail"
+    assert payload["command_exit_status"] == "completed"
     assert payload["case_count"] == len(tuple(FORM_TEMPLATES.glob("*.json")))
     assert payload["failed_count"] >= 1
     assert (output_dir / "batch_index.html").exists()
+
+
+def test_cli_engineering_workflow_batch_valid_json(tmp_path, capsys):
+    output_dir = tmp_path / "batch_valid_cli"
+
+    exit_code = main(
+        [
+            "engineering-workflow-batch",
+            "--input-dir",
+            str(BATCH_VALID),
+            "--output-dir",
+            str(output_dir),
+            "--with-preflight",
+            "--with-index",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["command"] == "engineering-workflow-batch"
+    assert payload["command_exit_status"] == "completed"
+    assert payload["failed_count"] == 0
+    assert payload["failed_cases"] == []
+    assert payload["case_count"] == len(tuple(BATCH_VALID.glob("*.json")))
 
 
 def test_engineering_workflow_batch_does_not_import_formula_modules():

@@ -1,0 +1,40 @@
+name: safety
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Run pytest
+        run: python -m pytest
+      - name: Run ruff
+        run: ruff check .
+      - name: Run golden validation
+        run: python -m sp63_core validate --golden
+      - name: Run manual cases
+        run: python -m sp63_core manual-cases --json
+      - name: Run external validation sample
+        run: python -m sp63_core external-validation --sample --json
+      - name: Run protected files guard
+        run: python -m sp63_core protected-files-check --json
+      - name: Run release candidate smoke
+        run: |
+          python -m sp63_core release-candidate-report \
+            --output-dir reports/release_candidate_ci_smoke \
+            --json
