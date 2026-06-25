@@ -34,6 +34,10 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.project_template import (
+    ProjectTemplatePackageResult,
+    build_project_template_package,
+)
 from sp63_core.workflows.protected_files_guard import (
     PROTECTED_FILES,
     ProtectedFilesGuardResult,
@@ -76,6 +80,7 @@ __all__ = [
     "PROTECTED_FILES",
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
+    "ProjectTemplatePackageResult",
     "ReleaseCandidateReportResult",
     "UserManualIndexResult",
     "EngineeringWorkflowResult",
@@ -86,6 +91,7 @@ __all__ = [
     "build_release_candidate_report",
     "build_diagnostics_catalog",
     "build_input_form_schema",
+    "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
     "build_user_manual_index",

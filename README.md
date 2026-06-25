@@ -1136,6 +1136,22 @@ The existing `form_templates` folder remains a diagnostic set with intentional
 invalid/review inputs. K77 does not change formulas, materials, reinforcement
 selection, external validation, UI policy, or ML safety.
 
+## K78 project template package
+
+K78 adds a project handoff scaffold:
+
+```bash
+python -m sp63_core project-template \
+  --output-dir reports/project_template_smoke \
+  --json
+```
+
+The package writes `input/rectangular_input.json`, blank external/material
+evidence CSV templates, `RUN_COMMANDS.md`, `acceptance_checklist.md`, and
+`project_template_manifest.json` with SHA256 checksums. It is a scaffold only:
+it does not run calculations, certify designs, update materials, include full
+SP 63 text, include private SCAD/LIRA files, or make ML project-ready.
+
 ## K72 evidence templates package
 
 K72 adds an engineer handoff package for blank external-validation and

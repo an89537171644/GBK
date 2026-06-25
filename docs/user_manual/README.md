@@ -17,5 +17,6 @@ material verification, and engineer review remain mandatory.
 - [Batch Workflow](batch_workflow.md)
 - [ML Advisory Limits](ml_advisory_limits.md)
 - [Evidence Templates](evidence_templates.md)
+- [Project Template](project_template.md)
 - [Troubleshooting](troubleshooting.md)
 - [Acceptance Checklist](acceptance_checklist.md)

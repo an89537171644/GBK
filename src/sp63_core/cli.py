@@ -117,6 +117,7 @@ from sp63_core.workflows import (
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_input_form_schema,
+    build_project_template_package,
     build_release_candidate_report,
     build_static_input_form_preview,
     build_static_workflow_report_index,
@@ -695,6 +696,18 @@ def build_parser() -> ArgumentParser:
     )
     evidence_templates.add_argument("--json", action="store_true", help="print JSON output")
     evidence_templates.set_defaults(handler=_handle_evidence_templates)
+
+    project_template = subparsers.add_parser(
+        "project-template",
+        help="create a project handoff template with input and evidence files",
+    )
+    project_template.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for project template package",
+    )
+    project_template.add_argument("--json", action="store_true", help="print JSON output")
+    project_template.set_defaults(handler=_handle_project_template)
 
     protected_files_check = subparsers.add_parser(
         "protected-files-check",
@@ -2532,6 +2545,30 @@ def _handle_evidence_templates(args: Namespace) -> int:
     print(f"output_dir: {result.output_dir}")
     print(f"external_validation_template_path: {result.external_validation_template_path}")
     print(f"material_verification_template_path: {result.material_verification_template_path}")
+    print(f"manifest_path: {result.manifest_path}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_project_template(args: Namespace) -> int:
+    result = build_project_template_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "project-template",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Project template package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"generated_files: {len(result.generated_files)}")
     print(f"manifest_path: {result.manifest_path}")
     _print_warnings(result.warnings)
     if result.errors:

@@ -1387,3 +1387,22 @@ still records intentional failed/review cases.
 
 K77 does not change formulas, material values, reinforcement selection,
 external validation logic, UI policy, or ML safety policy.
+
+## K78 Project Template Package Validation
+
+K78 adds validation coverage for `project-template`:
+
+```bash
+python -m sp63_core project-template --output-dir reports/project_template_smoke --json
+```
+
+The tests verify that the package creates `input/rectangular_input.json`,
+external/material evidence templates, `README_PROJECT_TEMPLATE.md`,
+`RUN_COMMANDS.md`, `acceptance_checklist.md`, and
+`project_template_manifest.json` with SHA256 checksums. CLI JSON output,
+mandatory safety flags, and absence of direct formula-module imports are also
+covered.
+
+K78 is a project handoff scaffold only. It does not run calculations, change
+formulas, change material values, update the material catalog, include full
+SP 63 text, include private documents, implement UI, or make ML a calculator.

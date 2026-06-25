@@ -1082,6 +1082,23 @@ K77 is workflow UX and example-data hardening only. It does not change
 formulas, material values, reinforcement selection, deterministic checks,
 external validation logic, UI behavior, or ML safety policy.
 
+## K78 Project Template Package
+
+K78 adds `project-template` and `workflows/project_template.py`:
+
+```bash
+python -m sp63_core project-template --output-dir reports/project_template_smoke --json
+```
+
+The command creates a handoff scaffold with an editable rectangular input JSON,
+blank external validation and material verification templates, recommended run
+commands, an acceptance checklist, and a SHA256 manifest.
+
+K78 is packaging only. It does not execute calculations, change formulas,
+change material values, auto-update catalogs, implement UI, add private
+SCAD/LIRA files, include full SP 63 text, or make ML a calculator. Engineer
+review remains mandatory.
+
 ## K72 External/Material Evidence Templates Package
 
 K72 adds `evidence-templates` and `workflows/evidence_templates.py` to package
