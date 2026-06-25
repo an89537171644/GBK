@@ -147,6 +147,11 @@ from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
 )
+from sp63_core.workflows.v10_gap_report import (
+    V10GapReportResult,
+    build_v10_gap_report,
+    render_v10_gap_report_markdown,
+)
 
 __all__ = [
     "AgentSprintGuardResult",
@@ -186,6 +191,7 @@ __all__ = [
     "UserAcceptanceSmokeResult",
     "V09FinalAuditResult",
     "V09ReadinessResult",
+    "V10GapReportResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_agent_sprint_guard",
@@ -213,10 +219,12 @@ __all__ = [
     "build_user_manual_index",
     "build_v09_final_audit",
     "build_v09_readiness_gate",
+    "build_v10_gap_report",
     "render_docs_audit_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
+    "render_v10_gap_report_markdown",
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",

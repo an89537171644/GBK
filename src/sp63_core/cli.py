@@ -137,12 +137,14 @@ from sp63_core.workflows import (
     build_user_manual_index,
     build_v09_final_audit,
     build_v09_readiness_gate,
+    build_v10_gap_report,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
     render_traceability_matrix_markdown,
+    render_v10_gap_report_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
     run_engineering_workflow,
@@ -1058,6 +1060,23 @@ def build_parser() -> ArgumentParser:
         help="print Markdown final v0.9 audit report",
     )
     v09_final_audit.set_defaults(handler=_handle_v09_final_audit)
+
+    v10_gap_report = subparsers.add_parser(
+        "v10-gap-report",
+        help="build v1.0 gap and risk report",
+    )
+    v10_gap_report.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v1.0 gap report artifacts",
+    )
+    v10_gap_report.add_argument("--json", action="store_true", help="print JSON output")
+    v10_gap_report.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown v1.0 gap report",
+    )
+    v10_gap_report.set_defaults(handler=_handle_v10_gap_report)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3452,6 +3471,34 @@ def _handle_v09_final_audit(args: Namespace) -> int:
         for error in result.errors:
             print(f"- {error}")
     return 0
+
+
+def _handle_v10_gap_report(args: Namespace) -> int:
+    result = build_v10_gap_report(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "v10-gap-report",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v10_gap_report_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v1.0 gap report")
+    print(f"status: {result.status}")
+    print(f"report_status: {result.report_status}")
+    print(f"ready_for_v10: {result.ready_for_v10}")
+    print(f"remaining_steps_estimate: {result.remaining_steps_estimate}")
+    print(f"output_dir: {result.output_dir}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_agent_sprint_guard(args: Namespace) -> int:
