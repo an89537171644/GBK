@@ -106,6 +106,11 @@ from sp63_core.workflows.protected_files_guard import (
     ProtectedFilesGuardResult,
     run_protected_files_guard,
 )
+from sp63_core.workflows.release_acceptance_checklist import (
+    ReleaseAcceptanceChecklistResult,
+    build_release_acceptance_checklist,
+    render_release_acceptance_checklist_markdown,
+)
 from sp63_core.workflows.release_bundle import (
     ReleaseBundleResult,
     build_release_bundle,
@@ -208,6 +213,7 @@ __all__ = [
     "ProtectedFilesGuardResult",
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
+    "ReleaseAcceptanceChecklistResult",
     "ReleaseBundleResult",
     "ReleaseCandidateReportResult",
     "ReleaseNotesPackageResult",
@@ -232,6 +238,7 @@ __all__ = [
     "build_external_validation_evidence_package",
     "build_freeze_remediation_plan",
     "build_release_candidate_report",
+    "build_release_acceptance_checklist",
     "build_release_artifact_manifest",
     "build_release_bundle",
     "build_release_notes_package",
@@ -264,6 +271,7 @@ __all__ = [
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",
+    "render_release_acceptance_checklist_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
     "run_clean_demo_workflow",

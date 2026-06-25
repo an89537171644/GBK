@@ -129,6 +129,7 @@ from sp63_core.workflows import (
     build_material_verification_closure,
     build_portable_package,
     build_project_template_package,
+    build_release_acceptance_checklist,
     build_release_artifact_manifest,
     build_release_bundle,
     build_release_candidate_report,
@@ -149,6 +150,7 @@ from sp63_core.workflows import (
     render_freeze_remediation_plan_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
+    render_release_acceptance_checklist_markdown,
     render_self_check_markdown,
     render_traceability_matrix_markdown,
     render_v09_freeze_report_markdown,
@@ -1182,6 +1184,27 @@ def build_parser() -> ArgumentParser:
         help="print JSON output",
     )
     static_launcher_dashboard.set_defaults(handler=_handle_static_launcher_dashboard)
+
+    release_acceptance_checklist = subparsers.add_parser(
+        "release-acceptance-checklist",
+        help="build a v0.9 release acceptance checklist",
+    )
+    release_acceptance_checklist.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release acceptance checklist artifacts",
+    )
+    release_acceptance_checklist.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    release_acceptance_checklist.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown checklist",
+    )
+    release_acceptance_checklist.set_defaults(handler=_handle_release_acceptance_checklist)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3737,6 +3760,36 @@ def _handle_static_launcher_dashboard(args: Namespace) -> int:
     print(f"command_count: {result.command_count}")
     print("web_server_required: false")
     print("javascript_calculations_present: false")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_release_acceptance_checklist(args: Namespace) -> int:
+    result = build_release_acceptance_checklist(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "release-acceptance-checklist",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_release_acceptance_checklist_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Release acceptance checklist")
+    print(f"status: {result.status}")
+    print(f"item_count: {result.item_count}")
+    print(f"machine_pass_count: {result.machine_pass_count}")
+    print(f"manual_signoff_required_count: {result.manual_signoff_required_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
