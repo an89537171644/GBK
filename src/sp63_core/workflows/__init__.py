@@ -8,6 +8,10 @@ from sp63_core.workflows.engineering_workflow import (
     EngineeringWorkflowResult,
     run_engineering_workflow,
 )
+from sp63_core.workflows.engineering_workflow_batch import (
+    BatchEngineeringWorkflowResult,
+    run_engineering_workflow_batch,
+)
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
     build_engineering_gui_planning_decision,
@@ -43,6 +47,7 @@ from sp63_core.workflows.static_report_index import (
 __all__ = [
     "EngineeringGUIPlanningResult",
     "EngineeringInterfaceContractResult",
+    "BatchEngineeringWorkflowResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
@@ -60,6 +65,7 @@ __all__ = [
     "render_self_check_markdown",
     "render_input_preflight_markdown",
     "run_engineering_workflow",
+    "run_engineering_workflow_batch",
     "run_engineering_workflow_self_check",
     "run_input_preflight",
 ]

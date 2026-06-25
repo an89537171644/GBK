@@ -1271,3 +1271,21 @@ JSON/Markdown behavior, safety flags, and absence of formula-module imports.
 
 K70 is diagnostics metadata only. It does not change formulas, material values,
 reinforcement selection, deterministic checks, UI policy, or ML safety policy.
+
+## K71 Batch Engineering Workflow Validation
+
+K71 adds validation coverage for `engineering-workflow-batch`:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/form_templates --output-dir reports/engineering_workflow_batch_smoke --with-preflight --with-index --json
+```
+
+The tests verify that the batch runner processes all JSON files in the input
+directory, creates case folders, writes `batch_workflow_summary.json`,
+`batch_workflow_summary.md`, `batch_index.html`, and
+`README_BATCH_WORKFLOW.md`, records failed/review cases, preserves operation
+when one case is invalid, provides CLI JSON output, and does not import formula
+modules.
+
+K71 is orchestration only. It does not change formulas, material values,
+reinforcement selection, deterministic checks, UI policy, or ML safety policy.

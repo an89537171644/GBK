@@ -120,6 +120,7 @@ from sp63_core.workflows import (
     build_static_workflow_report_index,
     render_self_check_markdown,
     run_engineering_workflow,
+    run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
     run_input_preflight,
 )
@@ -421,6 +422,43 @@ def build_parser() -> ArgumentParser:
         help="print Markdown workflow summary",
     )
     engineering_workflow.set_defaults(handler=_handle_engineering_workflow)
+
+    engineering_workflow_batch = subparsers.add_parser(
+        "engineering-workflow-batch",
+        help="run engineering workflow for every JSON file in an input directory",
+    )
+    engineering_workflow_batch.add_argument(
+        "--input-dir",
+        required=True,
+        help="directory containing input JSON files",
+    )
+    engineering_workflow_batch.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for batch workflow files",
+    )
+    engineering_workflow_batch.add_argument(
+        "--with-preflight",
+        action="store_true",
+        help="run preflight for each case before deterministic workflow",
+    )
+    engineering_workflow_batch.add_argument(
+        "--with-index",
+        action="store_true",
+        help="create static HTML indexes for each case",
+    )
+    engineering_workflow_batch.add_argument(
+        "--no-zip",
+        action="store_true",
+        help="skip deterministic report ZIP creation for each case",
+    )
+    engineering_workflow_batch.add_argument("--json", action="store_true", help="print JSON output")
+    engineering_workflow_batch.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown batch workflow summary",
+    )
+    engineering_workflow_batch.set_defaults(handler=_handle_engineering_workflow_batch)
 
     engineering_report_index = subparsers.add_parser(
         "engineering-report-index",
@@ -2005,6 +2043,42 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print(f"archive_validation_status: {result.archive_validation_status}")
     print(f"zip_status: {result.zip_status}")
     print(f"ml_readiness_status: {result.ml_readiness_status}")
+    print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_engineering_workflow_batch(args: Namespace) -> int:
+    result = run_engineering_workflow_batch(
+        input_dir=Path(args.input_dir),
+        output_dir=Path(args.output_dir),
+        with_preflight=args.with_preflight,
+        with_index=args.with_index,
+        create_zip=not args.no_zip,
+    )
+    payload = {
+        "command": "engineering-workflow-batch",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        summary_path = Path(result.batch_summary_markdown_path)
+        print(summary_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Batch engineering workflow")
+    print(f"status: {result.status}")
+    print(f"batch_status: {result.batch_status}")
+    print(f"case_count: {result.case_count}")
+    print(f"passed_count: {result.passed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
     print(f"output_dir: {result.output_dir}")
     _print_warnings(result.warnings)
     if result.errors:

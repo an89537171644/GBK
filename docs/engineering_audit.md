@@ -1044,3 +1044,22 @@ command.
 K70 is guidance metadata only. It does not execute calculations, change
 formulas, change material values, change reinforcement selection, implement UI,
 or make ML a calculator.
+
+## K71 Batch Engineering Workflow Runner
+
+K71 adds `engineering-workflow-batch` and
+`workflows/engineering_workflow_batch.py` to run the existing single-case
+workflow across an input JSON folder:
+
+```bash
+python -m sp63_core engineering-workflow-batch --input-dir docs/reports/examples/form_templates --output-dir reports/engineering_workflow_batch --with-preflight --with-index --json
+```
+
+The batch runner creates one case folder per input JSON, a batch summary,
+static batch index, and review README. Invalid cases are reported as failed
+case results and do not stop the remaining cases.
+
+K71 is orchestration only. It does not execute new formulas, change
+calculation modules, change material values, change reinforcement selection,
+implement UI, or make ML a calculator. Engineer review remains mandatory for
+every case.

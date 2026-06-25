@@ -1090,3 +1090,23 @@ recommended actions, categories, and related CLI commands for preflight,
 geometry, materials, loads, workflow, archive, ZIP, ML-readiness, protected
 files, and release-candidate review. It is metadata only and does not perform
 calculations or approve project use.
+
+## K71 batch engineering workflow runner
+
+K71 adds `engineering-workflow-batch` for running the existing single-case
+workflow over a directory of input JSON files:
+
+```bash
+python -m sp63_core engineering-workflow-batch \
+  --input-dir docs/reports/examples/form_templates \
+  --output-dir reports/engineering_workflow_batch \
+  --with-preflight \
+  --with-index \
+  --json
+```
+
+The batch runner creates one `case_####/` workflow folder per input file plus
+`batch_workflow_summary.json`, `batch_workflow_summary.md`,
+`batch_index.html`, and `README_BATCH_WORKFLOW.md`. Invalid cases do not stop
+the whole batch; they are reported as failed cases. The batch index is static
+HTML only and performs no calculations.
