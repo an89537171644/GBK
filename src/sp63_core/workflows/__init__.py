@@ -78,6 +78,10 @@ from sp63_core.workflows.material_verification_closure import (
     build_material_verification_closure,
     render_material_verification_closure_markdown,
 )
+from sp63_core.workflows.portable_package import (
+    PortablePackageResult,
+    build_portable_package,
+)
 from sp63_core.workflows.project_template import (
     ProjectTemplatePackageResult,
     build_project_template_package,
@@ -150,6 +154,7 @@ __all__ = [
     "JsonOutputContractResult",
     "LauncherScriptsPackageResult",
     "MaterialVerificationClosureResult",
+    "PortablePackageResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
     "PROTECTED_FILES",
@@ -182,6 +187,7 @@ __all__ = [
     "build_json_output_contract",
     "build_launcher_scripts_package",
     "build_material_verification_closure",
+    "build_portable_package",
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",

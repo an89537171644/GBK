@@ -125,6 +125,7 @@ from sp63_core.workflows import (
     build_json_output_contract,
     build_launcher_scripts_package,
     build_material_verification_closure,
+    build_portable_package,
     build_project_template_package,
     build_release_artifact_manifest,
     build_release_candidate_report,
@@ -1030,6 +1031,18 @@ def build_parser() -> ArgumentParser:
         help="print Markdown contract",
     )
     json_output_contract.set_defaults(handler=_handle_json_output_contract)
+
+    portable_package = subparsers.add_parser(
+        "portable-package",
+        help="create a portable Windows package skeleton without binaries",
+    )
+    portable_package.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for portable package skeleton",
+    )
+    portable_package.add_argument("--json", action="store_true", help="print JSON output")
+    portable_package.set_defaults(handler=_handle_portable_package)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -3355,6 +3368,32 @@ def _handle_json_output_contract(args: Namespace) -> int:
     print(f"contract_status: {result.contract_status}")
     print(f"contract_count: {result.contract_count}")
     print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_portable_package(args: Namespace) -> int:
+    result = build_portable_package(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "portable-package",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Portable package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"file_count: {result.file_count}")
+    print(f"script_count: {result.script_count}")
+    print(f"manifest_path: {result.manifest_path}")
+    print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

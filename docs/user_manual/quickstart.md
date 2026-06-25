@@ -33,3 +33,12 @@ python -m sp63_core clean-demo-workflow \
 The clean demo uses a known passing input and verifies preflight, deterministic
 report generation, archive validation, ZIP creation, and static report index
 generation. It is review evidence only and still requires engineer review.
+
+Create a Windows-oriented portable command skeleton:
+
+```bash
+python -m sp63_core portable-package --output-dir reports/portable_package_smoke --json
+```
+
+The package contains `.cmd` files that call existing `python -m sp63_core`
+commands. It does not add UI dependencies and does not certify designs.
