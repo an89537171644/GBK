@@ -143,6 +143,7 @@ from sp63_core.workflows import (
     build_v09_final_audit,
     build_v09_freeze_report,
     build_v09_readiness_gate,
+    build_v09_review_build,
     build_v10_gap_report,
     build_windows_smoke_plan,
     render_cli_status_contract_markdown,
@@ -155,6 +156,7 @@ from sp63_core.workflows import (
     render_self_check_markdown,
     render_traceability_matrix_markdown,
     render_v09_freeze_report_markdown,
+    render_v09_review_build_markdown,
     render_v10_gap_report_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
@@ -1222,6 +1224,28 @@ def build_parser() -> ArgumentParser:
         help="print JSON output",
     )
     review_signoff_templates.set_defaults(handler=_handle_review_signoff_templates)
+
+    v09_review_build = subparsers.add_parser(
+        "v09-review-build",
+        help="build the v0.9 review build artifact packet",
+    )
+    v09_review_build.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 review build artifacts",
+    )
+    v09_review_build.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 review build version label",
+    )
+    v09_review_build.add_argument("--json", action="store_true", help="print JSON output")
+    v09_review_build.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown review build report",
+    )
+    v09_review_build.set_defaults(handler=_handle_v09_review_build)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3830,6 +3854,38 @@ def _handle_review_signoff_templates(args: Namespace) -> int:
     print("Review signoff templates")
     print(f"status: {result.status}")
     print(f"template_count: {result.template_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_review_build(args: Namespace) -> int:
+    result = build_v09_review_build(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-review-build",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_review_build_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 review build")
+    print(f"status: {result.status}")
+    print(f"review_build_status: {result.review_build_status}")
+    print(f"artifact_count: {result.artifact_count}")
+    print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")
     _print_warnings(result.warnings)

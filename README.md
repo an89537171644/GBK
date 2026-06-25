@@ -1374,3 +1374,18 @@ python -m sp63_core release-notes \
 The package writes release notes, a release checklist, and known limitations.
 It does not publish a release, certify calculations, approve project use, or
 make ML project-ready.
+
+## K105 v0.9 review build
+
+K105 adds a single v0.9 review build command:
+
+```bash
+python -m sp63_core v09-review-build \
+  --output-dir reports/v09_review_build_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The build gathers review artifacts under one output directory. It remains
+review-only: it does not certify calculations, approve project use, or make ML
+project-ready.

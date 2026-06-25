@@ -175,6 +175,11 @@ from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
 )
+from sp63_core.workflows.v09_review_build import (
+    V09ReviewBuildResult,
+    build_v09_review_build,
+    render_v09_review_build_markdown,
+)
 from sp63_core.workflows.v10_gap_report import (
     V10GapReportResult,
     build_v10_gap_report,
@@ -229,6 +234,7 @@ __all__ = [
     "V09FinalAuditResult",
     "V09FreezeReportResult",
     "V09ReadinessResult",
+    "V09ReviewBuildResult",
     "V10GapReportResult",
     "WindowsSmokePlanResult",
     "EngineeringWorkflowResult",
@@ -264,6 +270,7 @@ __all__ = [
     "build_v09_final_audit",
     "build_v09_freeze_report",
     "build_v09_readiness_gate",
+    "build_v09_review_build",
     "build_v10_gap_report",
     "build_windows_smoke_plan",
     "render_docs_audit_markdown",
@@ -273,6 +280,7 @@ __all__ = [
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
     "render_v09_freeze_report_markdown",
+    "render_v09_review_build_markdown",
     "render_v10_gap_report_markdown",
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
