@@ -1599,3 +1599,19 @@ behavior, mandatory safety flags, and `ml_ready_for_project_use = false`.
 K90 is documentation and release-preparation metadata only. It does not publish
 a release, certify calculations, change formulas, change materials, implement
 UI, or make ML a calculator.
+
+## K107 v0.9 Review Closure Validation
+
+K107 adds validation coverage for `v09-review-closure`:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify JSON, Markdown, README generation, ready/not-ready flags,
+critical failure classification, review-required gates, CLI JSON/Markdown
+behavior, mandatory safety flags, and `ready_for_project_use = false`.
+
+K107 is manual review closure evidence only. It does not publish a release,
+certify calculations, change formulas, change materials, implement UI, or make
+ML a calculator.

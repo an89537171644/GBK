@@ -18,3 +18,12 @@ The roadmap is planning evidence only and does not approve project use.
 ```bash
 python -m sp63_core next-release-roadmap --output-dir reports/next_release_roadmap_smoke --json
 ```
+
+K107 consumes the roadmap in the v0.9 review closure command:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+The next roadmap step after closure remains manual engineer review and external
+validation evidence, not automatic project approval.

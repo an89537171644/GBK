@@ -1389,3 +1389,22 @@ python -m sp63_core v09-review-build \
 The build gathers review artifacts under one output directory. It remains
 review-only: it does not certify calculations, approve project use, or make ML
 project-ready.
+
+## K107 v0.9 review closure
+
+K107 adds the manual closure report for v0.9 review stabilization:
+
+```bash
+python -m sp63_core v09-review-closure \
+  --output-dir reports/v09_review_closure_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The closure report aggregates protected-files, docs, clean demo,
+release-acceptance, final-audit, freeze, review-build, and roadmap evidence. It
+can mark the build ready for manual v0.9 review evidence while keeping
+`ready_for_project_use = false` and `ml_ready_for_project_use = false`.
+
+Material verification, real external validation, manual engineer signoff, and
+project approval remain separate manual gates.

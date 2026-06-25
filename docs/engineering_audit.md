@@ -1232,3 +1232,21 @@ K75 does not publish a release, certify designs, change formulas, change
 material values, change reinforcement selection, implement UI, or make ML a
 calculator. The report remains `review_required` while material audit and
 external validation remain engineer gates.
+
+## K107 v0.9 Review Closure
+
+K107 adds `v09-review-closure` and `workflows/v09_review_closure.py`:
+
+```bash
+python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_smoke --version 0.9.0-rc1 --json
+```
+
+The closure report aggregates protected-files, documentation, clean demo,
+release acceptance checklist, final audit, freeze report, review build, and next
+release roadmap evidence. It can show readiness for manual v0.9 review build
+handoff, but it does not approve project use.
+
+K107 does not publish a release, certify designs, change formulas, change
+material values, change reinforcement selection, implement UI, or make ML a
+calculator. Material verification, real external validation, manual signoff,
+and project approval remain separate engineer review gates.

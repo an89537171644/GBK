@@ -6,6 +6,8 @@
 - ML and neural surrogate outputs are advisory-only;
 - `ml_ready_for_project_use` remains `false`;
 - workflow/self-check/index/schema/preflight reports do not approve project use;
+- v0.9 review closure output is manual review evidence only and does not close
+  material, external validation, manual signoff, or project approval gates;
 - static HTML reports and launcher scripts are review conveniences only;
 - no full GUI, web server, or desktop app is implemented;
 - v1.0 readiness remains blocked by material verification, real external
