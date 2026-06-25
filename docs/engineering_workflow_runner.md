@@ -249,3 +249,15 @@ python -m sp63_core evidence-templates --output-dir reports/evidence_templates -
 The command packages external validation and material verification CSV
 templates plus a README and SHA256 manifest. The package does not contain real
 external values and does not update the material catalog automatically.
+
+## K73 Protected Files Guard
+
+Run K73 before release-candidate review:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The guard checks whether protected formula, material catalog, or
+external-validation files changed in the branch diff. It is a review aid only
+and does not approve a merge or project use.

@@ -1125,3 +1125,16 @@ The package writes `external_validation_template.csv`,
 `evidence_templates_manifest.json` with SHA256 checksums. These are templates
 only: they do not provide real SCAD/LIRA values, do not update the material
 catalog, and do not approve project use.
+
+## K73 protected files guard
+
+K73 adds a release safety check for protected files:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The guard checks git diff for protected calculation modules,
+`validation/external.py`, and material catalog files. It returns `fail` when a
+protected file changed and `review_required` when git diff cannot be checked.
+It is a review aid only and never approves merge or project use.

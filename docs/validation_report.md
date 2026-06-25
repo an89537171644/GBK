@@ -1306,3 +1306,18 @@ required safety warnings are present, and formula modules are not imported.
 K72 does not create real external validation values, does not change formulas,
 does not change material values, does not update the material catalog, and does
 not make ML a calculator.
+
+## K73 Protected Files Guard Validation
+
+K73 adds validation coverage for `protected-files-check`:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The tests verify the protected file list, simulated pass/fail paths, non-git
+`review_required` behavior, CLI JSON output, and absence of formula-module
+imports.
+
+K73 does not change protected files. It is a review aid only and does not
+approve merge, project use, formulas, materials, or ML output.

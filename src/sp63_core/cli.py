@@ -124,6 +124,7 @@ from sp63_core.workflows import (
     run_engineering_workflow_batch,
     run_engineering_workflow_self_check,
     run_input_preflight,
+    run_protected_files_guard,
 )
 
 
@@ -692,6 +693,28 @@ def build_parser() -> ArgumentParser:
     )
     evidence_templates.add_argument("--json", action="store_true", help="print JSON output")
     evidence_templates.set_defaults(handler=_handle_evidence_templates)
+
+    protected_files_check = subparsers.add_parser(
+        "protected-files-check",
+        help="check whether protected calculation/material files changed",
+    )
+    protected_files_check.add_argument(
+        "--base-ref",
+        default="main",
+        help="base git ref for protected-files diff",
+    )
+    protected_files_check.add_argument(
+        "--head-ref",
+        default="HEAD",
+        help="head git ref for protected-files diff",
+    )
+    protected_files_check.add_argument(
+        "--allow-review-required",
+        action="store_true",
+        help="record review_required as explicitly allowed by caller",
+    )
+    protected_files_check.add_argument("--json", action="store_true", help="print JSON output")
+    protected_files_check.set_defaults(handler=_handle_protected_files_check)
 
     report_dataset_export = subparsers.add_parser(
         "report-dataset-export",
@@ -2459,6 +2482,33 @@ def _handle_evidence_templates(args: Namespace) -> int:
     print(f"external_validation_template_path: {result.external_validation_template_path}")
     print(f"material_verification_template_path: {result.material_verification_template_path}")
     print(f"manifest_path: {result.manifest_path}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_protected_files_check(args: Namespace) -> int:
+    result = run_protected_files_guard(
+        base_ref=args.base_ref,
+        head_ref=args.head_ref,
+        allow_review_required=args.allow_review_required,
+    )
+    payload = {
+        "command": "protected-files-check",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print("Protected files check")
+    print(f"status: {result.status}")
+    print(f"guard_status: {result.guard_status}")
+    print(f"checked_git_ref: {result.checked_git_ref}")
+    print(f"changed_protected_files: {len(result.changed_protected_files)}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

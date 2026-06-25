@@ -1080,3 +1080,21 @@ not invent incompatible formats.
 K72 does not add real external values, closed SCAD/LIRA files, personal data,
 full SP 63 text, formula changes, material value changes, or automatic catalog
 updates. Engineer review remains mandatory.
+
+## K73 Protected Files Guard
+
+K73 adds `protected-files-check` and
+`workflows/protected_files_guard.py` to detect protected file changes before a
+release or sprint PR is reviewed:
+
+```bash
+python -m sp63_core protected-files-check --json
+```
+
+The protected set includes deterministic formula modules,
+`validation/external.py`, and the concrete/rebar material catalog files. A
+changed protected file produces `fail`; unavailable git diff produces
+`review_required`.
+
+K73 is a review aid only. It does not approve merge, certify designs, change
+formulas, change materials, or make ML a calculator.

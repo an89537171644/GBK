@@ -34,6 +34,11 @@ from sp63_core.workflows.interface_contract import (
     EngineeringInterfaceContractResult,
     build_engineering_interface_contract,
 )
+from sp63_core.workflows.protected_files_guard import (
+    PROTECTED_FILES,
+    ProtectedFilesGuardResult,
+    run_protected_files_guard,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -59,6 +64,8 @@ __all__ = [
     "InputPreflightResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
+    "PROTECTED_FILES",
+    "ProtectedFilesGuardResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_engineering_gui_planning_decision",
@@ -74,4 +81,5 @@ __all__ = [
     "run_engineering_workflow_batch",
     "run_engineering_workflow_self_check",
     "run_input_preflight",
+    "run_protected_files_guard",
 ]
