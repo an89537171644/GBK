@@ -146,3 +146,10 @@ python -m sp63_core input-preflight --input-json <input.json> --output-dir <pref
 Future wrappers should surface the preflight status and issues before launching
 deterministic workflow commands. Preflight does not approve a design and does
 not make ML project-ready.
+
+## K102 Static Launcher Dashboard
+
+K102 adds `static-launcher-dashboard`, a local static HTML launcher page that
+links review commands and report artifacts. It is not a full GUI, does not run a
+web server, and contains no JavaScript calculations. Deterministic SP63 checks
+and engineer review remain mandatory.

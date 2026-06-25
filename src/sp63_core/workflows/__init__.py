@@ -29,6 +29,11 @@ from sp63_core.workflows.docs_audit import (
     build_docs_audit_report,
     render_docs_audit_markdown,
 )
+from sp63_core.workflows.engineer_review_packet import (
+    EngineerReviewPacketResult,
+    build_engineer_review_packet,
+    render_engineer_review_packet_markdown,
+)
 from sp63_core.workflows.engineering_handoff_package import (
     EngineeringHandoffPackageResult,
     build_engineering_handoff_package,
@@ -48,6 +53,11 @@ from sp63_core.workflows.evidence_templates import (
 from sp63_core.workflows.external_validation_evidence_package import (
     ExternalValidationEvidencePackageResult,
     build_external_validation_evidence_package,
+)
+from sp63_core.workflows.freeze_remediation_plan import (
+    FreezeRemediationPlanResult,
+    build_freeze_remediation_plan,
+    render_freeze_remediation_plan_markdown,
 )
 from sp63_core.workflows.gui_planning import (
     EngineeringGUIPlanningResult,
@@ -83,6 +93,11 @@ from sp63_core.workflows.material_verification_closure import (
     build_material_verification_closure,
     render_material_verification_closure_markdown,
 )
+from sp63_core.workflows.next_release_roadmap import (
+    NextReleaseRoadmapResult,
+    build_next_release_roadmap,
+    render_next_release_roadmap_markdown,
+)
 from sp63_core.workflows.portable_package import (
     PortablePackageResult,
     build_portable_package,
@@ -95,6 +110,11 @@ from sp63_core.workflows.protected_files_guard import (
     PROTECTED_FILES,
     ProtectedFilesGuardResult,
     run_protected_files_guard,
+)
+from sp63_core.workflows.release_acceptance_checklist import (
+    ReleaseAcceptanceChecklistResult,
+    build_release_acceptance_checklist,
+    render_release_acceptance_checklist_markdown,
 )
 from sp63_core.workflows.release_bundle import (
     ReleaseBundleResult,
@@ -112,6 +132,10 @@ from sp63_core.workflows.release_notes import (
     ReleaseNotesPackageResult,
     build_release_notes_package,
 )
+from sp63_core.workflows.review_signoff_templates import (
+    ReviewSignoffTemplatesResult,
+    build_review_signoff_templates,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -120,6 +144,10 @@ from sp63_core.workflows.self_check import (
 from sp63_core.workflows.static_input_form_preview import (
     StaticInputFormPreviewResult,
     build_static_input_form_preview,
+)
+from sp63_core.workflows.static_launcher_dashboard import (
+    StaticLauncherDashboardResult,
+    build_static_launcher_dashboard,
 )
 from sp63_core.workflows.static_report_index import (
     StaticWorkflowReportIndexResult,
@@ -152,16 +180,26 @@ from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
 )
+from sp63_core.workflows.v09_review_build import (
+    V09ReviewBuildResult,
+    build_v09_review_build,
+    render_v09_review_build_markdown,
+)
 from sp63_core.workflows.v10_gap_report import (
     V10GapReportResult,
     build_v10_gap_report,
     render_v10_gap_report_markdown,
+)
+from sp63_core.workflows.windows_smoke_plan import (
+    WindowsSmokePlanResult,
+    build_windows_smoke_plan,
 )
 
 __all__ = [
     "AgentSprintGuardResult",
     "EngineeringGUIPlanningResult",
     "EngineeringHandoffPackageResult",
+    "EngineerReviewPacketResult",
     "EngineeringInterfaceContractResult",
     "BatchEngineeringWorkflowResult",
     "CLEAN_DEMO_INPUT",
@@ -171,6 +209,7 @@ __all__ = [
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
     "ExternalValidationEvidencePackageResult",
+    "FreezeRemediationPlanResult",
     "DiagnosticsCatalogResult",
     "InputFormSchemaResult",
     "InputPreflightIssue",
@@ -179,17 +218,21 @@ __all__ = [
     "JsonOutputContractResult",
     "LauncherScriptsPackageResult",
     "MaterialVerificationClosureResult",
+    "NextReleaseRoadmapResult",
     "PortablePackageResult",
     "StaticWorkflowReportIndexResult",
     "StaticInputFormPreviewResult",
+    "StaticLauncherDashboardResult",
     "PROTECTED_FILES",
     "REQUIRED_USER_MANUAL_FILES",
     "ProtectedFilesGuardResult",
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
+    "ReleaseAcceptanceChecklistResult",
     "ReleaseBundleResult",
     "ReleaseCandidateReportResult",
     "ReleaseNotesPackageResult",
+    "ReviewSignoffTemplatesResult",
     "SprintStepSpec",
     "TraceabilityMatrixResult",
     "UserManualIndexResult",
@@ -197,45 +240,60 @@ __all__ = [
     "V09FinalAuditResult",
     "V09FreezeReportResult",
     "V09ReadinessResult",
+    "V09ReviewBuildResult",
     "V10GapReportResult",
+    "WindowsSmokePlanResult",
     "EngineeringWorkflowResult",
     "EngineeringWorkflowSelfCheckResult",
     "build_agent_sprint_guard",
     "build_cli_status_contract",
     "build_engineering_gui_planning_decision",
     "build_engineering_handoff_package",
+    "build_engineer_review_packet",
     "build_engineering_interface_contract",
     "build_evidence_templates_package",
     "build_external_validation_evidence_package",
+    "build_freeze_remediation_plan",
     "build_release_candidate_report",
+    "build_release_acceptance_checklist",
     "build_release_artifact_manifest",
     "build_release_bundle",
     "build_release_notes_package",
+    "build_review_signoff_templates",
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
     "build_json_output_contract",
     "build_launcher_scripts_package",
     "build_material_verification_closure",
+    "build_next_release_roadmap",
     "build_portable_package",
     "build_project_template_package",
     "build_static_workflow_report_index",
     "build_static_input_form_preview",
+    "build_static_launcher_dashboard",
     "build_traceability_matrix",
     "build_user_manual_index",
     "build_v09_final_audit",
     "build_v09_freeze_report",
     "build_v09_readiness_gate",
+    "build_v09_review_build",
     "build_v10_gap_report",
+    "build_windows_smoke_plan",
     "render_docs_audit_markdown",
+    "render_freeze_remediation_plan_markdown",
+    "render_engineer_review_packet_markdown",
     "render_cli_status_contract_markdown",
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
     "render_v09_freeze_report_markdown",
+    "render_v09_review_build_markdown",
     "render_v10_gap_report_markdown",
     "render_input_preflight_markdown",
     "render_json_output_contract_markdown",
     "render_material_verification_closure_markdown",
+    "render_next_release_roadmap_markdown",
+    "render_release_acceptance_checklist_markdown",
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
     "run_clean_demo_workflow",

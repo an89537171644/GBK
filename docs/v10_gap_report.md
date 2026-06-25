@@ -14,6 +14,13 @@ ready_for_v10 = false
 python -m sp63_core v10-gap-report --output-dir reports/v10_gap_report_smoke --json
 ```
 
+## K106 next release roadmap
+
+K106 adds `next-release-roadmap` to turn the v1.0 gaps into a planning roadmap
+for v0.9 internal review, v0.9 user trial, v1.0 engineering release,
+GUI/launcher, material verification, external validation, ML advisory maturity,
+and installer/packaging milestones.
+
 ## Open Gaps
 
 - material verification;

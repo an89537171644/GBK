@@ -116,36 +116,49 @@ from sp63_core.workflows import (
     build_cli_status_contract,
     build_diagnostics_catalog,
     build_docs_audit_report,
+    build_engineer_review_packet,
     build_engineering_gui_planning_decision,
     build_engineering_handoff_package,
     build_engineering_interface_contract,
     build_evidence_templates_package,
     build_external_validation_evidence_package,
+    build_freeze_remediation_plan,
     build_input_form_schema,
     build_json_output_contract,
     build_launcher_scripts_package,
     build_material_verification_closure,
+    build_next_release_roadmap,
     build_portable_package,
     build_project_template_package,
+    build_release_acceptance_checklist,
     build_release_artifact_manifest,
     build_release_bundle,
     build_release_candidate_report,
     build_release_notes_package,
+    build_review_signoff_templates,
     build_static_input_form_preview,
+    build_static_launcher_dashboard,
     build_static_workflow_report_index,
     build_traceability_matrix,
     build_user_manual_index,
     build_v09_final_audit,
     build_v09_freeze_report,
     build_v09_readiness_gate,
+    build_v09_review_build,
     build_v10_gap_report,
+    build_windows_smoke_plan,
     render_cli_status_contract_markdown,
     render_docs_audit_markdown,
+    render_engineer_review_packet_markdown,
+    render_freeze_remediation_plan_markdown,
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
+    render_next_release_roadmap_markdown,
+    render_release_acceptance_checklist_markdown,
     render_self_check_markdown,
     render_traceability_matrix_markdown,
     render_v09_freeze_report_markdown,
+    render_v09_review_build_markdown,
     render_v10_gap_report_markdown,
     run_clean_demo_and_verify,
     run_clean_demo_workflow,
@@ -1101,6 +1114,157 @@ def build_parser() -> ArgumentParser:
         help="print Markdown v0.9 freeze report",
     )
     v09_freeze_report.set_defaults(handler=_handle_v09_freeze_report)
+
+    freeze_remediation_plan = subparsers.add_parser(
+        "freeze-remediation-plan",
+        help="build a v0.9 freeze remediation plan",
+    )
+    freeze_remediation_plan.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for freeze remediation artifacts",
+    )
+    freeze_remediation_plan.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="version label used by current freeze report",
+    )
+    freeze_remediation_plan.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    freeze_remediation_plan.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown remediation plan",
+    )
+    freeze_remediation_plan.set_defaults(handler=_handle_freeze_remediation_plan)
+
+    windows_smoke_plan = subparsers.add_parser(
+        "windows-smoke-plan",
+        help="build a manual Windows clean-machine smoke plan",
+    )
+    windows_smoke_plan.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for Windows smoke plan artifacts",
+    )
+    windows_smoke_plan.add_argument("--json", action="store_true", help="print JSON output")
+    windows_smoke_plan.set_defaults(handler=_handle_windows_smoke_plan)
+
+    engineer_review_packet = subparsers.add_parser(
+        "engineer-review-packet",
+        help="build an engineer review packet",
+    )
+    engineer_review_packet.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for engineer review packet artifacts",
+    )
+    engineer_review_packet.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    engineer_review_packet.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown packet report",
+    )
+    engineer_review_packet.set_defaults(handler=_handle_engineer_review_packet)
+
+    static_launcher_dashboard = subparsers.add_parser(
+        "static-launcher-dashboard",
+        help="build a static local launcher dashboard",
+    )
+    static_launcher_dashboard.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for static launcher dashboard artifacts",
+    )
+    static_launcher_dashboard.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    static_launcher_dashboard.set_defaults(handler=_handle_static_launcher_dashboard)
+
+    release_acceptance_checklist = subparsers.add_parser(
+        "release-acceptance-checklist",
+        help="build a v0.9 release acceptance checklist",
+    )
+    release_acceptance_checklist.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release acceptance checklist artifacts",
+    )
+    release_acceptance_checklist.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    release_acceptance_checklist.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown checklist",
+    )
+    release_acceptance_checklist.set_defaults(handler=_handle_release_acceptance_checklist)
+
+    review_signoff_templates = subparsers.add_parser(
+        "review-signoff-templates",
+        help="build placeholder-only review signoff templates",
+    )
+    review_signoff_templates.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for review signoff templates",
+    )
+    review_signoff_templates.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    review_signoff_templates.set_defaults(handler=_handle_review_signoff_templates)
+
+    v09_review_build = subparsers.add_parser(
+        "v09-review-build",
+        help="build the v0.9 review build artifact packet",
+    )
+    v09_review_build.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 review build artifacts",
+    )
+    v09_review_build.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 review build version label",
+    )
+    v09_review_build.add_argument("--json", action="store_true", help="print JSON output")
+    v09_review_build.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown review build report",
+    )
+    v09_review_build.set_defaults(handler=_handle_v09_review_build)
+
+    next_release_roadmap = subparsers.add_parser(
+        "next-release-roadmap",
+        help="build the post-v0.9 next release roadmap",
+    )
+    next_release_roadmap.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for next release roadmap artifacts",
+    )
+    next_release_roadmap.add_argument("--json", action="store_true", help="print JSON output")
+    next_release_roadmap.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown roadmap",
+    )
+    next_release_roadmap.set_defaults(handler=_handle_next_release_roadmap)
 
     agent_sprint_guard = subparsers.add_parser(
         "agent-sprint-guard",
@@ -3546,6 +3710,227 @@ def _handle_v09_freeze_report(args: Namespace) -> int:
     print(f"freeze_status: {result.freeze_status}")
     print(f"version: {result.version}")
     print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_freeze_remediation_plan(args: Namespace) -> int:
+    result = build_freeze_remediation_plan(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "freeze-remediation-plan",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_freeze_remediation_plan_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Freeze remediation plan")
+    print(f"status: {result.status}")
+    print(f"plan_status: {result.plan_status}")
+    print(f"version: {result.version}")
+    print(f"blocker_count: {result.blocker_count}")
+    print(f"acceptable_review_gate_count: {result.acceptable_review_gate_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_windows_smoke_plan(args: Namespace) -> int:
+    result = build_windows_smoke_plan(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "windows-smoke-plan",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Windows smoke plan")
+    print(f"status: {result.status}")
+    print(f"command_count: {result.command_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_engineer_review_packet(args: Namespace) -> int:
+    result = build_engineer_review_packet(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "engineer-review-packet",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_engineer_review_packet_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Engineer review packet")
+    print(f"status: {result.status}")
+    print(f"packet_status: {result.packet_status}")
+    print(f"evidence_count: {result.evidence_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_static_launcher_dashboard(args: Namespace) -> int:
+    result = build_static_launcher_dashboard(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "static-launcher-dashboard",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Static launcher dashboard")
+    print(f"status: {result.status}")
+    print(f"command_count: {result.command_count}")
+    print("web_server_required: false")
+    print("javascript_calculations_present: false")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_release_acceptance_checklist(args: Namespace) -> int:
+    result = build_release_acceptance_checklist(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "release-acceptance-checklist",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_release_acceptance_checklist_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Release acceptance checklist")
+    print(f"status: {result.status}")
+    print(f"item_count: {result.item_count}")
+    print(f"machine_pass_count: {result.machine_pass_count}")
+    print(f"manual_signoff_required_count: {result.manual_signoff_required_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print(f"failed_count: {result.failed_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_review_signoff_templates(args: Namespace) -> int:
+    result = build_review_signoff_templates(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "review-signoff-templates",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+
+    print("Review signoff templates")
+    print(f"status: {result.status}")
+    print(f"template_count: {result.template_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_review_build(args: Namespace) -> int:
+    result = build_v09_review_build(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-review-build",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_review_build_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 review build")
+    print(f"status: {result.status}")
+    print(f"review_build_status: {result.review_build_status}")
+    print(f"artifact_count: {result.artifact_count}")
+    print(f"critical_failed_count: {result.critical_failed_count}")
+    print(f"review_required_count: {result.review_required_count}")
+    print("project_use_allowed: false")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_next_release_roadmap(args: Namespace) -> int:
+    result = build_next_release_roadmap(output_dir=Path(args.output_dir))
+    payload = {
+        "command": "next-release-roadmap",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_next_release_roadmap_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Next release roadmap")
+    print(f"status: {result.status}")
+    print(f"section_count: {result.section_count}")
     print(f"review_required_count: {result.review_required_count}")
     print("project_use_allowed: false")
     print("ml_ready_for_project_use: false")

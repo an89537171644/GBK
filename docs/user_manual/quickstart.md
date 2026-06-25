@@ -42,3 +42,12 @@ python -m sp63_core portable-package --output-dir reports/portable_package_smoke
 
 The package contains `.cmd` files that call existing `python -m sp63_core`
 commands. It does not add UI dependencies and does not certify designs.
+
+Generate a manual Windows clean-machine smoke plan:
+
+```bash
+python -m sp63_core windows-smoke-plan --output-dir reports/windows_smoke_plan_smoke --json
+```
+
+The generated PowerShell/CMD files are review aids only. Do not commit generated
+smoke outputs.
