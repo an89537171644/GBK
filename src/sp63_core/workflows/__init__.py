@@ -5,6 +5,11 @@ from sp63_core.workflows.agent_sprint_guard import (
     SprintStepSpec,
     build_agent_sprint_guard,
 )
+from sp63_core.workflows.clean_demo_verify import (
+    CleanDemoVerificationResult,
+    run_clean_demo_and_verify,
+    verify_clean_demo_artifacts,
+)
 from sp63_core.workflows.clean_demo_workflow import (
     CLEAN_DEMO_INPUT,
     CleanDemoWorkflowResult,
@@ -142,6 +147,7 @@ __all__ = [
     "BatchEngineeringWorkflowResult",
     "CLEAN_DEMO_INPUT",
     "CleanDemoWorkflowResult",
+    "CleanDemoVerificationResult",
     "CliStatusContractResult",
     "DocsAuditResult",
     "EvidenceTemplatesPackageResult",
@@ -203,9 +209,11 @@ __all__ = [
     "run_engineering_workflow",
     "run_engineering_workflow_batch",
     "run_clean_demo_workflow",
+    "run_clean_demo_and_verify",
     "run_engineering_workflow_self_check",
     "run_input_preflight",
     "run_protected_files_guard",
     "run_user_acceptance_smoke",
+    "verify_clean_demo_artifacts",
     "validate_payload_against_json_contract",
 ]

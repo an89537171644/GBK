@@ -140,6 +140,7 @@ from sp63_core.workflows import (
     render_json_output_contract_markdown,
     render_material_verification_closure_markdown,
     render_self_check_markdown,
+    run_clean_demo_and_verify,
     run_clean_demo_workflow,
     run_engineering_workflow,
     run_engineering_workflow_batch,
@@ -147,6 +148,7 @@ from sp63_core.workflows import (
     run_input_preflight,
     run_protected_files_guard,
     run_user_acceptance_smoke,
+    verify_clean_demo_artifacts,
 )
 
 
@@ -569,6 +571,31 @@ def build_parser() -> ArgumentParser:
         help="print Markdown clean demo workflow summary",
     )
     clean_demo_workflow.set_defaults(handler=_handle_clean_demo_workflow)
+
+    clean_demo_verify = subparsers.add_parser(
+        "clean-demo-verify",
+        help="verify clean demo generated user-facing artifacts",
+    )
+    clean_demo_verify.add_argument(
+        "--workflow-dir",
+        help="existing clean demo workflow directory to verify",
+    )
+    clean_demo_verify.add_argument(
+        "--run",
+        action="store_true",
+        help="run clean demo workflow before verification",
+    )
+    clean_demo_verify.add_argument(
+        "--output-dir",
+        help="output directory for --run mode",
+    )
+    clean_demo_verify.add_argument("--json", action="store_true", help="print JSON output")
+    clean_demo_verify.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown verification report",
+    )
+    clean_demo_verify.set_defaults(handler=_handle_clean_demo_verify)
 
     engineering_handoff_package = subparsers.add_parser(
         "engineering-handoff-package",
@@ -2607,6 +2634,42 @@ def _handle_clean_demo_workflow(args: Namespace) -> int:
         for error in result.errors:
             print(f"- {error}")
     return 0
+
+
+def _handle_clean_demo_verify(args: Namespace) -> int:
+    if args.run:
+        if not args.output_dir:
+            raise SystemExit("--output-dir is required with --run")
+        result = run_clean_demo_and_verify(output_dir=Path(args.output_dir))
+    else:
+        if not args.workflow_dir:
+            raise SystemExit("--workflow-dir is required unless --run is used")
+        result = verify_clean_demo_artifacts(workflow_dir=Path(args.workflow_dir))
+
+    payload = {
+        "command": "clean-demo-verify",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(Path(result.summary_markdown_path).read_text(encoding="utf-8"), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Clean demo verification")
+    print(f"status: {result.status}")
+    print(f"verification_status: {result.verification_status}")
+    print(f"workflow_dir: {result.workflow_dir}")
+    print(f"missing_artifacts: {len(result.missing_artifacts)}")
+    print(f"ml_ready_true_files: {len(result.ml_ready_true_files)}")
+    print(f"warning_artifacts_present: {result.warning_artifacts_present}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_engineering_handoff_package(args: Namespace) -> int:
