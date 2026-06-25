@@ -1359,3 +1359,18 @@ python -m sp63_core agent-sprint-guard --from-k 83 --to-k 90 --json
 The guard checks expected local files for each K-step and reports the first
 missing step as `proposed_next_k`. It does not inspect GitHub PR/Issue state,
 approve merges, certify calculations, or approve project use.
+
+## K90 release notes package
+
+K90 adds v0.9 release-preparation notes:
+
+```bash
+python -m sp63_core release-notes \
+  --output-dir reports/release_notes_v0_9_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The package writes release notes, a release checklist, and known limitations.
+It does not publish a release, certify calculations, approve project use, or
+make ML project-ready.

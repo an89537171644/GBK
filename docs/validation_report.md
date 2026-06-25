@@ -1583,3 +1583,19 @@ handling, CLI JSON behavior, mandatory safety flags, and
 K89 is a local completeness check only. It does not inspect GitHub state,
 approve merges, certify calculations, change formulas, change materials, or make
 ML a calculator.
+
+## K90 Release Notes Package Validation
+
+K90 adds validation coverage for `release-notes`:
+
+```bash
+python -m sp63_core release-notes --output-dir reports/release_notes_v0_9_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify release notes JSON/Markdown output, release checklist,
+known-limitations output, root documentation files, CHANGELOG entry, CLI JSON
+behavior, mandatory safety flags, and `ml_ready_for_project_use = false`.
+
+K90 is documentation and release-preparation metadata only. It does not publish
+a release, certify calculations, change formulas, change materials, implement
+UI, or make ML a calculator.

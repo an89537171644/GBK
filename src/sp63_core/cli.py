@@ -126,6 +126,7 @@ from sp63_core.workflows import (
     build_project_template_package,
     build_release_artifact_manifest,
     build_release_candidate_report,
+    build_release_notes_package,
     build_static_input_form_preview,
     build_static_workflow_report_index,
     build_user_manual_index,
@@ -896,6 +897,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release artifact manifest",
     )
     release_manifest.set_defaults(handler=_handle_release_manifest)
+
+    release_notes = subparsers.add_parser(
+        "release-notes",
+        help="build v0.9 engineering release notes package",
+    )
+    release_notes.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release notes package",
+    )
+    release_notes.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release notes version label",
+    )
+    release_notes.add_argument("--json", action="store_true", help="print JSON output")
+    release_notes.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release notes",
+    )
+    release_notes.set_defaults(handler=_handle_release_notes)
 
     user_acceptance_smoke = subparsers.add_parser(
         "user-acceptance-smoke",
@@ -3083,6 +3106,37 @@ def _handle_release_manifest(args: Namespace) -> int:
     print(f"git_commit: {result.git_commit}")
     print(f"artifact_count: {result.artifact_count}")
     print(f"output_dir: {result.output_dir}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 0
+
+
+def _handle_release_notes(args: Namespace) -> int:
+    result = build_release_notes_package(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-notes",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    if args.markdown:
+        print(Path(result.release_notes_markdown_path).read_text(encoding="utf-8"), end="")
+        return 0
+
+    print("Release notes package")
+    print(f"status: {result.status}")
+    print(f"package_status: {result.package_status}")
+    print(f"version: {result.version}")
+    print(f"output_dir: {result.output_dir}")
+    print(f"release_notes_markdown_path: {result.release_notes_markdown_path}")
+    print(f"ml_ready_for_project_use: {result.ml_ready_for_project_use}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

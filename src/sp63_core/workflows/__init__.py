@@ -83,6 +83,10 @@ from sp63_core.workflows.release_manifest import (
     ReleaseArtifactManifestResult,
     build_release_artifact_manifest,
 )
+from sp63_core.workflows.release_notes import (
+    ReleaseNotesPackageResult,
+    build_release_notes_package,
+)
 from sp63_core.workflows.self_check import (
     EngineeringWorkflowSelfCheckResult,
     render_self_check_markdown,
@@ -139,6 +143,7 @@ __all__ = [
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
     "ReleaseCandidateReportResult",
+    "ReleaseNotesPackageResult",
     "SprintStepSpec",
     "UserManualIndexResult",
     "UserAcceptanceSmokeResult",
@@ -154,6 +159,7 @@ __all__ = [
     "build_external_validation_evidence_package",
     "build_release_candidate_report",
     "build_release_artifact_manifest",
+    "build_release_notes_package",
     "build_diagnostics_catalog",
     "build_docs_audit_report",
     "build_input_form_schema",
