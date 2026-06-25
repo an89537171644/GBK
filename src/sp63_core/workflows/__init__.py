@@ -96,6 +96,10 @@ from sp63_core.workflows.protected_files_guard import (
     ProtectedFilesGuardResult,
     run_protected_files_guard,
 )
+from sp63_core.workflows.release_bundle import (
+    ReleaseBundleResult,
+    build_release_bundle,
+)
 from sp63_core.workflows.release_candidate import (
     ReleaseCandidateReportResult,
     build_release_candidate_report,
@@ -168,6 +172,7 @@ __all__ = [
     "ProtectedFilesGuardResult",
     "ProjectTemplatePackageResult",
     "ReleaseArtifactManifestResult",
+    "ReleaseBundleResult",
     "ReleaseCandidateReportResult",
     "ReleaseNotesPackageResult",
     "SprintStepSpec",
@@ -186,6 +191,7 @@ __all__ = [
     "build_external_validation_evidence_package",
     "build_release_candidate_report",
     "build_release_artifact_manifest",
+    "build_release_bundle",
     "build_release_notes_package",
     "build_diagnostics_catalog",
     "build_docs_audit_report",

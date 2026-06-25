@@ -128,6 +128,7 @@ from sp63_core.workflows import (
     build_portable_package,
     build_project_template_package,
     build_release_artifact_manifest,
+    build_release_bundle,
     build_release_candidate_report,
     build_release_notes_package,
     build_static_input_form_preview,
@@ -929,6 +930,28 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release artifact manifest",
     )
     release_manifest.set_defaults(handler=_handle_release_manifest)
+
+    release_bundle = subparsers.add_parser(
+        "release-bundle",
+        help="build review-only v0.9 release bundle ZIP",
+    )
+    release_bundle.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for release bundle artifacts",
+    )
+    release_bundle.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="release bundle version label",
+    )
+    release_bundle.add_argument("--json", action="store_true", help="print JSON output")
+    release_bundle.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown release bundle report",
+    )
+    release_bundle.set_defaults(handler=_handle_release_bundle)
 
     release_notes = subparsers.add_parser(
         "release-notes",
@@ -3224,6 +3247,37 @@ def _handle_release_manifest(args: Namespace) -> int:
         for error in result.errors:
             print(f"- {error}")
     return 0
+
+
+def _handle_release_bundle(args: Namespace) -> int:
+    result = build_release_bundle(
+        output_dir=Path(args.output_dir),
+        version=args.version,
+    )
+    payload = {
+        "command": "release-bundle",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(Path(result.report_markdown_path).read_text(encoding="utf-8"), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("Release bundle")
+    print(f"status: {result.status}")
+    print(f"bundle_status: {result.bundle_status}")
+    print(f"version: {result.version}")
+    print(f"zip_path: {result.zip_path}")
+    print(f"file_count: {result.file_count}")
+    print("ml_ready_for_project_use: false")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
 
 
 def _handle_release_notes(args: Namespace) -> int:
