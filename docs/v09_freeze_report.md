@@ -41,3 +41,9 @@ python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_s
 
 The closure output remains review evidence only and does not close material,
 external validation, or manual signoff gates.
+
+K108 includes this freeze report in the final v0.9 release candidate package:
+
+```bash
+python -m sp63_core v09-release-candidate-package --output-dir reports/v09_release_candidate_package_smoke --version 0.9.0-rc1 --json
+```

@@ -1250,3 +1250,21 @@ K107 does not publish a release, certify designs, change formulas, change
 material values, change reinforcement selection, implement UI, or make ML a
 calculator. Material verification, real external validation, manual signoff,
 and project approval remain separate engineer review gates.
+
+## K108 v0.9 Release Candidate Package
+
+K108 adds `v09-release-candidate-package` and
+`workflows/v09_release_candidate_package.py`:
+
+```bash
+python -m sp63_core v09-release-candidate-package --output-dir reports/v09_release_candidate_package_smoke --version 0.9.0-rc1 --json
+```
+
+The package writes start-here/readme files, JSON/Markdown summaries, a SHA256
+manifest, a ZIP archive, and compact evidence folders for manual engineering
+review.
+
+K108 does not publish a release, certify designs, change formulas, change
+material values, change reinforcement selection, implement UI, add a web
+server, or make ML a calculator. Project use remains forbidden until a separate
+engineer approval process.

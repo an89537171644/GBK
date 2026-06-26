@@ -27,3 +27,11 @@ python -m sp63_core v09-review-closure --output-dir reports/v09_review_closure_s
 
 The next roadmap step after closure remains manual engineer review and external
 validation evidence, not automatic project approval.
+
+K108 creates the final package for that manual review:
+
+```bash
+python -m sp63_core v09-release-candidate-package --output-dir reports/v09_release_candidate_package_smoke --version 0.9.0-rc1 --json
+```
+
+The package remains `review_required` while manual review gates remain open.

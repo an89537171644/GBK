@@ -180,6 +180,11 @@ from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
 )
+from sp63_core.workflows.v09_release_candidate_package import (
+    V09ReleaseCandidatePackageResult,
+    build_v09_release_candidate_package,
+    render_v09_release_candidate_package_markdown,
+)
 from sp63_core.workflows.v09_review_build import (
     V09ReviewBuildResult,
     build_v09_review_build,
@@ -245,6 +250,7 @@ __all__ = [
     "V09FinalAuditResult",
     "V09FreezeReportResult",
     "V09ReadinessResult",
+    "V09ReleaseCandidatePackageResult",
     "V09ReviewBuildResult",
     "V09ReviewClosureResult",
     "V10GapReportResult",
@@ -283,6 +289,7 @@ __all__ = [
     "build_v09_final_audit",
     "build_v09_freeze_report",
     "build_v09_readiness_gate",
+    "build_v09_release_candidate_package",
     "build_v09_review_build",
     "build_v09_review_closure",
     "build_v10_gap_report",
@@ -294,6 +301,7 @@ __all__ = [
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
     "render_v09_freeze_report_markdown",
+    "render_v09_release_candidate_package_markdown",
     "render_v09_review_build_markdown",
     "render_v09_review_closure_markdown",
     "render_v10_gap_report_markdown",

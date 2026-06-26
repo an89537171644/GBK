@@ -8,6 +8,8 @@
 - workflow/self-check/index/schema/preflight reports do not approve project use;
 - v0.9 review closure output is manual review evidence only and does not close
   material, external validation, manual signoff, or project approval gates;
+- v0.9 release candidate package output is evidence packaging only and does not
+  publish a release or approve project use;
 - static HTML reports and launcher scripts are review conveniences only;
 - no full GUI, web server, or desktop app is implemented;
 - v1.0 readiness remains blocked by material verification, real external

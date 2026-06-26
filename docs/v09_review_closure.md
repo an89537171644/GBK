@@ -40,3 +40,9 @@ Safety flags:
 - `deterministic_checks_required = true`
 - `ml_ready_for_project_use = false`
 - `ready_for_project_use = false`
+
+K108 packages this closure evidence into the final release candidate package:
+
+```bash
+python -m sp63_core v09-release-candidate-package --output-dir reports/v09_release_candidate_package_smoke --version 0.9.0-rc1 --json
+```

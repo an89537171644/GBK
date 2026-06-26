@@ -1615,3 +1615,19 @@ behavior, mandatory safety flags, and `ready_for_project_use = false`.
 K107 is manual review closure evidence only. It does not publish a release,
 certify calculations, change formulas, change materials, implement UI, or make
 ML a calculator.
+
+## K108 v0.9 Release Candidate Package Validation
+
+K108 adds validation coverage for `v09-release-candidate-package`:
+
+```bash
+python -m sp63_core v09-release-candidate-package --output-dir reports/v09_release_candidate_package_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify JSON, Markdown, `README_START_HERE.md`, manifest, ZIP output,
+ZIP safety exclusions, review-required package status, CLI JSON/Markdown
+behavior, mandatory safety flags, and `ready_for_project_use = false`.
+
+K108 is release-candidate evidence packaging only. It does not publish a
+release, certify calculations, change formulas, change materials, implement UI,
+or make ML a calculator.
