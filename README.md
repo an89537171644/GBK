@@ -1408,3 +1408,23 @@ can mark the build ready for manual v0.9 review evidence while keeping
 
 Material verification, real external validation, manual engineer signoff, and
 project approval remain separate manual gates.
+
+## K108 v0.9 release candidate package
+
+K108 adds the final v0.9 release candidate package command:
+
+```bash
+python -m sp63_core v09-release-candidate-package \
+  --output-dir reports/v09_release_candidate_package_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The package writes `README_START_HERE.md`, release candidate JSON/Markdown,
+a SHA256 manifest, a ZIP archive, and compact review evidence under
+`artifacts/`. Expected normal status is `review_required` with
+`ready_for_engineering_review = true` and `ready_for_project_use = false`.
+
+The package is review evidence only. It does not publish a release, approve
+project use, change formulas or materials, implement a GUI, or make ML a
+calculator.
