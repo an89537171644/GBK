@@ -1631,3 +1631,20 @@ behavior, mandatory safety flags, and `ready_for_project_use = false`.
 K108 is release-candidate evidence packaging only. It does not publish a
 release, certify calculations, change formulas, change materials, implement UI,
 or make ML a calculator.
+
+## K109 v0.9 Package Verification Validation
+
+K109 adds validation coverage for `v09-package-verify`:
+
+```bash
+python -m sp63_core v09-package-verify --build --output-dir reports/v09_package_verification_smoke --version 0.9.0-rc1 --json
+```
+
+The tests verify build-and-verify mode, existing package verification,
+JSON/Markdown CLI output, missing required file failures, forbidden ZIP entry
+failures, manifest checksum mismatch failures, documentation presence, and
+protected calculation files remaining untouched.
+
+K109 is package verification evidence only. Manual review gates keep status
+`review_required` when the package is otherwise complete. Project use and ML
+project readiness remain false.

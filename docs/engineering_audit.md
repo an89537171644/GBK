@@ -1268,3 +1268,21 @@ K108 does not publish a release, certify designs, change formulas, change
 material values, change reinforcement selection, implement UI, add a web
 server, or make ML a calculator. Project use remains forbidden until a separate
 engineer approval process.
+
+## K109 v0.9 Release Candidate Package Verification
+
+K109 adds `v09-package-verify` and `workflows/v09_package_verify.py`:
+
+```bash
+python -m sp63_core v09-package-verify --package-dir reports/v09_release_candidate_package_smoke --output-dir reports/v09_package_verification_smoke --json
+```
+
+The command can also run with `--build` to create the K108 package before
+verification. It writes JSON/Markdown verification reports, a README, and a
+manual acceptance log template.
+
+The verifier checks required package files, ZIP contents, forbidden file
+exclusions, and manifest SHA256 coverage where practical. Existing manual
+review gates keep status `review_required`; with zero critical verification
+errors, `ready_for_manual_review = true`. Project use and ML project readiness
+remain false.
