@@ -1,6 +1,7 @@
 # SP63 reinforcement service properties
 
 requires_engineer_review = true
+project_use = false
 
 ## Purpose
 
@@ -33,15 +34,18 @@ Draft-MVP reinforcement service property card for second limit-state checks.
 
 ## Step 3 source decision
 
-`Rsser` is traced to clause 6.2.7 and table 6.13, not table 6.14. The attached
-base PDF contains 400 MPa for A400 in table 6.13. The catalog value 390 MPa is
-retained only from the Step 2 statement about Amendment 1 under provisional
-profile `SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15`; that amendment artifact
-is not present in the repository.
+`Rsser` is traced to clause 6.2.7 and table 6.13, not table 6.14. The
+user-provided scan of SP 63.13330.2018 with Amendments 1 and 2 has SHA-256
+`8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`.
+PDF page 2 confirms the stated amendment composition and dates; PDF pages
+35-37 contain tables 6.13-6.15 for A240, A400, and A500.
 
-- Source status for the attached base row: `CONFIRMED` (400 MPa).
-- Status of the implemented A400 value 390 MPa: `ASSUMPTION`.
-- Amendment evidence and final disposition: `OPEN_QUESTION`.
+- Artifact-content status for the listed service rows: `CONFIRMED`.
+- Status of the implemented A400 value `Rsser = 390 MPa`: `CONFIRMED`
+  against the reviewed artifact.
+- Authenticity, legal status, and currentness beyond Amendment 2:
+  `OPEN_QUESTION`.
 - Architecture impact: one catalog row feeds all SLS consumers, so the value
   must not be promoted independently of the material evidence gate.
-- Engineering verification: mandatory before release or project use.
+- Engineering verification: independent review is mandatory before release;
+  this content confirmation does not approve formulas or project use.

@@ -1,5 +1,20 @@
 # Implementation status
 
+## SP 63 evidence boundary
+
+- User-provided scan of SP 63.13330.2018 with Amendments 1 and 2: SHA-256
+  `8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`.
+- PDF page 2 confirms the stated amendment composition and dates; the reviewed
+  material and bending locations are recorded in the corresponding formula
+  cards.
+- Artifact-content status for the recorded `gamma_b1`, concrete-table, and
+  A400 390/340 MPa values: `CONFIRMED`.
+- Authenticity, legal status, and currentness beyond Amendment 2:
+  `OPEN_QUESTION`.
+- Independent engineering review remains required, clause 8.1.3 remains
+  unimplemented, BMR expected values remain `ASSUMPTION`, and
+  `project_use=false`.
+
 | module | status | tests | requires_engineer_review | next_action |
 |---|---|---|---|---|
 | `units.py` | done | yes | no | keep stable |
@@ -8,7 +23,7 @@
 | `materials/audit.py` | implemented material audit report | yes | yes | engineer must verify values against SP 63 tables before final use |
 | `materials/verification.py` | implemented material catalog engineer verification gate with draft/needs_review/engineer_verified statuses | yes | yes | engineer must fill verification CSV before material values are treated as verified |
 | `materials/verification_report.py` | implemented Markdown/JSON report integration for engineer-filled material verification CSV | yes | yes | engineer must review needs_review rows before accepting material catalog values |
-| `materials/uls_context.py` | реализован узкий provisional-контекст ULS для `short/long` с явными `Rb_base`, `gamma_b1`, `Rb_effective`, `Rsc` и идентификатором профиля | yes | yes | инженер должен подтвердить трактовку сочетаний и A400 по отсутствующему изменению № 1; остальные `gamma_bi` не покрыты |
+| `materials/uls_context.py` | реализован узкий provisional-контекст ULS для `short/long` с явными `Rb_base`, `gamma_b1`, `Rb_effective`, `Rsc` и идентификатором профиля; содержание A400 подтверждено по артефакту с Изменениями № 1 и № 2 | yes | yes | независимо проверить трактовку сочетаний и применение подтверждённых строк A400; подлинность/юридический статус/актуальность после Изменения № 2 и остальные `gamma_bi` не закрыты |
 | `sections/orientation.py` | реализован обязательный контракт локальных осей, оси момента и растянутой грани | yes | yes | инженер должен проверить принятую машинную конвенцию на схемах обеих граней |
 | `sections/rectangular.py` | однорядная геометрия с явной семантикой `cover`; `h0` выводится из геометрии без произвольного override | yes | yes | инженер должен проверить геометрическую модель и область однорядного применения |
 | `checks/bending.py` | исправленная узкая ветвь `As_prime=0`: material/load context, обязательная ориентация и безопасный `outside_applicability` без способности вне границы | yes | yes | повторная инженерная проверка карточки, BMR-01—BMR-05 и непокрытого п. 8.1.3 |

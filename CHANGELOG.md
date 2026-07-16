@@ -2,9 +2,12 @@
 
 ## Unreleased — ULS-BEND-RECT-001 step 3 remediation
 
-- Confirmed the B15 service row against the attached base PDF and carried the
-  five A400 390/340 MPa changes only as provisional Step 2 regressions; their
-  Amendment 1 source remains an open engineering question.
+- Confirmed the B15 service row and the A400 390/340 MPa rows against the
+  content of the user-provided SP 63.13330.2018 scan with Amendments 1 and 2,
+  SHA-256
+  `8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`.
+  This is content-level confirmation only: authenticity, legal status, and
+  currentness beyond Amendment 2 remain an open question.
 - Added an explicit ULS material/load context with `gamma_b1` provenance.
 - Made local axes, bending axis, tension face, and load context mandatory inputs.
 - Removed arbitrary `h0_override`, compression-diameter fallback, and `Rsc_override` paths.
@@ -15,7 +18,9 @@
   than weakening the guard or its dependent audit checks.
 
 The calculation branch remains subject to engineering review. Clause 8.1.3 is
-not checked, external evidence is incomplete, and `project_use` remains false.
+not checked, BMR expected values remain `ASSUMPTION` pending independent
+reproduction, external evidence is incomplete, and `project_use` remains
+false.
 
 ## 0.9.0-rc1 engineering review preparation
 

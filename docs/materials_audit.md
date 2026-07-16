@@ -10,6 +10,15 @@ approval for project design. All values retain the
 
 The full text of SP 63 is not stored in this repository.
 
+The current source artifact is the user-provided scan of SP 63.13330.2018 with
+Amendments 1 and 2, SHA-256
+`8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`.
+PDF page 2 confirms the stated amendment composition and dates. The status
+`CONFIRMED` below means confirmation against the visible content of this
+specific artifact only. Its authenticity, legal status, and currentness beyond
+Amendment 2 remain `OPEN_QUESTION`; independent engineering review is still
+required and `project_use = false`.
+
 ## Usage In The Core
 
 Concrete strength properties for the first limit state:
@@ -77,18 +86,20 @@ used in final design decisions.
 
 | Catalog row | Source | Status | Architecture impact | Engineering check |
 |---|---|---|---|---|
-| B15 `Rbtser = 1.10 MPa` | SP 63.13330.2018, table 6.7; profile `SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15` | `CONFIRMED` against the attached base edition | service checks read the rechecked catalog row | required before release |
-| A400 `Rsn = 390 MPa`, `Rsser = 390 MPa` | Step 2 statement about clause 6.2.7/table 6.13 in Amendment 1; attached base PDF table 6.13 contains 400 MPa | implemented values `ASSUMPTION`; Amendment evidence `OPEN_QUESTION` | all A400 normative/service tensile consumers use one provisional catalog row | required before release |
-| A400 `Rs = 340 MPa`, `Rsc = 340 MPa` | Step 2 statement about clause 6.2.8/table 6.14 in Amendment 1; attached base PDF table 6.14 contains 350 MPa | implemented values `ASSUMPTION`; Amendment evidence `OPEN_QUESTION` | all A400 ULS tension/compression consumers use one provisional catalog row | required before release |
+| B15 `Rbtser = 1.10 MPa` | reviewed scan, PDF page 24, table 6.7; profile `SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15` | artifact content `CONFIRMED` | service checks read the rechecked catalog row | independent review required before release |
+| A400 `Rsn = 390 MPa`, `Rsser = 390 MPa` | reviewed scan, PDF pages 35–37, clause 6.2.7 and table 6.13 | artifact content `CONFIRMED` | all A400 normative/service tensile consumers use one provisional catalog row | independent review required before release |
+| A400 `Rs = 340 MPa`, `Rsc = 340 MPa` | reviewed scan, PDF pages 35–37, clause 6.2.8 and table 6.14 | artifact content `CONFIRMED` | all A400 ULS tension/compression consumers use one provisional catalog row | independent review required before release |
 
 The two machine keys `Rsc_short` and `Rsc_long` both store 340 MPa for A400.
 They represent one applied `Rsc` selected by the declared load combination,
 not two different normative symbols.
 
-No durable local artifacts or hashes for Amendments 1 and 2, and no engineer
-sign-off for the combined profile, are stored in the repository. Amendment-
-dependent A400 provenance therefore remains `OPEN_QUESTION` / evidence pending
-even though the provisional rows are retained for regression and review.
+An artifact containing Amendments 1 and 2 has therefore been supplied and is
+identified by the SHA-256 above; the A400 390/340 MPa rows are no longer marked
+as assumptions about the artifact's content. This does not constitute an
+engineer sign-off for the combined profile. Artifact authenticity, legal
+status, currentness beyond Amendment 2, and permission for project use remain
+`OPEN_QUESTION` / pending independent review.
 
 ## ULS Material Context
 

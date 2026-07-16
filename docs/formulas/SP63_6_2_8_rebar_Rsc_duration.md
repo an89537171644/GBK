@@ -1,6 +1,7 @@
 # SP63 6.2.8 - reinforcement compression resistance Rsc by load context
 
 requires_engineer_review = true
+project_use = false
 
 ## Scope
 
@@ -37,15 +38,20 @@ resistance.
 
 ## Traceability
 
-- Source: SP 63.13330.2018, clause 6.2.8 and table 6.14. The attached base PDF
-  contains A400 `Rs/Rsc = 350/350 MPa`; Step 2 attributes the implemented
-  340/340 MPa row to Amendment 1, whose artifact is not attached.
-- Source status: base row `CONFIRMED`; implemented A400 340 MPa
-  `ASSUMPTION`; Amendment 1 evidence `OPEN_QUESTION`.
+- Source artifact: user-provided scan of SP 63.13330.2018 with Amendments 1
+  and 2, SHA-256
+  `8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`;
+  PDF page 2 confirms the stated amendment composition and dates.
+- Source: clause 6.2.8 and table 6.14, reviewed on PDF pages 35-37.
+- Artifact-content status: the implemented A400 `Rs/Rsc = 340/340 MPa` row
+  is `CONFIRMED` against this artifact.
+- Evidence boundary: authenticity, legal status, and currentness beyond
+  Amendment 2 remain `OPEN_QUESTION`.
 - Architecture impact: one centralized resolver; no independent duration
   interpretation inside calculation modules.
-- Engineering verification: required before release and project use; the
-  provisional A400 row cannot close the material gate.
+- Engineering verification: independent review is required before release;
+  artifact-content confirmation alone cannot close the material gate or
+  approve project use.
 
 ## Units
 
