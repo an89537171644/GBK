@@ -50,9 +50,21 @@
 
 - Reinforcement catalog separates `Rsc_short` and `Rsc_long`.
 - A500 uses `Rsc_short = 400 MPa` and `Rsc_long = 435 MPa`.
-- `check_bending_rectangular` accepts `load_duration = short/long`.
-- `Rsc_override` still has priority for manual review cases.
+- `load_duration = short/long` explicitly selects the supported load context.
+- The context records `Rb_base`, `gamma_b1`, `Rb_effective`, `Rsc`, and its source profile.
+- Arbitrary `Rsc_override` and `h0_override` paths are not supported.
 - ML, stirrup selection, and Streamlit are outside K2.
+
+## ULS-BEND-RECT-001 step 3 safety status
+
+- Local axes, the `local_z` bending axis, and the tension face are mandatory inputs.
+- Version 1 is restricted to singly reinforced sections with `As_prime = 0`.
+- A numerical capacity is not formed for `x <= 0` or `x > xi_R * h0`.
+- Clause 8.1.3 is not checked; completeness remains `incomplete`.
+- The provisional `long` material context is available only in the isolated
+  bending check. End-to-end design, dataset generation, and ML paths accept
+  only `short` and fail closed otherwise.
+- Formula evidence still requires engineering review and `project_use = false`.
 
 ## K3 transverse reinforcement selection status
 
@@ -66,19 +78,21 @@
 - `design_rectangular_element()` is available.
 - The function combines longitudinal and transverse reinforcement selection.
 - The result contains `CalculationProtocol` for passing full designs.
-- ML and UI are not implemented yet.
+- The workflow is `short`-only and keeps `completeness_status=incomplete`,
+  `evidence_status=needs_engineer_review`, and `project_use=false`.
+- Experimental ML remains advisory-only; a full UI is not implemented.
 
 ## K5 CLI status
 
 The CLI uses subcommands for the main MVP scenarios:
 
 ```bash
-python -m sp63_core bending --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --rebar A500 --as-area 942.48 --moment 150000000 --load-duration short
+python -m sp63_core bending --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --local-axes-id section-local-v1 --moment-axis local_z --tension-face local_y_min --concrete B25 --rebar A500 --as-area 942.48 --moment 150000000 --load-duration short
 python -m sp63_core shear --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --stirrup-rebar A240 --Q 80000 --Asw 100.53 --sw 200
-python -m sp63_core select-longitudinal --b 300 --h 500 --cover 32 --stirrup-diameter 8 --concrete B25 --rebar A500 --moment 150000000 --load-duration short
+python -m sp63_core select-longitudinal --b 300 --h 500 --cover 32 --stirrup-diameter 8 --local-axes-id section-local-v1 --moment-axis local_z --tension-face local_y_min --concrete B25 --rebar A500 --moment 150000000 --load-duration short
 python -m sp63_core select-transverse --b 300 --h 500 --cover 32 --stirrup-diameter 8 --main-bar-diameter 20 --concrete B25 --stirrup-rebar A240 --Q 80000
-python -m sp63_core design-rectangular --b 300 --h 500 --cover 32 --stirrup-diameter 8 --concrete B25 --rebar A500 --stirrup-rebar A240 --moment 150000000 --shear 80000 --load-duration short
-python -m sp63_core generate-dataset --limit 100 --output data/generated/dataset_v001.csv --load-duration short
+python -m sp63_core design-rectangular --b 300 --h 500 --cover 32 --stirrup-diameter 8 --local-axes-id section-local-v1 --moment-axis local_z --tension-face local_y_min --concrete B25 --rebar A500 --stirrup-rebar A240 --moment 150000000 --shear 80000 --load-duration short
+python -m sp63_core generate-dataset --limit 100 --output data/generated/dataset_v003.csv --load-duration short
 ```
 
 Each calculation command also supports `--json`.
@@ -87,8 +101,9 @@ Each calculation command also supports `--json`.
 
 - Draft constructive checks for longitudinal and transverse reinforcement are implemented.
 - Reinforcement selection now filters candidates by calculation checks and draft constructive requirements.
-- Serviceability limit states are not implemented yet.
-- ML is not implemented yet.
+- Draft serviceability checks are implemented but remain unvalidated and
+  require engineering review.
+- Experimental ML is implemented only as an advisory sandbox.
 
 ## K7 dataset split status
 

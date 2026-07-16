@@ -33,7 +33,7 @@ def test_v09_final_audit_contains_expected_items(tmp_path):
     assert items["clean-demo-workflow"] == "pass"
     assert items["engineering-handoff-package"] == "pass"
     assert items["launcher-scripts"] == "pass"
-    assert items["material-verification-closure"] == "pass"
+    assert items["material-verification-closure"] == "review_required"
     assert items["external-validation-evidence-package"] == "pass"
     assert "v09-readiness" in items
     assert "docs-audit" in items

@@ -24,6 +24,10 @@ reinforcement selection algorithms, material values, or ML behavior.
   "stirrup_rebar_class": "A240",
   "M": 150000000,
   "Q": 80000,
+  "local_axes_id": "example-section-local-axes",
+  "moment_axis": "local_z",
+  "tension_face": "local_y_min",
+  "load_duration": "short",
   "Mser": 30000000,
   "check_cracks": true,
   "check_crack_width": true,
@@ -43,13 +47,17 @@ The same example is stored in
 |---|---|---|
 | `b` | mm | rectangular section width |
 | `h` | mm | rectangular section height |
-| `cover` | mm | protective cover |
+| `cover` | mm | distance from the concrete face to the outer stirrup surface in the current single-row geometry |
 | `stirrup_diameter_for_geometry` | mm | stirrup diameter used for effective depth geometry |
 | `concrete_class` | text | concrete class from the draft catalog |
 | `longitudinal_rebar_class` | text | longitudinal reinforcement class |
 | `stirrup_rebar_class` | text | transverse reinforcement class |
 | `M` | N*mm | design bending moment |
 | `Q` | N | design shear force |
+| `local_axes_id` | text | non-empty identifier of the declared section-local axes |
+| `moment_axis` | text | `local_z` for the current version |
+| `tension_face` | text | explicit `local_y_min` or `local_y_max`; never inferred from moment sign |
+| `load_duration` | text | `short` for the end-to-end report/design workflow |
 
 ## Optional fields
 
@@ -63,7 +71,6 @@ The same example is stored in
 | `acrc_limit` | mm | draft crack width limit |
 | `deflection_limit` | mm | explicit deflection limit |
 | `deflection_limit_ratio` | dimensionless | span divisor for default deflection limit |
-| `load_duration` | text | `short` or `long` |
 
 ## Units
 
@@ -77,8 +84,15 @@ The same example is stored in
 
 - Missing required fields raise a clear `ValueError`.
 - Unknown fields are rejected instead of being silently accepted.
-- Calculation formulas and reinforcement selection are unchanged.
-- All generated reports keep `requires_engineer_review = true`.
+- The end-to-end design/report workflow accepts only `load_duration=short`.
+  The isolated bending check has a separately verified provisional `long`
+  branch; shear and the full workflow do not propagate that context and return
+  `outside_applicability`.
+- This loader does not define or approve calculation formulas; it passes the
+  validated contract to the deterministic workflow.
+- All generated reports keep `completeness_status=incomplete`,
+  `evidence_status=needs_engineer_review`, `project_use_status=prohibited`,
+  `project_use=false`, and `requires_engineer_review=true`.
 
 ## CLI
 

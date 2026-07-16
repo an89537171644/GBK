@@ -23,6 +23,10 @@ def test_engineering_workflow_batch_runs_form_templates(tmp_path):
     assert result.batch_status == "fail"
     assert result.failed_count >= 1
     assert result.review_required_count >= 1
+    assert result.completeness_status == "incomplete"
+    assert result.evidence_status == "needs_engineer_review"
+    assert result.project_use_status == "prohibited"
+    assert result.project_use is False
     assert result.requires_engineer_review is True
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
@@ -46,6 +50,8 @@ def test_engineering_workflow_batch_summary_contains_case_statuses(tmp_path):
 
     payload = json.loads((output_dir / "batch_workflow_summary.json").read_text(encoding="utf-8"))
     assert payload["report_type"] == "batch_engineering_workflow_summary"
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
     assert payload["case_count"] == len(payload["case_results"])
     assert any(case["preflight_status"] == "fail" for case in payload["case_results"])
     assert any(
@@ -55,6 +61,8 @@ def test_engineering_workflow_batch_summary_contains_case_statuses(tmp_path):
     assert payload["command_exit_status"] == "completed"
     assert payload["failed_cases"]
     assert payload["recommendations"]
+    assert all(case["project_use_status"] == "prohibited" for case in payload["case_results"])
+    assert all(case["project_use"] is False for case in payload["case_results"])
 
 
 def test_engineering_workflow_batch_valid_examples_have_no_failed_cases(tmp_path):
@@ -113,6 +121,8 @@ def test_engineering_workflow_batch_index_links_case_indexes(tmp_path):
     assert "case_0001" in html
     assert "case report" in html
     assert "ml_ready_for_project_use" in html
+    assert "project_use_status" in html
+    assert "project_use: <code>false</code>" in html
     assert "command_exit_status" in html
     assert "<script" not in html.lower()
     assert "Approve design" not in html
@@ -176,6 +186,8 @@ def test_cli_engineering_workflow_batch_json(tmp_path, capsys):
     assert payload["command_exit_status"] == "completed"
     assert payload["case_count"] == len(tuple(FORM_TEMPLATES.glob("*.json")))
     assert payload["failed_count"] >= 1
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
     assert (output_dir / "batch_index.html").exists()
 
 

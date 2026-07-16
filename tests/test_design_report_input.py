@@ -46,6 +46,10 @@ def test_design_report_input_rejects_missing_required_field():
                 "stirrup_rebar_class": "A240",
                 "M": 150_000_000,
                 "Q": 80_000,
+                "local_axes_id": "missing-b-local-axes",
+                "moment_axis": "local_z",
+                "tension_face": "local_y_min",
+                "load_duration": "short",
             }
         )
 
@@ -61,10 +65,23 @@ def test_design_report_input_rejects_unknown_field():
         "stirrup_rebar_class": "A240",
         "M": 150_000_000,
         "Q": 80_000,
+        "local_axes_id": "unknown-field-local-axes",
+        "moment_axis": "local_z",
+        "tension_face": "local_y_min",
+        "load_duration": "short",
         "unexpected_capacity_override": 1.0,
     }
 
     with pytest.raises(ValueError, match="unknown design report input fields"):
+        rectangular_design_input_from_mapping(data)
+
+
+@pytest.mark.parametrize("field", ("h0_override", "Rsc_override"))
+def test_design_report_input_rejects_removed_overrides(field):
+    data = json.loads(Path(EXAMPLE_INPUT).read_text(encoding="utf-8"))
+    data[field] = 1.0
+
+    with pytest.raises(ValueError, match=field):
         rectangular_design_input_from_mapping(data)
 
 

@@ -3,6 +3,7 @@ import json
 
 from sp63_core.cli import main
 from sp63_core.dataset import (
+    DATASET_VERSION,
     analyze_synthetic_dataset_balance,
     build_stratified_split_summary,
 )
@@ -16,6 +17,7 @@ def _balanced_rows():
         rows.append(
             {
                 "dataset_source": "synthetic_report_derived_sp63_core",
+                "dataset_version": DATASET_VERSION,
                 "case_id": f"case_{index:03d}",
                 "source_archive_path": f"reports/case_{index:03d}",
                 "report_json_path": f"reports/case_{index:03d}/report.json",
@@ -25,6 +27,14 @@ def _balanced_rows():
                 "report_json_sha256": f"report-{index}",
                 "manifest_sha256": f"manifest-{index}",
                 "archive_validation_status": "pass",
+                "local_axes_id": f"case-{index:03d}-local-axes",
+                "moment_axis": "local_z",
+                "tension_face": "local_y_min",
+                "load_duration": "short",
+                "completeness_status": "incomplete",
+                "evidence_status": "needs_engineer_review",
+                "project_use_status": "prohibited",
+                "project_use": False,
                 "b": 300,
                 "h": 500,
                 "cover": 32,

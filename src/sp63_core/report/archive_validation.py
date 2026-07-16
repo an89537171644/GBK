@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sp63_core.report.manifest import compute_file_sha256
+from sp63_core.report.manifest import MANIFEST_VERSION, compute_file_sha256
 
 SINGLE_BUNDLE_REQUIRED_FILES = (
     "manifest.json",
@@ -40,6 +40,10 @@ class ReportArchiveValidationResult:
     index_consistency_status: str
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -313,6 +317,20 @@ def _validate_manifest_review_flag(
     manifest_path: Path,
     errors: list[str],
 ) -> None:
+    if manifest.get("manifest_version") != MANIFEST_VERSION:
+        errors.append(
+            f"{manifest_path}: manifest_version must be {MANIFEST_VERSION!r}"
+        )
+    if manifest.get("completeness_status") != "incomplete":
+        errors.append(f"{manifest_path}: completeness_status must be 'incomplete'")
+    if manifest.get("evidence_status") != "needs_engineer_review":
+        errors.append(
+            f"{manifest_path}: evidence_status must be 'needs_engineer_review'"
+        )
+    if manifest.get("project_use_status") != "prohibited":
+        errors.append(f"{manifest_path}: project_use_status must be 'prohibited'")
+    if manifest.get("project_use") is not False:
+        errors.append(f"{manifest_path}: project_use must be false")
     if manifest.get("requires_engineer_review") is not True:
         errors.append(f"{manifest_path}: requires_engineer_review must be true")
 

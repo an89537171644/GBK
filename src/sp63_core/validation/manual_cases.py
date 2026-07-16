@@ -14,9 +14,14 @@ from sp63_core.checks import (
 )
 from sp63_core.materials import get_concrete, get_rebar
 from sp63_core.report import build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
 ManualValue = float | str | bool
+MANUAL_BENDING_ORIENTATION = RectangularBendingOrientation(
+    local_axes_id="manual-case-local-axes",
+    moment_axis="local_z",
+    tension_face="local_y_min",
+)
 
 
 @dataclass(frozen=True)
@@ -86,7 +91,15 @@ def _case_01() -> tuple[
     As = 942.48
     Asw = 2.0 * pi * 8.0**2 / 4.0
 
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=150_000_000)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=150_000_000,
+        orientation=MANUAL_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(section, concrete, stirrup_rebar, Q=80_000, Asw=Asw, sw=200)
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=30_000_000)
     crack_width = check_normal_crack_width_rectangular(
@@ -216,6 +229,8 @@ def _case_02() -> tuple[
         get_rebar("A500"),
         As=402.12,
         M=150_000_000,
+        orientation=MANUAL_BENDING_ORIENTATION,
+        load_duration="short",
     )
     protocol = build_calculation_protocol(
         input_data={},
@@ -274,7 +289,15 @@ def _case_03() -> tuple[
     concrete = get_concrete("B25")
     rebar = get_rebar("A500")
     stirrup_rebar = get_rebar("A240")
-    bending = check_bending_rectangular(section, concrete, rebar, As=942.48, M=150_000_000)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=942.48,
+        M=150_000_000,
+        orientation=MANUAL_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(
         section,
         concrete,

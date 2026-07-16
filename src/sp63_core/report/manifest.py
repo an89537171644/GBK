@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-MANIFEST_VERSION = "1"
+MANIFEST_VERSION = "2"
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,10 @@ class ReportArtifactManifest:
     overall_status: str | None
     warnings_count: int
     metadata: dict[str, Any] = field(default_factory=dict)
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -53,6 +57,9 @@ def build_report_manifest(
     overall_status: str | None = None,
     warnings_count: int = 0,
     metadata: dict[str, Any] | None = None,
+    completeness_status: str = "incomplete",
+    evidence_status: str = "needs_engineer_review",
+    project_use_status: str = "prohibited",
 ) -> ReportArtifactManifest:
     """Build manifest metadata for existing input and output files."""
     return ReportArtifactManifest(
@@ -68,6 +75,10 @@ def build_report_manifest(
         overall_status=overall_status,
         warnings_count=warnings_count,
         metadata={} if metadata is None else dict(metadata),
+        completeness_status=completeness_status,
+        evidence_status=evidence_status,
+        project_use_status=project_use_status,
+        project_use=False,
         requires_engineer_review=True,
     )
 

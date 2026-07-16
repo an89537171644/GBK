@@ -14,11 +14,19 @@ from sp63_core.rebar import (
     check_transverse_constructive,
 )
 from sp63_core.rebar.transverse import QSW_MIN_RULE_WARNING, SHEAR_RULE_MAX_WARNING
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
 ADVISORY_WARNING = (
     "draft ML safety gate: baseline ML is advisory only; deterministic SP63 checks "
     "remain mandatory"
+)
+NARROW_ACCEPTANCE_WARNING = (
+    "accepted_by_deterministic_core covers only the narrow checked scope; "
+    "project use remains prohibited"
+)
+LONG_DURATION_UNSUPPORTED_WARNING = (
+    "ML proposal rejected: load_duration='long' is unsupported until the "
+    "deterministic shear load-combination context is implemented"
 )
 
 
@@ -27,6 +35,14 @@ def check_ml_proposal_safety(
     original_case: DatasetCase,
 ) -> dict[str, Any]:
     """Run deterministic checks for the exact ML reinforcement proposal."""
+    if original_case.load_duration == "long":
+        return _unsupported_long_duration_result(proposal, original_case)
+
+    orientation = RectangularBendingOrientation(
+        local_axes_id=original_case.local_axes_id,
+        moment_axis=original_case.moment_axis,
+        tension_face=original_case.tension_face,
+    )
     section = RectangularSection(
         b=original_case.b,
         h=original_case.h,
@@ -57,6 +73,7 @@ def check_ml_proposal_safety(
         rebar=longitudinal_rebar,
         As=As,
         M=original_case.M,
+        orientation=orientation,
         load_duration=original_case.load_duration,
     )
     shear = check_shear_rectangular(
@@ -89,6 +106,7 @@ def check_ml_proposal_safety(
     )
     warnings = (
         ADVISORY_WARNING,
+        NARROW_ACCEPTANCE_WARNING,
         *layout.warnings,
         *longitudinal_constructive.warnings,
         *bending.warnings,
@@ -105,6 +123,15 @@ def check_ml_proposal_safety(
         "longitudinal_constructive_status": longitudinal_constructive.status,
         "transverse_constructive_status": transverse_constructive.status,
         "stirrup_diameter_mode": "geometry_input_parameter",
+        "local_axes_id": original_case.local_axes_id,
+        "moment_axis": original_case.moment_axis,
+        "tension_face": original_case.tension_face,
+        "load_duration": original_case.load_duration,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
         "warnings": warnings,
         "proposal": asdict(proposal),
     }
@@ -123,6 +150,38 @@ def check_ml_prediction_safety(
     result["warnings"] = (*proposal_warnings, *result["warnings"])
     result["prediction_keys"] = tuple(sorted(prediction))
     return result
+
+
+def _unsupported_long_duration_result(
+    proposal: MLReinforcementProposal,
+    original_case: DatasetCase,
+) -> dict[str, Any]:
+    return {
+        "ml_is_advisory": True,
+        "accepted_by_deterministic_core": False,
+        "bending_status": "not_checked",
+        "shear_status": "not_checked",
+        "layout_feasible": False,
+        "longitudinal_constructive_status": "not_checked",
+        "transverse_constructive_status": "not_checked",
+        "stirrup_diameter_mode": "geometry_input_parameter",
+        "local_axes_id": original_case.local_axes_id,
+        "moment_axis": original_case.moment_axis,
+        "tension_face": original_case.tension_face,
+        "load_duration": original_case.load_duration,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
+        "rejection_reasons": (LONG_DURATION_UNSUPPORTED_WARNING,),
+        "warnings": (
+            ADVISORY_WARNING,
+            NARROW_ACCEPTANCE_WARNING,
+            LONG_DURATION_UNSUPPORTED_WARNING,
+        ),
+        "proposal": asdict(proposal),
+    }
 
 
 def _has_blocking_shear_warning(warnings: tuple[str, ...]) -> bool:

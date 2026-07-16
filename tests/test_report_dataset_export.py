@@ -1,8 +1,15 @@
 import csv
 import json
 
+import pytest
+
 from sp63_core.cli import main
-from sp63_core.dataset import REPORT_DATASET_SOURCE, export_dataset_from_report_archive
+from sp63_core.dataset import (
+    DATASET_VERSION,
+    REPORT_DATASET_SOURCE,
+    export_dataset_from_report_archive,
+    extract_dataset_row_from_report_json,
+)
 
 EXAMPLE_INPUT = "docs/reports/examples/rectangular_design_input_example.json"
 BATCH_EXAMPLES_DIR = "docs/reports/examples/batch"
@@ -51,6 +58,15 @@ def test_single_report_bundle_exports_dataset_jsonl(tmp_path):
     assert result.row_count == 1
     assert result.archive_validation_status == "pass"
     assert rows[0]["dataset_source"] == REPORT_DATASET_SOURCE
+    assert rows[0]["dataset_version"] == DATASET_VERSION
+    assert rows[0]["local_axes_id"] == "example-section-local-axes"
+    assert rows[0]["moment_axis"] == "local_z"
+    assert rows[0]["tension_face"] == "local_y_min"
+    assert rows[0]["load_duration"] == "short"
+    assert rows[0]["completeness_status"] == "incomplete"
+    assert rows[0]["evidence_status"] == "needs_engineer_review"
+    assert rows[0]["project_use_status"] == "prohibited"
+    assert rows[0]["project_use"] is False
     assert rows[0]["requires_engineer_review"] is True
     assert rows[0]["ml_is_advisory_only"] is True
     assert rows[0]["deterministic_checks_required"] is True
@@ -77,6 +93,12 @@ def test_batch_report_archive_exports_dataset_jsonl(tmp_path):
     assert len(rows) == 3
     assert {row["case_id"] for row in rows} == {"case_001", "case_002", "case_003"}
     assert all(row["dataset_source"] == REPORT_DATASET_SOURCE for row in rows)
+    assert all(row["dataset_version"] == DATASET_VERSION for row in rows)
+    assert all(row["local_axes_id"] for row in rows)
+    assert all(row["moment_axis"] == "local_z" for row in rows)
+    assert all(row["tension_face"] == "local_y_min" for row in rows)
+    assert all(row["load_duration"] == "short" for row in rows)
+    assert all(row["project_use"] is False for row in rows)
     assert all(row["requires_engineer_review"] is True for row in rows)
     assert all(row["ml_is_advisory_only"] is True for row in rows)
     assert all(row["deterministic_checks_required"] is True for row in rows)
@@ -99,9 +121,42 @@ def test_batch_report_archive_exports_dataset_csv(tmp_path):
     assert result.row_count == 3
     assert len(rows) == 3
     assert rows[0]["dataset_source"] == REPORT_DATASET_SOURCE
+    assert rows[0]["dataset_version"] == DATASET_VERSION
+    assert rows[0]["local_axes_id"]
+    assert rows[0]["moment_axis"] == "local_z"
+    assert rows[0]["tension_face"] == "local_y_min"
+    assert rows[0]["load_duration"] == "short"
+    assert rows[0]["completeness_status"] == "incomplete"
+    assert rows[0]["evidence_status"] == "needs_engineer_review"
+    assert rows[0]["project_use_status"] == "prohibited"
+    assert rows[0]["project_use"] == "False"
     assert rows[0]["overall_status"]
     assert "strength_status" in rows[0]
     assert "serviceability_status" in rows[0]
+
+
+def test_report_dataset_extraction_rejects_long_duration(tmp_path):
+    source_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(source_dir) == 0
+    input_path = source_dir / "input.json"
+    payload = json.loads(input_path.read_text(encoding="utf-8"))
+    payload["load_duration"] = "long"
+    input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="load_duration"):
+        extract_dataset_row_from_report_json(source_dir / "report.json")
+
+
+def test_report_dataset_extraction_rejects_unsafe_hard_status(tmp_path):
+    source_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(source_dir) == 0
+    report_path = source_dir / "report.json"
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    payload["project_use"] = True
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="project_use"):
+        extract_dataset_row_from_report_json(report_path)
 
 
 def test_invalid_report_archive_does_not_export_dataset(tmp_path):

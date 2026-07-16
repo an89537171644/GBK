@@ -1,6 +1,8 @@
 import csv
 import json
 
+import pytest
+
 from sp63_core.cli import main
 from sp63_core.dataset import (
     export_dataset_from_report_archive,
@@ -146,6 +148,39 @@ def test_report_dataset_quality_gate_fails_nonpassing_archive_status(tmp_path):
 
     assert result.status == "fail"
     assert any("archive_validation_status" in error for error in result.errors)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "error_text"),
+    (
+        ("dataset_version", "0.2", "dataset_version"),
+        ("local_axes_id", "", "orientation provenance"),
+        ("moment_axis", "local_y", "orientation provenance"),
+        ("tension_face", "unknown", "orientation provenance"),
+        ("load_duration", "long", "load_duration must be short"),
+        ("completeness_status", "complete", "hard safety statuses"),
+        ("evidence_status", "confirmed", "hard safety statuses"),
+        ("project_use_status", "allowed", "hard safety statuses"),
+        ("project_use", True, "hard safety statuses"),
+        ("requires_engineer_review", False, "hard safety statuses"),
+    ),
+)
+def test_report_dataset_quality_gate_rejects_unsafe_provenance(
+    tmp_path,
+    field_name,
+    invalid_value,
+    error_text,
+):
+    dataset_path = _write_batch_dataset(tmp_path)
+    rows = _read_jsonl(dataset_path)
+    rows[0][field_name] = invalid_value
+    broken_path = tmp_path / f"invalid_{field_name}.jsonl"
+    _write_jsonl(broken_path, rows)
+
+    result = run_report_dataset_quality_gate(dataset_path=broken_path, min_rows=1)
+
+    assert result.status == "fail"
+    assert any(error_text in error for error in result.errors)
 
 
 def test_cli_report_dataset_quality_json_output(tmp_path, capsys):

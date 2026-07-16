@@ -7,6 +7,7 @@ from sp63_core.validation import (
     run_design_golden_cases,
     run_shear_golden_cases,
 )
+from sp63_core.validation.golden import _matches_expected
 
 
 def test_bending_golden_cases_pass():
@@ -66,3 +67,11 @@ def test_golden_case_result_contains_expected_and_actual():
     assert result.actual
     assert "calculation_status" in result.expected
     assert "calculation_status" in result.actual
+
+
+def test_golden_comparator_rejects_non_finite_actual_value():
+    assert not _matches_expected(
+        expected={"value": 1.0},
+        actual={"value": float("nan")},
+        tolerances={"value": 0.1},
+    )

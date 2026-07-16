@@ -1,7 +1,10 @@
 """Draft golden-case validation for the calculation core."""
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from importlib.resources import files
+from math import isfinite
 
 from sp63_core.checks import (
     check_bending_rectangular,
@@ -12,9 +15,15 @@ from sp63_core.checks import (
 )
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
-GoldenValue = float | str | bool
+GoldenValue = float | str | bool | None
+GOLDEN_BENDING_ORIENTATION = RectangularBendingOrientation(
+    local_axes_id="golden-case-local-axes",
+    moment_axis="local_z",
+    tension_face="local_y_min",
+)
+STEP3_BENDING_BENCHMARK_RESOURCE = "data/uls_bend_rect_step3_benchmarks.json"
 
 
 @dataclass(frozen=True)
@@ -42,6 +51,8 @@ def run_bending_golden_cases() -> tuple[GoldenCaseResult, ...]:
         rebar=rebar,
         As=942.48,
         M=150_000_000,
+        orientation=GOLDEN_BENDING_ORIENTATION,
+        load_duration="short",
     )
     failing = check_bending_rectangular(
         section=section,
@@ -49,6 +60,8 @@ def run_bending_golden_cases() -> tuple[GoldenCaseResult, ...]:
         rebar=rebar,
         As=402.12,
         M=150_000_000,
+        orientation=GOLDEN_BENDING_ORIENTATION,
+        load_duration="short",
     )
 
     return (
@@ -101,6 +114,124 @@ def run_bending_golden_cases() -> tuple[GoldenCaseResult, ...]:
             warnings=failing.warnings,
         ),
     )
+
+
+def run_step3_bending_benchmark_cases() -> tuple[GoldenCaseResult, ...]:
+    """Run BMR-01--BMR-05 from the Step 3 provisional regression fixture.
+
+    The fixture remains assumption-level evidence pending independent
+    engineering reproduction. Loading it here makes the same five safety
+    regressions part of both normal and acceptance ``validate --golden`` paths.
+    """
+    suite_text = (
+        files("sp63_core.validation")
+        .joinpath(STEP3_BENDING_BENCHMARK_RESOURCE)
+        .read_text(encoding="utf-8")
+    )
+    suite = json.loads(suite_text)
+    _validate_step3_benchmark_metadata(suite)
+    orientation = RectangularBendingOrientation(**suite["orientation"])
+    results: list[GoldenCaseResult] = []
+
+    for case in suite["cases"]:
+        input_data = case["input"]
+        expected_fixture = case["expected"]
+        section = RectangularSection(
+            b=input_data["b"],
+            h=input_data["h"],
+            cover=input_data["cover"],
+            stirrup_diameter=input_data["stirrup_diameter"],
+            main_bar_diameter=input_data["main_bar_diameter"],
+        )
+        As = input_data["bar_count"] * area_by_diameter(
+            input_data["main_bar_diameter"]
+        )
+        As_prime = 0.0
+        if input_data["As_prime_bar_count"]:
+            As_prime = input_data["As_prime_bar_count"] * area_by_diameter(
+                input_data["As_prime_bar_diameter"]
+            )
+        bending = check_bending_rectangular(
+            section=section,
+            concrete=get_concrete(input_data["concrete_class"]),
+            rebar=get_rebar(input_data["rebar_class"]),
+            As=As,
+            As_prime=As_prime,
+            M=input_data["M"],
+            orientation=orientation,
+            load_duration=input_data["load_duration"],
+        )
+
+        expected: dict[str, GoldenValue] = {
+            "h0": expected_fixture["h0"],
+            "x": expected_fixture["x"],
+            "xi": expected_fixture["xi"],
+            "xi_R": expected_fixture["xi_R"],
+            "x_limit": expected_fixture["x_limit"],
+            "Mult": expected_fixture["Mult"],
+            "utilization": expected_fixture["utilization"],
+            "calculation_status": expected_fixture["status"],
+            "capacity_applicable": expected_fixture["capacity_applicable"],
+        }
+        actual: dict[str, GoldenValue] = {
+            "h0": section.effective_depth(),
+            "x": bending.x,
+            "xi": bending.xi,
+            "xi_R": bending.xi_R,
+            "x_limit": bending.intermediate_values["x_limit"],
+            "Mult": bending.Mult,
+            "utilization": bending.utilization,
+            "calculation_status": bending.status,
+            "capacity_applicable": bending.capacity_applicable,
+        }
+        for key in ("Rb_base", "gamma_b1", "Rb_effective", "applicability_reason"):
+            if key in expected_fixture:
+                expected[key] = expected_fixture[key]
+                actual[key] = bending.intermediate_values.get(key)
+
+        results.append(
+            _build_result(
+                case_id=case["case_id"],
+                expected=expected,
+                actual=actual,
+                tolerances={
+                    "h0": 1e-9,
+                    "x": 1e-6,
+                    "xi": 1e-9,
+                    "xi_R": 1e-9,
+                    "x_limit": 1e-6,
+                    "Mult": 1e-3,
+                    "utilization": 1e-9,
+                    "Rb_base": 1e-9,
+                    "gamma_b1": 1e-12,
+                    "Rb_effective": 1e-9,
+                },
+                warnings=(
+                    *bending.warnings,
+                    "Step 3 BMR expected values are assumption-level until independent "
+                    "engineering sign-off",
+                ),
+            )
+        )
+
+    return tuple(results)
+
+
+def _validate_step3_benchmark_metadata(suite: Mapping[str, object]) -> None:
+    """Reject benchmark resources that lose their assumption/review gates."""
+    expected = {
+        "decision_status": "ASSUMPTION",
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
+    }
+    invalid = [key for key, value in expected.items() if suite.get(key) != value]
+    if invalid:
+        raise ValueError(
+            "Step 3 benchmark safety metadata is invalid: " + ", ".join(invalid)
+        )
 
 
 def run_shear_golden_cases() -> tuple[GoldenCaseResult, ...]:
@@ -157,6 +288,9 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
             stirrup_rebar_class="A240",
             M=150_000_000,
             Q=80_000,
+            local_axes_id="golden-case-local-axes",
+            moment_axis="local_z",
+            tension_face="local_y_min",
             load_duration="short",
         )
     )
@@ -421,7 +555,10 @@ def _matches_expected(
         if isinstance(expected_value, float):
             if not isinstance(actual_value, float | int):
                 return False
-            if abs(float(actual_value) - expected_value) > tolerances.get(key, 0.0):
+            actual_number = float(actual_value)
+            if not isfinite(actual_number) or not isfinite(expected_value):
+                return False
+            if abs(actual_number - expected_value) > tolerances.get(key, 0.0):
                 return False
         elif actual_value != expected_value:
             return False

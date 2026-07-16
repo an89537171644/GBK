@@ -10,7 +10,7 @@ from sp63_core.dataset import (
 
 
 def test_split_dataset_cases_is_reproducible():
-    cases = generate_dataset_cases(limit=10)
+    cases = generate_dataset_cases(limit=10, load_duration="short")
 
     split_a = split_dataset_cases(cases, seed=42)
     split_b = split_dataset_cases(cases, seed=42)
@@ -23,7 +23,7 @@ def test_split_dataset_cases_is_reproducible():
 
 
 def test_split_dataset_cases_sizes():
-    cases = generate_dataset_cases(limit=10)
+    cases = generate_dataset_cases(limit=10, load_duration="short")
     split = split_dataset_cases(cases)
 
     assert len(split.train) == 7
@@ -32,7 +32,7 @@ def test_split_dataset_cases_sizes():
 
 
 def test_export_dataset_split_csv_creates_three_files(tmp_path):
-    cases = generate_dataset_cases(limit=10)
+    cases = generate_dataset_cases(limit=10, load_duration="short")
     split = split_dataset_cases(cases)
 
     paths = export_dataset_split_csv(split, tmp_path, prefix="dataset_test")
@@ -50,14 +50,14 @@ def test_split_dataset_cases_rejects_empty_cases():
 
 
 def test_split_dataset_cases_rejects_invalid_ratio_sum():
-    cases = generate_dataset_cases(limit=3)
+    cases = generate_dataset_cases(limit=3, load_duration="short")
 
     with pytest.raises(ValueError, match="must sum to 1.0"):
         split_dataset_cases(cases, train_ratio=0.5, validation_ratio=0.2, test_ratio=0.2)
 
 
 def test_group_split_has_no_group_leakage():
-    cases = generate_dataset_cases(limit=60)
+    cases = generate_dataset_cases(limit=60, load_duration="short")
 
     split = split_dataset_cases(cases, seed=42, group_by="group_key")
 
@@ -70,7 +70,7 @@ def test_group_split_has_no_group_leakage():
 
 
 def test_group_split_reproducible():
-    cases = generate_dataset_cases(limit=60)
+    cases = generate_dataset_cases(limit=60, load_duration="short")
 
     split_a = split_dataset_cases(cases, seed=42, group_by="group_key")
     split_b = split_dataset_cases(cases, seed=42, group_by="group_key")

@@ -96,6 +96,7 @@ def build_neural_surrogate_report(
 
     safe_cases = generate_dataset_cases(
         limit=_safe_regression_limit(diagnostic_limit),
+        load_duration="short",
         seed=random_state,
     )
     regression_metrics = _build_regression_metrics(

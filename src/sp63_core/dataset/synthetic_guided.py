@@ -34,6 +34,10 @@ class GuidedSyntheticGenerationResult:
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
     synthetic_data_only: bool = True
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
     ml_is_advisory_only: bool = True
     deterministic_checks_required: bool = True
@@ -114,6 +118,10 @@ def generate_guided_synthetic_inputs(
         "accepted_count": sum(final_distribution.values()),
         "rejected_count": rejected_count,
         "synthetic_data_only": True,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
         "requires_engineer_review": True,
         "ml_is_advisory_only": True,
         "deterministic_checks_required": True,
@@ -209,7 +217,14 @@ def _build_guided_candidate_payload(
     else:
         raise ValueError("desired_status must be pass, fail, or review_or_fail")
 
-    payload["load_duration"] = rng.choice(("short", "short", "short", "long"))
+    payload.update(
+        {
+            "local_axes_id": f"guided-synthetic-attempt-{attempt:06d}",
+            "moment_axis": "local_z",
+            "tension_face": "local_y_min",
+            "load_duration": "short",
+        }
+    )
     if include_serviceability:
         _add_serviceability_fields(payload, rng=rng, desired_status=desired_status)
     return payload
@@ -358,6 +373,10 @@ def _render_guided_synthetic_readme(
             f"- max_attempts: `{max_attempts}`",
             f"- include_serviceability: `{include_serviceability}`",
             "- synthetic_data_only: `true`",
+            "- completeness_status: `incomplete`",
+            "- evidence_status: `needs_engineer_review`",
+            "- project_use_status: `prohibited`",
+            "- project_use: `false`",
             "- requires_engineer_review: `true`",
             "- ml_is_advisory_only: `true`",
             "- deterministic_checks_required: `true`",

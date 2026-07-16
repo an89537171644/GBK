@@ -105,6 +105,26 @@ def test_input_preflight_rejects_missing_optional_csv_path(tmp_path):
     assert any(issue.issue_id == "path_field_missing" for issue in result.issues)
 
 
+def test_input_preflight_rejects_material_and_duration_outside_design_scope(tmp_path):
+    input_path = tmp_path / "outside_scope.json"
+    data = json.loads(EXAMPLE_INPUT.read_text(encoding="utf-8"))
+    data["longitudinal_rebar_class"] = "A240"
+    data["load_duration"] = "long"
+    input_path.write_text(json.dumps(data), encoding="utf-8")
+
+    result = run_input_preflight(input_path)
+
+    assert result.status == "fail"
+    assert any(
+        issue.issue_id == "unsupported_uls_longitudinal_rebar_class"
+        for issue in result.issues
+    )
+    assert any(
+        issue.issue_id == "select_field_invalid" and issue.field == "load_duration"
+        for issue in result.issues
+    )
+
+
 def test_input_preflight_writes_output_files(tmp_path):
     result = run_input_preflight(EXAMPLE_INPUT, output_dir=tmp_path)
 

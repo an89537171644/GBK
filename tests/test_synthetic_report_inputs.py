@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -19,6 +20,10 @@ def test_synthetic_report_input_generator_creates_requested_cases(tmp_path):
     assert result.generated_count == 5
     assert result.skipped_count == 0
     assert result.requires_engineer_review is True
+    assert result.completeness_status == "incomplete"
+    assert result.evidence_status == "needs_engineer_review"
+    assert result.project_use_status == "prohibited"
+    assert result.project_use is False
     assert result.synthetic_data_only is True
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
@@ -65,6 +70,7 @@ def test_synthetic_report_inputs_load_with_existing_reader(tmp_path):
         assert design_input.h > 0
         assert design_input.M > 0
         assert design_input.Q > 0
+        assert design_input.load_duration == "short"
 
 
 def test_synthetic_manifest_records_case_sha256(tmp_path):
@@ -72,6 +78,13 @@ def test_synthetic_manifest_records_case_sha256(tmp_path):
     generate_synthetic_report_inputs(output_dir=output_dir, case_count=3, seed=42)
 
     manifest = json.loads((output_dir / "synthetic_manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["completeness_status"] == "incomplete"
+    assert manifest["evidence_status"] == "needs_engineer_review"
+    assert manifest["project_use_status"] == "prohibited"
+    assert manifest["project_use"] is False
+    assert manifest["cases"][0]["input_summary"]["load_duration"] == "short"
+    assert manifest["cases"][0]["input_summary"]["moment_axis"] == "local_z"
 
     assert manifest["generator"] == "synthetic_report_inputs"
     assert manifest["case_count"] == 3
@@ -81,6 +94,13 @@ def test_synthetic_manifest_records_case_sha256(tmp_path):
     assert len(manifest["cases"]) == 3
     assert all(case["sha256"] for case in manifest["cases"])
     assert all(Path(case["path"]).name.startswith("case_") for case in manifest["cases"])
+    assert all(
+        json.loads((output_dir / case["path"]).read_text(encoding="utf-8"))[
+            "load_duration"
+        ]
+        == "short"
+        for case in manifest["cases"]
+    )
 
 
 def test_cli_synthetic_report_inputs_json(tmp_path, capsys):
@@ -165,3 +185,12 @@ def test_committed_synthetic_batch_smoke_examples_exist():
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["case_count"] == 10
     assert manifest["synthetic_data_only"] is True
+    assert manifest["completeness_status"] == "incomplete"
+    assert manifest["evidence_status"] == "needs_engineer_review"
+    assert manifest["project_use_status"] == "prohibited"
+    assert manifest["project_use"] is False
+    for case_record in manifest["cases"]:
+        case_path = example_dir / case_record["path"]
+        case_data = json.loads(case_path.read_text(encoding="utf-8"))
+        assert case_data["load_duration"] == "short"
+        assert hashlib.sha256(case_path.read_bytes()).hexdigest() == case_record["sha256"]

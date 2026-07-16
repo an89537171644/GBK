@@ -4,6 +4,11 @@ from dataclasses import asdict, dataclass
 from html import escape
 from typing import Any
 
+from sp63_core.materials import (
+    UnsupportedULSMaterialProfileError,
+    resolve_uls_material_context,
+)
+
 REPORT_TYPE = "rectangular_design_calculation_report"
 DRAFT_REPORT_WARNING = (
     "Report generated from the draft-MVP calculation core. Engineer review is "
@@ -22,6 +27,8 @@ LIMITATIONS = (
     "ML is advisory-only",
     "deterministic SP63 checks are mandatory",
     "engineer review is required",
+    "SP 63 clause 8.1.3 applicability is not checked",
+    "project_use remains false until engineering sign-off",
 )
 
 
@@ -35,6 +42,10 @@ class DesignCalculationReport:
     strength_status: str
     serviceability_status: str
     overall_status: str
+    completeness_status: str
+    evidence_status: str
+    project_use_status: str
+    project_use: bool
     warnings: tuple[str, ...]
     markdown: str
     html: str | None
@@ -59,6 +70,10 @@ def build_rectangular_design_report(
         strength_status=result.strength_status,
         serviceability_status=result.serviceability_status,
         overall_status=result.overall_status,
+        completeness_status=result.completeness_status,
+        evidence_status=result.evidence_status,
+        project_use_status=result.project_use_status,
+        project_use=result.project_use,
         warnings=warnings,
         markdown=markdown,
         html=html,
@@ -130,6 +145,10 @@ def render_rectangular_design_report_markdown(result: Any) -> str:
                     "strength_status": data["strength_status"],
                     "serviceability_status": data["serviceability_status"],
                     "overall_status": data["overall_status"],
+                    "completeness_status": data["completeness_status"],
+                    "evidence_status": data["evidence_status"],
+                    "project_use_status": data["project_use_status"],
+                    "project_use": data["project_use"],
                 }
             ),
             "",
@@ -169,9 +188,13 @@ def _build_json_data(result: Any) -> dict[str, Any]:
         "strength_status": result.strength_status,
         "serviceability_status": result.serviceability_status,
         "overall_status": result.overall_status,
+        "completeness_status": result.completeness_status,
+        "evidence_status": result.evidence_status,
+        "project_use_status": result.project_use_status,
+        "project_use": result.project_use,
         "requires_engineer_review": True,
         "input_data": asdict(result.input_data),
-        "materials": _materials_data(result),
+        "materials": _materials_data(result, protocol),
         "geometry": _geometry_data(result, protocol),
         "reinforcement": _reinforcement_data(result),
         "checks": _checks_data(protocol_checks),
@@ -181,8 +204,21 @@ def _build_json_data(result: Any) -> dict[str, Any]:
     }
 
 
-def _materials_data(result: Any) -> dict[str, Any]:
-    return {
+def _materials_data(result: Any, protocol: dict[str, Any] | None) -> dict[str, Any]:
+    try:
+        material_context = resolve_uls_material_context(
+            result.concrete,
+            result.longitudinal_rebar,
+            result.input_data.load_duration,
+        )
+    except UnsupportedULSMaterialProfileError as exc:
+        material_context = None
+        material_context_status = "unsupported"
+        material_context_error = str(exc)
+    else:
+        material_context_status = "resolved"
+        material_context_error = None
+    data = {
         "concrete_class": result.concrete.class_name,
         "concrete": {
             "Rb": result.concrete.Rb,
@@ -214,8 +250,33 @@ def _materials_data(result: Any) -> dict[str, Any]:
             "Es": result.stirrup_rebar.Es,
             "requires_engineer_review": result.stirrup_rebar.draft_requires_engineer_review,
         },
+        "material_context_status": material_context_status,
+        "material_context_error": material_context_error,
+        "normative_profile_id": (
+            None if material_context is None else material_context.normative_profile_id
+        ),
+        "load_combination": None if material_context is None else material_context.load_combination,
+        "Rb_base": result.concrete.Rb,
+        "gamma_b1": None if material_context is None else material_context.gamma_b1,
+        "Rb_effective": None if material_context is None else material_context.Rb_effective,
+        "Rsc": None if material_context is None else material_context.Rsc,
+        "material_source_clauses": (
+            None if material_context is None else material_context.source_clauses
+        ),
         "material_verification_note": MATERIAL_REVIEW_NOTE,
     }
+    if protocol is not None and material_context is not None:
+        for key in (
+            "normative_profile_id",
+            "load_combination",
+            "Rb_base",
+            "gamma_b1",
+            "Rb_effective",
+            "Rsc",
+        ):
+            if key in protocol["materials"]:
+                data[key] = protocol["materials"][key]
+    return data
 
 
 def _geometry_data(
@@ -232,12 +293,33 @@ def _geometry_data(
         if selected_transverse is not None:
             geometry["selected_transverse_scheme"] = selected_transverse.scheme
         return geometry
+    orientation = result.input_data.bending_orientation()
+    geometry_section = (
+        result.section
+        if selected_longitudinal is None
+        else selected_longitudinal.section
+    )
+    h0 = (
+        None
+        if selected_longitudinal is None
+        else selected_longitudinal.section.effective_depth()
+    )
     return {
-        "b": result.section.b,
-        "h": result.section.h,
-        "cover": result.section.cover,
-        "stirrup_diameter_for_geometry": result.section.stirrup_diameter,
-        "h0": result.section.effective_depth(),
+        "b": geometry_section.b,
+        "h": geometry_section.h,
+        "cover": geometry_section.cover,
+        "stirrup_diameter_for_geometry": geometry_section.stirrup_diameter,
+        "h0": h0,
+        "h0_source": (
+            "not_available_no_selected_main_bar"
+            if selected_longitudinal is None
+            else "derived_from_selected_longitudinal_geometry"
+        ),
+        "cover_reference": "concrete_face_to_outer_stirrup_surface",
+        "local_axes_id": orientation.local_axes_id,
+        "moment_axis": orientation.moment_axis,
+        "tension_face": orientation.tension_face,
+        "compression_face": orientation.compression_face,
         "selected_main_bar_diameter": (
             None if selected_longitudinal is None else selected_longitudinal.diameter
         ),

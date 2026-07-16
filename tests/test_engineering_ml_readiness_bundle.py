@@ -2,7 +2,7 @@ import csv
 import json
 
 from sp63_core.cli import main
-from sp63_core.dataset import REQUIRED_REPORT_DATASET_COLUMNS
+from sp63_core.dataset import DATASET_VERSION, REQUIRED_REPORT_DATASET_COLUMNS
 from sp63_core.ml import (
     build_engineering_ml_readiness_bundle,
     render_readiness_matrix_csv,
@@ -17,6 +17,7 @@ def _dataset_row():
     row.update(
         {
             "dataset_source": "validated_report_archive",
+            "dataset_version": DATASET_VERSION,
             "case_id": "case_001",
             "source_archive_path": "reports/case_001",
             "report_json_path": "reports/case_001/report.json",
@@ -26,6 +27,14 @@ def _dataset_row():
             "report_json_sha256": "b" * 64,
             "manifest_sha256": "c" * 64,
             "archive_validation_status": "pass",
+            "local_axes_id": "case-001-local-axes",
+            "moment_axis": "local_z",
+            "tension_face": "local_y_min",
+            "load_duration": "short",
+            "completeness_status": "incomplete",
+            "evidence_status": "needs_engineer_review",
+            "project_use_status": "prohibited",
+            "project_use": False,
             "b": 300,
             "h": 500,
             "cover": 32,

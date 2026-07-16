@@ -20,19 +20,21 @@ def test_material_verification_closure_without_csv_requires_review(tmp_path):
     assert (tmp_path / "README_MATERIAL_VERIFICATION_CLOSURE.md").exists()
 
 
-def test_material_verification_closure_complete_fixture_is_ready_for_review(tmp_path):
+def test_material_verification_closure_synthetic_fixture_requires_review(tmp_path):
     result = build_material_verification_closure(
         material_verification_csv=FIXTURE,
         output_dir=tmp_path,
     )
 
-    assert result.status == "pass"
-    assert result.material_ready_for_engineering_review is True
+    assert result.status == "review_required"
+    assert result.material_ready_for_engineering_review is False
     assert result.material_ready_for_project_use is False
-    assert result.coverage_ratio == 1.0
+    assert result.coverage_ratio == (len(result.required_material_keys) - 6) / len(
+        result.required_material_keys
+    )
     assert result.missing_material_keys == ()
     assert result.rejected_material_keys == ()
-    assert result.review_required_material_keys == ()
+    assert len(result.review_required_material_keys) == 6
 
 
 def test_material_verification_closure_missing_row_requires_review(tmp_path):
@@ -74,8 +76,8 @@ def test_cli_material_verification_closure_json(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["command"] == "material-verification-closure"
-    assert payload["status"] == "pass"
-    assert payload["material_ready_for_engineering_review"] is True
+    assert payload["status"] == "review_required"
+    assert payload["material_ready_for_engineering_review"] is False
     assert payload["material_ready_for_project_use"] is False
     assert (output_dir / "material_verification_closure.md").exists()
 

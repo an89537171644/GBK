@@ -6,6 +6,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from sp63_core.dataset.generator import DATASET_SOURCE, DATASET_VERSION
+
 FEATURE_REQUIRED_COLUMNS: tuple[str, ...] = (
     "section_b_mm",
     "section_h_mm",
@@ -48,6 +50,17 @@ SERVICE_REQUIRED_COLUMNS: tuple[str, ...] = (
     "unsafe_row",
     "dataset_source",
 )
+VERSIONED_PROVENANCE_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "dataset_version",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
+)
 REQUIRED_COLUMNS: tuple[str, ...] = (
     FEATURE_REQUIRED_COLUMNS
     + RESULT_REQUIRED_COLUMNS
@@ -86,7 +99,11 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
     """Build an ML readiness report for deterministic dataset rows."""
     normalized_rows = tuple(dict(row) for row in rows)
     total_rows = len(normalized_rows)
+    diagnostic_dataset = _is_diagnostic_dataset(normalized_rows)
     missing_required_columns = _missing_required_columns(normalized_rows)
+    invalid_versioned_provenance = bool(
+        normalized_rows and _has_invalid_versioned_provenance(normalized_rows)
+    )
     status_counts = _status_counts(normalized_rows)
     failure_reason_counts = _failure_reason_counts(normalized_rows)
     group_key_present = bool(normalized_rows) and all(
@@ -101,13 +118,17 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
     low_variance_status_columns = _constant_columns(normalized_rows, STATUS_COLUMNS)
 
     warnings: list[str] = []
-    diagnostic_dataset = _is_diagnostic_dataset(normalized_rows)
     if total_rows == 0:
         warnings.append("dataset must contain at least one row")
     if missing_required_columns:
         warnings.append(
             "dataset is missing required columns: "
             + ", ".join(missing_required_columns)
+        )
+    if invalid_versioned_provenance:
+        warnings.append(
+            "dataset v0.3 provenance is invalid; legacy, long-duration, or "
+            "project-use rows are rejected"
         )
     if unsafe_rows_count > 0:
         warnings.append("dataset contains unsafe rows")
@@ -148,7 +169,12 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
                 "classification readiness remains review-only"
             )
 
-    if total_rows == 0 or missing_required_columns or group_leakage_count > 0:
+    if (
+        total_rows == 0
+        or missing_required_columns
+        or invalid_versioned_provenance
+        or group_leakage_count > 0
+    ):
         status = "fail"
     elif unsafe_rows_count > 0 or constant_target_columns:
         status = "review_required"
@@ -174,15 +200,50 @@ def build_ml_readiness_report(rows: Iterable[Mapping[str, Any]]) -> MLReadinessR
     )
 
 
-def _missing_required_columns(rows: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
+def _missing_required_columns(
+    rows: tuple[dict[str, Any], ...],
+) -> tuple[str, ...]:
+    required_columns = (*REQUIRED_COLUMNS, *VERSIONED_PROVENANCE_REQUIRED_COLUMNS)
     if not rows:
-        return REQUIRED_COLUMNS
+        return tuple(required_columns)
     missing = [
         column
-        for column in REQUIRED_COLUMNS
+        for column in required_columns
         if any(column not in row for row in rows)
     ]
     return tuple(missing)
+
+
+def _has_invalid_versioned_provenance(rows: tuple[dict[str, Any], ...]) -> bool:
+    for row in rows:
+        if row.get("dataset_version") != DATASET_VERSION:
+            return True
+        if not isinstance(row.get("local_axes_id"), str) or not str(
+            row["local_axes_id"]
+        ).strip():
+            return True
+        if row.get("moment_axis") != "local_z":
+            return True
+        if row.get("tension_face") not in ("local_y_min", "local_y_max"):
+            return True
+        if row.get("load_duration") != "short":
+            return True
+        if row.get("completeness_status") != "incomplete":
+            return True
+        if row.get("evidence_status") != "needs_engineer_review":
+            return True
+        if row.get("project_use_status") != "prohibited":
+            return True
+        if not _is_false(row.get("project_use")):
+            return True
+        if not _is_truthy(row.get("requires_engineer_review")):
+            return True
+        if row.get("dataset_source") not in (
+            DATASET_SOURCE,
+            DIAGNOSTIC_DATASET_SOURCE,
+        ):
+            return True
+    return False
 
 
 def _status_counts(rows: tuple[dict[str, Any], ...]) -> dict[str, dict[str, int]]:
@@ -240,6 +301,16 @@ def _is_truthy(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"true", "1", "yes"}
     return bool(value)
+
+
+def _is_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value is False
+    if isinstance(value, (int, float)):
+        return value == 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"false", "0", "no"}
+    return False
 
 
 def _is_diagnostic_dataset(rows: tuple[dict[str, Any], ...]) -> bool:

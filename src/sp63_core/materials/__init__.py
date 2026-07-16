@@ -14,10 +14,19 @@ from sp63_core.materials.concrete import Concrete, get_concrete
 from sp63_core.materials.rebar import (
     LONGITUDINAL_DIAMETERS,
     STIRRUP_DIAMETERS,
-    LoadDuration,
     Rebar,
     area_by_diameter,
     get_rebar,
+)
+from sp63_core.materials.uls_context import (
+    NORMATIVE_PROFILE_ID,
+    SUPPORTED_ULS_CONCRETE_CLASSES,
+    SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES,
+    LoadCombination,
+    LoadDuration,
+    ULSMaterialContext,
+    UnsupportedULSMaterialProfileError,
+    resolve_uls_material_context,
 )
 from sp63_core.materials.verification import (
     MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
@@ -37,16 +46,22 @@ from sp63_core.materials.verification_report import (
 __all__ = [
     "Concrete",
     "LONGITUDINAL_DIAMETERS",
+    "LoadCombination",
     "LoadDuration",
     "MaterialAuditRow",
     "MATERIAL_VERIFICATION_REQUIRED_COLUMNS",
     "MATERIAL_VERIFICATION_STATUSES",
+    "NORMATIVE_PROFILE_ID",
+    "SUPPORTED_ULS_CONCRETE_CLASSES",
+    "SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES",
     "MaterialVerificationReport",
     "MaterialVerificationReportDocument",
     "MaterialVerificationReviewRow",
     "MaterialVerificationRow",
     "Rebar",
     "STIRRUP_DIAMETERS",
+    "ULSMaterialContext",
+    "UnsupportedULSMaterialProfileError",
     "area_by_diameter",
     "build_concrete_audit_rows",
     "build_material_audit_rows",
@@ -57,4 +72,5 @@ __all__ = [
     "get_concrete",
     "get_rebar",
     "render_material_verification_markdown",
+    "resolve_uls_material_context",
 ]

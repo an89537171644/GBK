@@ -31,6 +31,10 @@ def test_single_bundle_archive_validation_passes(tmp_path):
     assert result.missing_file_count == 0
     assert result.checksum_mismatch_count == 0
     assert result.index_consistency_status == "pass"
+    assert result.completeness_status == "incomplete"
+    assert result.evidence_status == "needs_engineer_review"
+    assert result.project_use_status == "prohibited"
+    assert result.project_use is False
     assert result.requires_engineer_review is True
 
 
@@ -111,6 +115,34 @@ def test_report_archive_validation_fails_for_checksum_mismatch(tmp_path):
     assert result.status == "fail"
     assert result.checksum_mismatch_count >= 1
     assert any("checksum mismatch" in error for error in result.errors)
+
+
+def test_report_archive_validation_rejects_tampered_project_use_contract(tmp_path):
+    output_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(output_dir) == 0
+    manifest_path = output_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["project_use"] = True
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_report_bundle(output_dir)
+
+    assert result.status == "fail"
+    assert any("project_use must be false" in error for error in result.errors)
+
+
+def test_report_archive_validation_rejects_stale_manifest_schema(tmp_path):
+    output_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(output_dir) == 0
+    manifest_path = output_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["manifest_version"] = "1"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_report_bundle(output_dir)
+
+    assert result.status == "fail"
+    assert any("manifest_version must be '2'" in error for error in result.errors)
 
 
 def test_report_archive_validation_fails_for_missing_manifest(tmp_path):

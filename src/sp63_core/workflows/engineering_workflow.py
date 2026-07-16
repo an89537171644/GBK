@@ -51,6 +51,10 @@ class EngineeringWorkflowResult:
     files_created: tuple[str, ...]
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
     ml_is_advisory_only: bool = True
     deterministic_checks_required: bool = True
@@ -332,6 +336,9 @@ def _build_and_write_deterministic_report(
         overall_status=report.overall_status,
         warnings_count=len(report.warnings),
         metadata={"workflow": "engineering-workflow"},
+        completeness_status=report.completeness_status,
+        evidence_status=report.evidence_status,
+        project_use_status=report.project_use_status,
     )
     write_report_manifest_json(manifest, manifest_path)
     readme_path.write_text(
@@ -352,6 +359,9 @@ def _build_and_write_deterministic_report(
         overall_status=report.overall_status,
         warnings_count=len(report.warnings),
         metadata={"workflow": "engineering-workflow"},
+        completeness_status=report.completeness_status,
+        evidence_status=report.evidence_status,
+        project_use_status=report.project_use_status,
     )
     write_report_manifest_json(manifest, manifest_path)
 
@@ -379,6 +389,10 @@ def _design_report_payload(report: Any) -> dict[str, Any]:
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "completeness_status": report.completeness_status,
+        "evidence_status": report.evidence_status,
+        "project_use_status": report.project_use_status,
+        "project_use": report.project_use,
         "requires_engineer_review": report.requires_engineer_review,
         "warnings": list(report.warnings),
         "input_data": data["input_data"],
@@ -442,6 +456,10 @@ def _render_workflow_summary_markdown(result: EngineeringWorkflowResult) -> str:
         WORKFLOW_WARNING,
         "",
         "requires_engineer_review = true",
+        f"completeness_status = {result.completeness_status}",
+        f"evidence_status = {result.evidence_status}",
+        f"project_use_status = {result.project_use_status}",
+        f"project_use = {str(result.project_use).lower()}",
         "ml_is_advisory_only = true",
         "deterministic_checks_required = true",
         "",
@@ -550,6 +568,10 @@ def _render_workflow_readme(
             "## Current Workflow Status",
             "",
             f"- workflow_status: `{result.workflow_status}`",
+            f"- completeness_status: `{result.completeness_status}`",
+            f"- evidence_status: `{result.evidence_status}`",
+            f"- project_use_status: `{result.project_use_status}`",
+            f"- project_use: `{result.project_use}`",
             f"- preflight_status: `{result.preflight_status}`",
             f"- preflight_errors_count: `{result.preflight_errors_count}`",
             f"- preflight_warnings_count: `{result.preflight_warnings_count}`",

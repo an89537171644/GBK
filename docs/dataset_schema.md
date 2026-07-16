@@ -1,4 +1,14 @@
-# Dataset Schema v0.1
+# Dataset Schema v0.3
+
+Version 0.3 invalidates versions 0.1 and 0.2. Every row now persists the
+declared local axes and tension face together with explicit completeness,
+evidence, and project-use statuses. Legacy rows and rows missing these fields
+are rejected; the loader and ML readiness gate do not invent an orientation or
+upgrade provenance implicitly.
+
+Generated rows remain synthetic, require engineering review, and do not
+constitute independent validation. In version 0.3 `project_use` is always
+`false`, even when the narrow deterministic checks have `status = pass`.
 
 requires_engineer_review = true
 
@@ -21,6 +31,12 @@ selected transverse reinforcement diameter. Dataset generation therefore limits
 transverse selection to `section_stirrup_diameter` and rejects unsupported
 geometry stirrup diameters.
 
+`generate_dataset_cases(...)` requires an explicit `load_duration`. Version
+0.3 accepts only `short`: the `long` mode is rejected until the shear branch has
+an approved load-combination/material context. This restriction also applies
+to ML proposal acceptance. Synthetic report and guided-input generators emit
+only `short` cases.
+
 ## Fields
 
 | field | type | units | description |
@@ -30,13 +46,16 @@ geometry stirrup diameters.
 | `element_type` | str | - | `beam` only in MVP |
 | `b` | float | mm | Section width |
 | `h` | float | mm | Section height |
-| `cover` | float | mm | Protective cover used for section geometry |
+| `cover` | float | mm | Distance from the concrete face to the outer stirrup surface |
 | `h0` | float | mm | Effective depth from selected longitudinal option section |
 | `geometry_stirrup_diameter` | int | mm | Stirrup diameter used in section geometry and `h0` |
 | `concrete_class` | str | - | Concrete class |
 | `rebar_class` | str | - | Longitudinal reinforcement class |
 | `stirrup_class` | str | - | Transverse reinforcement class |
-| `load_duration` | str | - | `short` or `long` for compression reinforcement resistance |
+| `local_axes_id` | str | - | Non-empty identifier of the declared section-local axes |
+| `moment_axis` | str | - | `local_z` in version 0.3 |
+| `tension_face` | str | - | Explicit `local_y_min` or `local_y_max`; never inferred |
+| `load_duration` | str | - | Explicitly supplied; only `short` is accepted for v0.3 generation |
 | `M` | float | N*mm | Bending moment |
 | `Q` | float | N | Shear force |
 | `As_required` | float | mm2 | Selected longitudinal steel area for the checked row |
@@ -66,7 +85,7 @@ geometry stirrup diameters.
 | `section_b_mm` | float | mm | Explicit K21 section width alias |
 | `section_h_mm` | float | mm | Explicit K21 section height alias |
 | `effective_depth_mm` | float | mm | Explicit K21 effective depth alias |
-| `cover_mm` | float | mm | Explicit K21 cover alias |
+| `cover_mm` | float | mm | Alias of the face-to-outer-stirrup distance |
 | `main_bar_diameter_mm` | int | mm | Explicit K21 selected main bar diameter |
 | `stirrup_diameter_mm` | int | mm | Explicit K21 selected stirrup diameter |
 | `stirrup_spacing_mm` | int | mm | Explicit K21 selected stirrup spacing |
@@ -91,12 +110,22 @@ geometry stirrup diameters.
 | `strength_status` | str | - | Separated strength status from deterministic protocol |
 | `serviceability_status` | str | - | Separated serviceability status from deterministic protocol |
 | `overall_status` | str | - | Overall deterministic protocol status |
+| `completeness_status` | str | - | `incomplete` until all required adjacent checks are closed |
+| `evidence_status` | str | - | `needs_engineer_review` for generated rows |
+| `project_use_status` | str | - | `prohibited` for generated rows |
+| `project_use` | bool | - | Always `false` in v0.3 |
 | `warnings_count` | int | - | Count of deterministic protocol warnings |
 | `requires_engineer_review` | bool | - | Always true for draft deterministic rows |
 | `unsafe_row` | bool | - | True when the row fails deterministic safety rules |
 | `dataset_source` | str | - | `deterministic_sp63_core` |
 | `sp63_core_version` | str | - | Calculation core version |
-| `dataset_version` | str | - | Dataset schema version |
+| `dataset_version` | str | - | Exactly `0.3`; earlier versions fail closed |
+
+Generate the current schema explicitly:
+
+```bash
+python -m sp63_core generate-dataset --limit 100 --load-duration short --output dataset_v003.csv
+```
 
 ## K21 Dataset Enrichment
 
@@ -149,10 +178,16 @@ safe accepted dataset produced by `generate_dataset_cases()`.
 Diagnostic rows include:
 
 - geometry, material, load, reinforcement, strength, and serviceability fields;
+- `local_axes_id`, `moment_axis`, `tension_face`, and
+  `load_duration=short` without inferred defaults at load time;
 - status fields for bending, shear, crack formation, crack width, deflection,
   strength, serviceability, and overall result;
 - `failure_reason` and `warning_text`;
+- `completeness_status=incomplete`,
+  `evidence_status=needs_engineer_review`,
+  `project_use_status=prohibited`, and `project_use=false`;
 - `requires_engineer_review = true`;
+- `dataset_version = 0.3`;
 - `dataset_source = diagnostic_deterministic_sp63_core`.
 
 The default K23 diagnostic set is based on the K20 manual verification scenarios
@@ -264,10 +299,16 @@ calculation core.
 The row schema includes:
 
 - input geometry, material classes, loads, and serviceability switches;
+- mandatory `local_axes_id`, `moment_axis`, `tension_face`, and
+  `load_duration=short` copied from the validated report input;
 - selected longitudinal and transverse reinforcement;
 - bending, shear, crack formation, crack width, and deflection statuses and
   main values;
 - `strength_status`, `serviceability_status`, and `overall_status`;
+- `completeness_status=incomplete`,
+  `evidence_status=needs_engineer_review`,
+  `project_use_status=prohibited`, and `project_use=false`;
+- `dataset_version=0.3`;
 - `requires_engineer_review = true`;
 - `ml_is_advisory_only = true`;
 - `deterministic_checks_required = true`.
@@ -287,6 +328,9 @@ checks report-derived dataset rows before ML use.
 The gate verifies:
 
 - provenance columns and SHA256 fields from report archives;
+- exact dataset version 0.3, valid local-axis/tension-face provenance, and
+  `load_duration=short` for every row;
+- hard review/project-use statuses for every row;
 - input feature columns such as geometry, material classes, `M`, and `Q`;
 - target/status candidate columns such as `strength_status`,
   `serviceability_status`, `overall_status`, and `warnings_count`;
@@ -308,7 +352,9 @@ validation statuses are still `not_provided`.
 prepares feature, target, and split metadata for report-derived rows.
 
 `input_only` feature mode is limited to source inputs such as geometry,
-material classes, loads, service moment/span, and check switches. Status,
+material classes, loads, `moment_axis`, `tension_face`, `load_duration`,
+service moment/span, and check switches. The case-specific `local_axes_id` is
+provenance, not a predictive feature. Status,
 check-result, resistance, utilization, and direct target columns are excluded
 from input features.
 
@@ -326,7 +372,9 @@ not train ML and does not add neural-network code.
 runs a non-neural baseline classifier on the K45 feature set.
 
 The baseline supports JSONL and CSV report-derived datasets, supported status
-targets, and the `input_only` and `deterministic_derived` feature modes.
+targets, and the `input_only` and `deterministic_derived` feature modes. Rows
+outside dataset version 0.3, with missing orientation provenance, or with a
+load context other than `short` fail before training.
 Leakage columns remain excluded from model inputs. Deterministic-derived mode
 returns a warning because those fields may leak design decisions.
 
@@ -406,9 +454,9 @@ validation/test.
 
 `export_dataset_split_csv()` writes:
 
-- `dataset_v001_train.csv`;
-- `dataset_v001_validation.csv`;
-- `dataset_v001_test.csv`.
+- `dataset_v003_train.csv`;
+- `dataset_v003_validation.csv`;
+- `dataset_v003_test.csv`.
 
 ## Dataset Report
 

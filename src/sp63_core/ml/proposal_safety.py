@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any
 
 from sp63_core.checks import (
@@ -12,13 +13,20 @@ from sp63_core.checks import (
     check_shear_rectangular,
 )
 from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
+from sp63_core.rebar import (
+    check_longitudinal_constructive,
+    check_single_layer_layout,
+    check_transverse_constructive,
+)
+from sp63_core.rebar.transverse import QSW_MIN_RULE_WARNING, SHEAR_RULE_MAX_WARNING
 from sp63_core.report import build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
 ML_PROPOSAL_WARNINGS: tuple[str, ...] = (
     "ML proposal is advisory-only",
     "deterministic SP63 verification is mandatory",
     "accepted result still requires engineer review",
+    "accepted means only the narrow deterministic checks; project use is prohibited",
 )
 
 
@@ -46,8 +54,15 @@ class MLProposalVerificationResult:
     deterministic_strength_status: str
     deterministic_serviceability_status: str
     deterministic_overall_status: str
+    layout_feasible: bool | None
+    longitudinal_constructive_status: str
+    transverse_constructive_status: str
     rejection_reasons: tuple[str, ...]
     warnings: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     deterministic_checks_required: bool = True
     ml_is_advisory_only: bool = True
     requires_engineer_review: bool = True
@@ -68,6 +83,26 @@ def verify_ml_proposal_with_deterministic_core(
 
     input_data = proposal.input_data
     proposed = proposal.proposed_values
+    orientation = RectangularBendingOrientation(
+        local_axes_id=_required_string(input_data, "local_axes_id"),
+        moment_axis=_required_string(input_data, "moment_axis"),
+        tension_face=_required_string(input_data, "tension_face"),
+    )
+    load_duration = _required_string(input_data, "load_duration")
+    if load_duration not in ("short", "long"):
+        raise ValueError("load_duration must be 'short' or 'long'")
+    if load_duration == "long":
+        return _rejected_result(
+            proposal,
+            reason=(
+                "load_duration='long' is unsupported until the deterministic "
+                "shear load-combination context is implemented"
+            ),
+            strength_status="not_checked",
+            serviceability_status="not_checked",
+            overall_status="review_or_fail",
+        )
+
     main_bar_count = _positive_int(proposed, "main_bar_count")
     main_bar_diameter = _positive_float(proposed, "main_bar_diameter")
     stirrup_diameter = _positive_float(proposed, "stirrup_diameter")
@@ -95,12 +130,26 @@ def verify_ml_proposal_with_deterministic_core(
     As = main_bar_count * area_by_diameter(main_bar_diameter)
     Asw = stirrup_legs * area_by_diameter(stirrup_diameter)
 
+    layout = check_single_layer_layout(
+        section=section,
+        bar_count=main_bar_count,
+        diameter=main_bar_diameter,
+    )
+    longitudinal_constructive = check_longitudinal_constructive(
+        section=section,
+        bar_count=main_bar_count,
+        As=As,
+        element_type="beam",
+    )
+
     bending = check_bending_rectangular(
         section=section,
         concrete=concrete,
         rebar=longitudinal_rebar,
         As=As,
         M=M,
+        orientation=orientation,
+        load_duration=load_duration,
     )
     shear = check_shear_rectangular(
         section=section,
@@ -109,6 +158,20 @@ def verify_ml_proposal_with_deterministic_core(
         Q=Q,
         Asw=Asw,
         sw=stirrup_spacing,
+    )
+    transverse_constructive = check_transverse_constructive(
+        section=section,
+        concrete=concrete,
+        stirrup_rebar=stirrup_rebar,
+        Q=Q,
+        stirrup_diameter=stirrup_diameter,
+        Asw=Asw,
+        spacing=stirrup_spacing,
+        element_type="beam",
+    )
+    blocking_shear_warnings = any(
+        warning in (QSW_MIN_RULE_WARNING, SHEAR_RULE_MAX_WARNING)
+        for warning in shear.warnings
     )
     checks: dict[str, Any] = {
         "bending": bending,
@@ -172,15 +235,38 @@ def verify_ml_proposal_with_deterministic_core(
         protocol.strength_status == "pass"
         and protocol.serviceability_status in ("pass", "not_checked")
         and protocol.overall_status == "pass"
+        and layout.layout_feasible
+        and longitudinal_constructive.status == "pass"
+        and transverse_constructive.status in ("pass", "warning")
+        and not blocking_shear_warnings
     )
-    rejection_reasons = _rejection_reasons(protocol.checks)
+    rejection_reasons = list(_rejection_reasons(protocol.checks))
+    if not layout.layout_feasible:
+        rejection_reasons.append("single-layer longitudinal layout is not feasible")
+    if longitudinal_constructive.status != "pass":
+        rejection_reasons.append("longitudinal constructive check failed")
+    if transverse_constructive.status not in ("pass", "warning"):
+        rejection_reasons.append("transverse constructive check failed")
+    if blocking_shear_warnings:
+        rejection_reasons.append("blocking shear warning prevents acceptance")
     if not accepted and not rejection_reasons:
-        rejection_reasons = (
+        rejection_reasons = [
             f"deterministic strength status is {protocol.strength_status}",
             f"deterministic serviceability status is {protocol.serviceability_status}",
             f"deterministic overall status is {protocol.overall_status}",
+        ]
+    warnings = tuple(
+        dict.fromkeys(
+            (
+                *ML_PROPOSAL_WARNINGS,
+                *layout.warnings,
+                *longitudinal_constructive.warnings,
+                *shear.warnings,
+                *transverse_constructive.warnings,
+                *protocol.warnings,
+            )
         )
-    warnings = (*ML_PROPOSAL_WARNINGS, *protocol.warnings)
+    )
     if not accepted:
         warnings = (
             *warnings,
@@ -193,7 +279,10 @@ def verify_ml_proposal_with_deterministic_core(
         deterministic_strength_status=protocol.strength_status,
         deterministic_serviceability_status=protocol.serviceability_status,
         deterministic_overall_status=protocol.overall_status,
-        rejection_reasons=() if accepted else rejection_reasons,
+        layout_feasible=layout.layout_feasible,
+        longitudinal_constructive_status=longitudinal_constructive.status,
+        transverse_constructive_status=transverse_constructive.status,
+        rejection_reasons=() if accepted else tuple(rejection_reasons),
         warnings=warnings,
     )
 
@@ -213,6 +302,9 @@ def _rejected_result(
         deterministic_strength_status=strength_status,
         deterministic_serviceability_status=serviceability_status,
         deterministic_overall_status=overall_status,
+        layout_feasible=None,
+        longitudinal_constructive_status="not_checked",
+        transverse_constructive_status="not_checked",
         rejection_reasons=(reason,),
         warnings=(
             *ML_PROPOSAL_WARNINGS,
@@ -227,6 +319,8 @@ def _rejection_reasons(checks: Mapping[str, Mapping[str, Any]]) -> tuple[str, ..
         status = check.get("status")
         if status == "fail":
             reasons.append(f"{check_name} check failed")
+        elif status == "outside_applicability":
+            reasons.append(f"{check_name} check is outside applicability")
     return tuple(reasons)
 
 
@@ -234,8 +328,17 @@ def _positive_float(values: Mapping[str, Any], key: str) -> float:
     if key not in values:
         raise ValueError(f"missing required field {key!r}")
     value = float(values[key])
-    if value <= 0:
-        raise ValueError(f"{key} must be positive")
+    if not isfinite(value) or value <= 0:
+        raise ValueError(f"{key} must be finite and positive")
+    return value
+
+
+def _required_string(values: Mapping[str, Any], key: str) -> str:
+    if key not in values:
+        raise ValueError(f"missing required field {key!r}")
+    value = values[key]
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{key} must be a non-empty string")
     return value
 
 
@@ -250,8 +353,8 @@ def _nonnegative_float(values: Mapping[str, Any], key: str) -> float:
     if key not in values:
         raise ValueError(f"missing required field {key!r}")
     value = float(values[key])
-    if value < 0:
-        raise ValueError(f"{key} must be nonnegative")
+    if not isfinite(value) or value < 0:
+        raise ValueError(f"{key} must be finite and nonnegative")
     return value
 
 
@@ -259,6 +362,6 @@ def _optional_nonnegative_float(values: Mapping[str, Any], key: str) -> float | 
     if key not in values or values[key] is None:
         return None
     value = float(values[key])
-    if value < 0:
-        raise ValueError(f"{key} must be nonnegative")
+    if not isfinite(value) or value < 0:
+        raise ValueError(f"{key} must be finite and nonnegative")
     return value

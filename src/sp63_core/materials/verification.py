@@ -34,6 +34,10 @@ MATERIAL_VERIFICATION_NOTE = (
     "engineer must verify the catalog value against SP 63 tables; full "
     "normative text is not stored in repository"
 )
+SYNTHETIC_NON_EVIDENCE_WARNING = (
+    "synthetic material verification rows are test-only non-evidence and do not "
+    "constitute engineer sign-off"
+)
 CATALOG_VALUE_TOLERANCE = 1e-9
 
 
@@ -200,6 +204,8 @@ def build_material_verification_report(
             )
         if any(row.verification_status != "engineer_verified" for row in parsed_rows):
             warnings.append(MATERIAL_VERIFICATION_WARNING)
+        if any("synthetic" in row.source_note.lower() for row in parsed_rows):
+            warnings.append(SYNTHETIC_NON_EVIDENCE_WARNING)
         rows = tuple(parsed_rows)
 
     status_counts = _status_counts(rows)

@@ -27,29 +27,11 @@ def test_gross_area():
     assert section.gross_area() == 150_000
 
 
-def test_compression_rebar_depth_with_dedicated_bar():
-    section = RectangularSection(
-        b=300,
-        h=500,
-        cover=30,
-        stirrup_diameter=8,
-        main_bar_diameter=20,
-        compression_bar_diameter=16,
-    )
+def test_rejected_geometry_overrides_are_not_section_fields():
+    fields = RectangularSection.__dataclass_fields__
 
-    assert section.compression_rebar_depth() == 46
-
-
-def test_compression_rebar_depth_uses_main_bar_as_mvp_simplification():
-    section = RectangularSection(
-        b=300,
-        h=500,
-        cover=30,
-        stirrup_diameter=8,
-        main_bar_diameter=20,
-    )
-
-    assert section.compression_rebar_depth() == 48
+    assert "h0_override" not in fields
+    assert "compression_bar_diameter" not in fields
 
 
 def test_invalid_b_raises():
@@ -91,42 +73,13 @@ def test_non_positive_effective_depth_raises():
         section.validate_geometry()
 
 
-def test_h0_override_is_used_in_effective_depth():
-    section = RectangularSection(
-        b=300,
-        h=500,
-        cover=30,
-        stirrup_diameter=8,
-        main_bar_diameter=20,
-        h0_override=455,
-    )
-
-    assert section.effective_depth() == 455
-
-
-def test_non_positive_h0_override_raises():
-    section = RectangularSection(
-        b=300,
-        h=500,
-        cover=30,
-        stirrup_diameter=8,
-        main_bar_diameter=20,
-        h0_override=0,
-    )
-
-    with pytest.raises(ValueError, match="h0_override must be positive"):
-        section.validate_geometry()
-
-
-def test_h0_override_must_be_less_than_section_height():
-    section = RectangularSection(
-        b=300,
-        h=500,
-        cover=30,
-        stirrup_diameter=8,
-        main_bar_diameter=20,
-        h0_override=500,
-    )
-
-    with pytest.raises(ValueError, match="h0_override must be less than section height"):
-        section.validate_geometry()
+def test_rejected_h0_override_is_not_accepted_by_constructor():
+    with pytest.raises(TypeError, match="h0_override"):
+        RectangularSection(
+            b=300,
+            h=500,
+            cover=30,
+            stirrup_diameter=8,
+            main_bar_diameter=20,
+            h0_override=455,
+        )

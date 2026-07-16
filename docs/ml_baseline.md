@@ -100,7 +100,7 @@ Train from an existing dataset CSV:
 
 ```bash
 python -m sp63_core train-baseline \
-  --dataset data/generated/dataset_v001.csv \
+  --dataset data/generated/dataset_v003.csv \
   --model-output models/baseline_model.pkl \
   --metrics-output reports/interim/baseline_metrics.json \
   --json

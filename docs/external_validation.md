@@ -23,6 +23,17 @@ The CSV contains program outputs from selected dataset rows:
 - `program_Mult`;
 - `program_Qult`.
 
+Every generated row also carries mandatory provenance and hard safety fields:
+
+- `local_axes_id`, `moment_axis`, `tension_face`, `load_duration=short`;
+- `completeness_status=incomplete`;
+- `evidence_status=needs_engineer_review`;
+- `project_use_status=prohibited`, `project_use=false`;
+- `requires_engineer_review=true`.
+
+Legacy CSVs missing these columns, rows with `long`, and rows that attempt to
+change the hard safety flags are rejected before delta evaluation.
+
 The engineer fills external values:
 
 - `scad_As`, `scad_Mult`, `scad_Qult`;
@@ -65,11 +76,14 @@ The automated gates check:
 - every row must have a completed external source according to
   `--required-external-source`.
 
-The recommended draft threshold is:
+The historical draft threshold is:
 
 ```text
 max_delta_percent = 5.0
 ```
+
+Its normative/metrological status is `OPEN_QUESTION`; it is a software gate,
+not an approved engineering tolerance, until an engineer signs the policy.
 
 `--required-external-source` accepts:
 
@@ -86,3 +100,7 @@ requires `accepted = true` for every external row.
 Without filled external SCAD/LIRA comparison rows and manual engineering review,
 ML can only be treated as experimental. The deterministic calculation core and
 dataset are still draft-MVP assets, not certified design software.
+
+Even a technical external acceptance result of `pass` does not change
+`completeness_status=incomplete`, `evidence_status=needs_engineer_review`, or
+`project_use=false` for Step 3.

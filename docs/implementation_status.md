@@ -8,16 +8,18 @@
 | `materials/audit.py` | implemented material audit report | yes | yes | engineer must verify values against SP 63 tables before final use |
 | `materials/verification.py` | implemented material catalog engineer verification gate with draft/needs_review/engineer_verified statuses | yes | yes | engineer must fill verification CSV before material values are treated as verified |
 | `materials/verification_report.py` | implemented Markdown/JSON report integration for engineer-filled material verification CSV | yes | yes | engineer must review needs_review rows before accepting material catalog values |
-| `sections/rectangular.py` | implemented with `h0_override` validation | yes | no | keep geometry checks covered |
-| `checks/bending.py` | implemented with `load_duration` support | yes | yes | engineer review of formula card and golden cases |
+| `materials/uls_context.py` | реализован узкий provisional-контекст ULS для `short/long` с явными `Rb_base`, `gamma_b1`, `Rb_effective`, `Rsc` и идентификатором профиля | yes | yes | инженер должен подтвердить трактовку сочетаний и A400 по отсутствующему изменению № 1; остальные `gamma_bi` не покрыты |
+| `sections/orientation.py` | реализован обязательный контракт локальных осей, оси момента и растянутой грани | yes | yes | инженер должен проверить принятую машинную конвенцию на схемах обеих граней |
+| `sections/rectangular.py` | однорядная геометрия с явной семантикой `cover`; `h0` выводится из геометрии без произвольного override | yes | yes | инженер должен проверить геометрическую модель и область однорядного применения |
+| `checks/bending.py` | исправленная узкая ветвь `As_prime=0`: material/load context, обязательная ориентация и безопасный `outside_applicability` без способности вне границы | yes | yes | повторная инженерная проверка карточки, BMR-01—BMR-05 и непокрытого п. 8.1.3 |
 | `checks/shear.py` | implemented with draft transverse reinforcement counting warnings | yes | yes | engineer review of formula card and golden cases |
 | `checks/cracking.py` | implemented draft normal crack formation check | yes | yes | keep as Mcrc input to crack width |
 | `checks/crack_width.py` | implemented draft normal crack width check | yes | yes | keep as input to serviceability review |
 | `checks/deflection.py` | implemented draft curvature and deflection check | yes | yes | engineer review and future long-term/refined serviceability model |
 | `rebar/constructive.py` | implemented draft constructive checks | yes | yes | engineer review |
-| `rebar/longitudinal.py` | implemented with h0 recalculation and draft single-layer layout check | yes | yes | engineer review of layout assumptions |
+| `rebar/longitudinal.py` | draft single-layer selection; должен использовать тот же контракт ориентации и геометрии, что и ULS-проверка | yes | yes | инженерская проверка раскладки; полное конструирование не подтверждено |
 | `rebar/transverse.py` | implemented draft transverse reinforcement selection | yes | yes | engineer review of spacing and legs assumptions |
-| `design/rectangular.py` | implemented draft end-to-end rectangular design with separated strength, serviceability, and overall statuses | yes | yes | engineer review and CLI integration |
+| `design/rectangular.py` | draft end-to-end design только для `short`; расчётный `pass` не снимает `incomplete`, `needs_engineer_review` и запрет проектного применения | yes | yes | проверить сквозную передачу ориентации/контекста и закрыть п. 8.1.3; `long` остаётся только в isolated bending |
 | `report/protocol.py` | implemented separated strength_status, serviceability_status, and overall_status; legacy status aliases overall_status | yes | yes | keep protocol structure stable |
 | `report/design_report.py` | implemented draft rectangular design calculation report export in Markdown/HTML/JSON | yes | yes | engineer review report output before project use |
 | `report/design_report_input.py` | implemented JSON input loader and traceable report bundle for rectangular design reports | yes | yes | keep input schema explicit and reject unknown critical fields |
@@ -36,7 +38,7 @@
 | `dataset/synthetic_guided.py` | implemented deterministic-guided synthetic input generation for class balancing | yes | yes | use only for synthetic ML experiments; external validation remains separate |
 | `dataset/split.py` | implemented with row split and group_key split | yes | no | keep deterministic split stable |
 | `dataset/report.py` | implemented with extended K21 report counters for deterministic statuses and serviceability output ranges | yes | no | compare enriched report ranges during dataset review |
-| `validation/golden.py` | implemented draft golden-case runner | yes | yes | engineer review expected values and tolerances |
+| `validation/golden.py` | draft golden runner; BMR-01—BMR-05 добавляются как отдельные регрессии безопасности | yes | yes | независимо воспроизвести ожидаемые значения и утвердить допуски |
 | `validation/manual_cases.py` | implemented manual SP63 verification cases | yes | yes | engineer review manual expected values and tolerances |
 | `validation/dataset_checks.py` | implemented dataset batch validation | yes | yes | review validation report before ML |
 | `validation/scad_lira_template.py` | implemented manual comparison template | yes | yes | fill with SCAD/LIRA engineer results |

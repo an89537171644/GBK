@@ -65,7 +65,7 @@ def export_dataset_split_csv(
     split: DatasetSplit,
     output_dir: str | Path,
     *,
-    prefix: str = "dataset_v001",
+    prefix: str = "dataset_v003",
 ) -> dict[str, Path]:
     """Export train, validation and test CSV files."""
     base_dir = Path(output_dir)

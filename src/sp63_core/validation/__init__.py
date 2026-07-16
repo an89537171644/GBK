@@ -16,11 +16,14 @@ from sp63_core.validation.external import (
     load_external_comparison_csv,
 )
 from sp63_core.validation.external_report import (
+    EXTERNAL_PROVENANCE_COLUMNS,
     EXTERNAL_VALIDATION_COLUMNS,
     EXTERNAL_VALUES_REQUIRED_WARNING,
     ExternalValidationSummary,
     ExternalValidationTolerance,
     build_external_validation_summary,
+    load_external_validation_csv,
+    validate_external_validation_rows,
 )
 from sp63_core.validation.golden import (
     GoldenCaseResult,
@@ -30,6 +33,7 @@ from sp63_core.validation.golden import (
     run_deflection_golden_cases,
     run_design_golden_cases,
     run_shear_golden_cases,
+    run_step3_bending_benchmark_cases,
 )
 from sp63_core.validation.manual_cases import (
     ManualVerificationCase,
@@ -43,6 +47,7 @@ __all__ = [
     "ExternalComparisonRow",
     "ExternalValidationSummary",
     "ExternalValidationTolerance",
+    "EXTERNAL_PROVENANCE_COLUMNS",
     "EXTERNAL_VALIDATION_COLUMNS",
     "EXTERNAL_VALUES_REQUIRED_WARNING",
     "GoldenCaseResult",
@@ -58,6 +63,7 @@ __all__ = [
     "export_external_comparison_csv",
     "export_external_comparison_with_deltas_csv",
     "load_external_comparison_csv",
+    "load_external_validation_csv",
     "run_bending_golden_cases",
     "run_crack_formation_golden_cases",
     "run_crack_width_golden_cases",
@@ -65,5 +71,7 @@ __all__ = [
     "run_design_golden_cases",
     "run_manual_verification_cases",
     "run_shear_golden_cases",
+    "run_step3_bending_benchmark_cases",
     "validate_dataset_cases",
+    "validate_external_validation_rows",
 ]

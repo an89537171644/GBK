@@ -2,7 +2,7 @@ material_type,class_name,property_name,catalog_value,unit,verification_status,en
 concrete,B15,Rb,8.5,MPa,engineer_verified,8.5,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 concrete,B15,Rbt,0.75,MPa,engineer_verified,0.75,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 concrete,B15,Rbser,11,MPa,engineer_verified,11,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-concrete,B15,Rbtser,1.15,MPa,engineer_verified,1.15,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
+concrete,B15,Rbtser,1.1,MPa,needs_review,,,,synthetic non-evidence fixture; rechecked row has no engineer sign-off,fixture only; not evidence,true
 concrete,B15,Eb,24000,MPa,engineer_verified,24000,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 concrete,B20,Rb,11.5,MPa,engineer_verified,11.5,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 concrete,B20,Rbt,0.9,MPa,engineer_verified,0.9,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
@@ -36,11 +36,11 @@ rebar,A240,Rsc_short,210,MPa,engineer_verified,210,Synthetic Engineer,2026-06-01
 rebar,A240,Rsc_long,210,MPa,engineer_verified,210,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 rebar,A240,Rsw,170,MPa,engineer_verified,170,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 rebar,A240,Es,200000,MPa,engineer_verified,200000,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-rebar,A400,Rsn,400,MPa,engineer_verified,400,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-rebar,A400,Rs,350,MPa,engineer_verified,350,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-rebar,A400,Rsser,400,MPa,engineer_verified,400,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-rebar,A400,Rsc_short,350,MPa,engineer_verified,350,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
-rebar,A400,Rsc_long,350,MPa,engineer_verified,350,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
+rebar,A400,Rsn,390,MPa,needs_review,,,,synthetic non-evidence fixture; provisional row has no amendment evidence or engineer sign-off,fixture only; not evidence,true
+rebar,A400,Rs,340,MPa,needs_review,,,,synthetic non-evidence fixture; provisional row has no amendment evidence or engineer sign-off,fixture only; not evidence,true
+rebar,A400,Rsser,390,MPa,needs_review,,,,synthetic non-evidence fixture; provisional row has no amendment evidence or engineer sign-off,fixture only; not evidence,true
+rebar,A400,Rsc_short,340,MPa,needs_review,,,,synthetic non-evidence fixture; provisional row has no amendment evidence or engineer sign-off,fixture only; not evidence,true
+rebar,A400,Rsc_long,340,MPa,needs_review,,,,synthetic non-evidence fixture; provisional row has no amendment evidence or engineer sign-off,fixture only; not evidence,true
 rebar,A400,Rsw,280,MPa,engineer_verified,280,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 rebar,A400,Es,200000,MPa,engineer_verified,200000,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false
 rebar,A500,Rsn,500,MPa,engineer_verified,500,Synthetic Engineer,2026-06-01,synthetic material verification fixture; no normative text included,test fixture only,false

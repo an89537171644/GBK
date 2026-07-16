@@ -1,3 +1,7 @@
+from dataclasses import replace
+
+import pytest
+
 from sp63_core.dataset import (
     generate_dataset_cases,
     generate_diagnostic_dataset_cases,
@@ -8,13 +12,14 @@ from sp63_core.ml import (
     evaluate_baseline_models,
     evaluate_ml_safety,
     load_baseline_model_bundle,
+    predict_baseline_targets,
     save_baseline_model_bundle,
     train_baseline_models,
 )
 
 
 def test_train_evaluate_save_and_load_baseline_models(tmp_path):
-    cases = generate_dataset_cases(limit=50)
+    cases = generate_dataset_cases(limit=50, load_duration="short")
     split = split_dataset_cases(cases, group_by="group_key")
 
     bundle = train_baseline_models(split.train)
@@ -43,8 +48,28 @@ def test_train_evaluate_save_and_load_baseline_models(tmp_path):
     assert bundle.metadata["target_leakage_checked"] is True
 
 
+def test_baseline_training_rejects_long_duration_rows():
+    case = generate_dataset_cases(limit=1, load_duration="short")[0]
+    object.__setattr__(case, "load_duration", "long")
+
+    with pytest.raises(ValueError, match="baseline training requires load_duration='short'"):
+        train_baseline_models((case,))
+
+
+def test_baseline_model_bundle_rejects_legacy_dataset_version(tmp_path):
+    cases = generate_dataset_cases(limit=5, load_duration="short")
+    bundle = train_baseline_models(cases)
+    legacy_bundle = replace(bundle, dataset_version="0.2")
+    path = save_baseline_model_bundle(legacy_bundle, tmp_path / "legacy.pkl")
+
+    with pytest.raises(ValueError, match="dataset_version '0.2' is incompatible"):
+        load_baseline_model_bundle(path)
+    with pytest.raises(ValueError, match="dataset_version '0.2' is incompatible"):
+        predict_baseline_targets(legacy_bundle, cases)
+
+
 def test_build_baseline_ml_report_uses_non_neural_models():
-    safe_cases = generate_dataset_cases(limit=30)
+    safe_cases = generate_dataset_cases(limit=30, load_duration="short")
     diagnostic_cases = generate_diagnostic_dataset_cases(limit=1000)
 
     report = build_baseline_ml_report(safe_cases, diagnostic_cases)

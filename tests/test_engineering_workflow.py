@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from sp63_core.cli import main
-from sp63_core.dataset import REQUIRED_REPORT_DATASET_COLUMNS
+from sp63_core.dataset import DATASET_VERSION, REQUIRED_REPORT_DATASET_COLUMNS
 from sp63_core.workflows import run_engineering_workflow
 
 EXAMPLE_INPUT = Path("docs/reports/examples/rectangular_design_input_example.json")
@@ -15,6 +15,7 @@ def _dataset_row() -> dict[str, object]:
     row.update(
         {
             "dataset_source": "validated_report_archive",
+            "dataset_version": DATASET_VERSION,
             "case_id": "case_001",
             "source_archive_path": "reports/case_001",
             "report_json_path": "reports/case_001/report.json",
@@ -24,6 +25,14 @@ def _dataset_row() -> dict[str, object]:
             "report_json_sha256": "b" * 64,
             "manifest_sha256": "c" * 64,
             "archive_validation_status": "pass",
+            "local_axes_id": "case-001-local-axes",
+            "moment_axis": "local_z",
+            "tension_face": "local_y_min",
+            "load_duration": "short",
+            "completeness_status": "incomplete",
+            "evidence_status": "needs_engineer_review",
+            "project_use_status": "prohibited",
+            "project_use": False,
             "b": 300,
             "h": 500,
             "cover": 32,
@@ -62,6 +71,10 @@ def test_engineering_workflow_without_ml_creates_report_zip_and_summary(tmp_path
     assert result.archive_validation_status == "pass"
     assert result.zip_status == "pass"
     assert result.ml_readiness_status is None
+    assert result.completeness_status == "incomplete"
+    assert result.evidence_status == "needs_engineer_review"
+    assert result.project_use_status == "prohibited"
+    assert result.project_use is False
     assert result.requires_engineer_review is True
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
@@ -78,6 +91,22 @@ def test_engineering_workflow_without_ml_creates_report_zip_and_summary(tmp_path
     assert (output_dir / "workflow_summary.json").exists()
     assert (output_dir / "workflow_summary.md").exists()
     assert (output_dir / "README_WORKFLOW.md").exists()
+
+    workflow_summary = json.loads(
+        (output_dir / "workflow_summary.json").read_text(encoding="utf-8")
+    )
+    assert workflow_summary["project_use_status"] == "prohibited"
+    assert workflow_summary["project_use"] is False
+
+    report_payload = json.loads(
+        (deterministic_dir / "report.json").read_text(encoding="utf-8")
+    )
+    assert report_payload["project_use_status"] == "prohibited"
+    assert report_payload["project_use"] is False
+
+    manifest = json.loads((deterministic_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["project_use_status"] == "prohibited"
+    assert manifest["project_use"] is False
 
 
 def test_engineering_workflow_no_zip_skips_zip(tmp_path):
@@ -152,6 +181,8 @@ def test_cli_engineering_workflow_json(tmp_path, capsys):
     assert payload["deterministic_report_status"] == "pass"
     assert payload["archive_validation_status"] == "pass"
     assert payload["zip_status"] == "pass"
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
     assert payload["requires_engineer_review"] is True
 
 

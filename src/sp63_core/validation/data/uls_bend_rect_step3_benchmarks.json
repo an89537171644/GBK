@@ -1,0 +1,163 @@
+{
+  "suite_id": "ULS-BEND-RECT-001-STEP3",
+  "baseline_commit": "086cd1c42dd8098b703e3880c2d9101f5ccf9635",
+  "normative_profile_id": "SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15",
+  "decision_status": "ASSUMPTION",
+  "completeness_status": "incomplete",
+  "evidence_status": "needs_engineer_review",
+  "project_use_status": "prohibited",
+  "project_use": false,
+  "requires_engineer_review": true,
+  "orientation": {
+    "local_axes_id": "bmr-local-axes",
+    "moment_axis": "local_z",
+    "tension_face": "local_y_min"
+  },
+  "cases": [
+    {
+      "case_id": "BMR-01",
+      "input": {
+        "b": 300.0,
+        "h": 600.0,
+        "cover": 30.0,
+        "stirrup_diameter": 8.0,
+        "main_bar_diameter": 20,
+        "concrete_class": "B30",
+        "rebar_class": "A500",
+        "bar_count": 4,
+        "M": 250000000.0,
+        "load_duration": "short",
+        "As_prime_bar_count": 0,
+        "As_prime_bar_diameter": 0
+      },
+      "expected": {
+        "h0": 552.0,
+        "x": 107.18374935776943,
+        "xi": 0.19417345898146635,
+        "xi_R": 0.4933920704845815,
+        "x_limit": 272.352422907489,
+        "Mult": 272448383.0697002,
+        "utilization": 0.9176050053343233,
+        "status": "pass",
+        "capacity_applicable": true
+      }
+    },
+    {
+      "case_id": "BMR-02",
+      "input": {
+        "b": 250.0,
+        "h": 500.0,
+        "cover": 25.0,
+        "stirrup_diameter": 8.0,
+        "main_bar_diameter": 18,
+        "concrete_class": "B25",
+        "rebar_class": "A400",
+        "bar_count": 3,
+        "M": 111000000.0,
+        "load_duration": "short",
+        "As_prime_bar_count": 0,
+        "As_prime_bar_diameter": 0
+      },
+      "expected": {
+        "h0": 458.0,
+        "x": 71.60231311436931,
+        "xi": 0.1563369281973129,
+        "xi_R": 0.5384615384615384,
+        "x_limit": 246.6153846153846,
+        "Mult": 109585249.96959932,
+        "utilization": 1.0129100406377058,
+        "status": "fail",
+        "capacity_applicable": true
+      }
+    },
+    {
+      "case_id": "BMR-03",
+      "input": {
+        "b": 300.0,
+        "h": 500.0,
+        "cover": 32.0,
+        "stirrup_diameter": 8.0,
+        "main_bar_diameter": 20,
+        "concrete_class": "B25",
+        "rebar_class": "A500",
+        "bar_count": 3,
+        "M": 164000000.0,
+        "load_duration": "long",
+        "As_prime_bar_count": 0,
+        "As_prime_bar_diameter": 0
+      },
+      "expected": {
+        "h0": 450.0,
+        "x": 104.71975511965978,
+        "xi": 0.2327105669325773,
+        "xi_R": 0.4933920704845815,
+        "x_limit": 222.02643171806167,
+        "Mult": 163023639.00969124,
+        "utilization": 1.0059890761624497,
+        "status": "fail",
+        "capacity_applicable": true,
+        "Rb_base": 14.5,
+        "gamma_b1": 0.9,
+        "Rb_effective": 13.05
+      }
+    },
+    {
+      "case_id": "BMR-04",
+      "input": {
+        "b": 300.0,
+        "h": 500.0,
+        "cover": 32.0,
+        "stirrup_diameter": 8.0,
+        "main_bar_diameter": 20,
+        "concrete_class": "B30",
+        "rebar_class": "A500",
+        "bar_count": 6,
+        "M": 150000000.0,
+        "load_duration": "short",
+        "As_prime_bar_count": 2,
+        "As_prime_bar_diameter": 16
+      },
+      "expected": {
+        "h0": 450.0,
+        "x": null,
+        "xi": null,
+        "xi_R": 0.4933920704845815,
+        "x_limit": 222.02643171806167,
+        "Mult": null,
+        "utilization": null,
+        "status": "outside_applicability",
+        "capacity_applicable": false,
+        "applicability_reason": "compression_reinforcement_outside_v1_scope"
+      }
+    },
+    {
+      "case_id": "BMR-05",
+      "input": {
+        "b": 300.0,
+        "h": 500.0,
+        "cover": 29.5,
+        "stirrup_diameter": 8.0,
+        "main_bar_diameter": 25,
+        "concrete_class": "B25",
+        "rebar_class": "A500",
+        "bar_count": 5,
+        "M": 250000000.0,
+        "load_duration": "short",
+        "As_prime_bar_count": 0,
+        "As_prime_bar_diameter": 0
+      },
+      "expected": {
+        "h0": 450.0,
+        "x": 245.4369260617026,
+        "xi": 0.545415391248228,
+        "xi_R": 0.4933920704845815,
+        "x_limit": 222.02643171806167,
+        "Mult": null,
+        "utilization": null,
+        "status": "outside_applicability",
+        "capacity_applicable": false,
+        "applicability_reason": "compression_zone_exceeds_limit"
+      }
+    }
+  ]
+}

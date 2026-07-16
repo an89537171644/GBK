@@ -1,8 +1,12 @@
 """External validation summary report for engineer-filled comparison cases."""
 
+import csv
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+from sp63_core.sections import RectangularBendingOrientation
 
 EXTERNAL_VALIDATION_COLUMNS: tuple[str, ...] = (
     "case_id",
@@ -14,6 +18,10 @@ EXTERNAL_VALIDATION_COLUMNS: tuple[str, ...] = (
     "concrete_class",
     "main_rebar_class",
     "stirrup_rebar_class",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
     "moment_nmm",
     "shear_n",
     "moment_service_nmm",
@@ -41,6 +49,22 @@ EXTERNAL_VALIDATION_COLUMNS: tuple[str, ...] = (
     "delta_deflection_mm",
     "acceptance_status",
     "engineer_comment",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
+    "requires_engineer_review",
+)
+
+EXTERNAL_PROVENANCE_COLUMNS: tuple[str, ...] = (
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
     "requires_engineer_review",
 )
 
@@ -108,6 +132,7 @@ class ExternalValidationSummary:
     inconsistent_acceptance_status_count: int
     tolerance_failed_count: int
     invalid_numeric_values_count: int
+    invalid_provenance_count: int
     max_bending_delta_percent: float | None
     max_shear_delta_percent: float | None
     max_mcrc_delta_percent: float | None
@@ -115,6 +140,10 @@ class ExternalValidationSummary:
     max_deflection_delta_mm: float | None
     status: str
     warnings: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -133,6 +162,7 @@ def build_external_validation_summary(
     failed_cases = 0
     missing_external_values_count = 0
     invalid_numeric_values_count = 0
+    invalid_provenance_count = 0
     inconsistent_acceptance_status_count = 0
     tolerance_failed_count = 0
 
@@ -143,6 +173,9 @@ def build_external_validation_summary(
     deflection_deltas: list[float] = []
 
     for row in rows_tuple:
+        row_provenance_errors = _external_provenance_errors(row)
+        if row_provenance_errors:
+            invalid_provenance_count += 1
         row_missing_external_values = _row_has_missing_external_values(row)
         if row_missing_external_values:
             missing_external_values_count += 1
@@ -203,6 +236,7 @@ def build_external_validation_summary(
             status=status,
             has_missing_values=row_missing_external_values,
             has_invalid_numeric_values=row_invalid_numeric_count > 0,
+            has_invalid_provenance=bool(row_provenance_errors),
             tolerance_failed=row_tolerance_failed,
         ):
             inconsistent_acceptance_status_count += 1
@@ -220,6 +254,11 @@ def build_external_validation_summary(
         warnings.append("external validation delta exceeds draft tolerance")
     if invalid_numeric_values_count:
         warnings.append("external validation contains invalid numeric values")
+    if invalid_provenance_count:
+        warnings.append(
+            "external validation contains missing, invalid, or unsupported "
+            "calculation provenance"
+        )
     if inconsistent_acceptance_status_count:
         warnings.append("external validation acceptance_status is inconsistent with strict checks")
 
@@ -230,6 +269,7 @@ def build_external_validation_summary(
         review_cases=review_cases,
         missing_external_values_count=missing_external_values_count,
         invalid_numeric_values_count=invalid_numeric_values_count,
+        invalid_provenance_count=invalid_provenance_count,
         inconsistent_acceptance_status_count=inconsistent_acceptance_status_count,
         tolerance_failed_count=tolerance_failed_count,
     )
@@ -245,6 +285,7 @@ def build_external_validation_summary(
         inconsistent_acceptance_status_count=inconsistent_acceptance_status_count,
         tolerance_failed_count=tolerance_failed_count,
         invalid_numeric_values_count=invalid_numeric_values_count,
+        invalid_provenance_count=invalid_provenance_count,
         max_bending_delta_percent=_max_or_none(bending_deltas),
         max_shear_delta_percent=_max_or_none(shear_deltas),
         max_mcrc_delta_percent=_max_or_none(mcrc_deltas),
@@ -257,6 +298,93 @@ def build_external_validation_summary(
 
 def _row_has_missing_external_values(row: Mapping[str, Any]) -> bool:
     return any(_is_blank(row.get(column)) for column in EXTERNAL_RESULT_COLUMNS)
+
+
+def load_external_validation_csv(path: str | Path) -> tuple[dict[str, str], ...]:
+    """Load external validation CSV and reject incomplete provenance."""
+    input_path = Path(path)
+    with input_path.open(encoding="utf-8-sig", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        if reader.fieldnames is None:
+            raise ValueError("external validation CSV is missing header")
+        missing_columns = [
+            column for column in EXTERNAL_VALIDATION_COLUMNS if column not in reader.fieldnames
+        ]
+        if missing_columns:
+            raise ValueError(
+                "external validation CSV is missing columns: "
+                + ", ".join(missing_columns)
+            )
+        rows = tuple(dict(row) for row in reader)
+    validate_external_validation_rows(rows)
+    return rows
+
+
+def validate_external_validation_rows(rows: Iterable[Mapping[str, Any]]) -> None:
+    """Reject rows without the supported orientation, duration, and safety flags."""
+    for row_number, row in enumerate(rows, start=2):
+        errors = _external_provenance_errors(row)
+        if errors:
+            raise ValueError(
+                f"external validation CSV row {row_number}: " + "; ".join(errors)
+            )
+
+
+def _external_provenance_errors(row: Mapping[str, Any]) -> tuple[str, ...]:
+    errors: list[str] = []
+    missing_columns = [
+        column for column in EXTERNAL_PROVENANCE_COLUMNS if _is_blank(row.get(column))
+    ]
+    if missing_columns:
+        errors.append("missing provenance fields: " + ", ".join(missing_columns))
+
+    if not any(
+        _is_blank(row.get(column))
+        for column in ("local_axes_id", "moment_axis", "tension_face")
+    ):
+        try:
+            RectangularBendingOrientation(
+                local_axes_id=row["local_axes_id"],
+                moment_axis=row["moment_axis"],
+                tension_face=row["tension_face"],
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+    if not _is_blank(row.get("load_duration")) and row.get("load_duration") != "short":
+        errors.append(
+            "load_duration must be 'short' until the shear load-combination "
+            "context is implemented"
+        )
+    expected_text_values = {
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+    }
+    for field_name, expected in expected_text_values.items():
+        value = row.get(field_name)
+        if not _is_blank(value) and value != expected:
+            errors.append(f"{field_name} must be {expected!r}")
+    if not _is_blank(row.get("project_use")) and _strict_bool(row.get("project_use")) is not False:
+        errors.append("project_use must be false")
+    if (
+        not _is_blank(row.get("requires_engineer_review"))
+        and _strict_bool(row.get("requires_engineer_review")) is not True
+    ):
+        errors.append("requires_engineer_review must be true")
+    return tuple(errors)
+
+
+def _strict_bool(value: Any) -> bool | None:
+    if value is True or value is False:
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    return None
 
 
 def _normalized_status(value: Any) -> str:
@@ -316,10 +444,16 @@ def _acceptance_status_is_inconsistent(
     status: str,
     has_missing_values: bool,
     has_invalid_numeric_values: bool,
+    has_invalid_provenance: bool,
     tolerance_failed: bool,
 ) -> bool:
     if status == "accepted":
-        return has_missing_values or has_invalid_numeric_values or tolerance_failed
+        return (
+            has_missing_values
+            or has_invalid_numeric_values
+            or has_invalid_provenance
+            or tolerance_failed
+        )
     if status == "failed":
         return not tolerance_failed
     return False
@@ -333,9 +467,12 @@ def _summary_status(
     review_cases: int,
     missing_external_values_count: int,
     invalid_numeric_values_count: int,
+    invalid_provenance_count: int,
     inconsistent_acceptance_status_count: int,
     tolerance_failed_count: int,
 ) -> str:
+    if invalid_provenance_count:
+        return "fail"
     if strict_mode:
         if tolerance_failed_count or failed_cases:
             return "fail"

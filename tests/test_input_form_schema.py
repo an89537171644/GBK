@@ -15,6 +15,10 @@ REQUIRED_DESIGN_FIELDS = {
     "stirrup_rebar_class",
     "M",
     "Q",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
 }
 
 
@@ -56,6 +60,7 @@ def test_input_form_schema_contains_expected_field_groups():
         "ml_readiness",
     }
     assert {"b", "h", "cover", "span"} <= _field_names(result)
+    assert {"local_axes_id", "moment_axis", "tension_face"} <= _field_names(result)
     assert {
         "concrete_class",
         "longitudinal_rebar_class",
@@ -85,12 +90,39 @@ def test_input_form_schema_fields_have_metadata():
             assert "validation_message" in field
 
 
+def test_cover_field_declares_outer_stirrup_reference():
+    result = build_input_form_schema()
+    cover = next(
+        field
+        for group in result.json_data["groups"]
+        for field in group["fields"]
+        if field["name"] == "cover"
+    )
+
+    assert "outer stirrup surface" in cover["label"]
+    assert "наружной поверхности хомута" in cover["label_ru"]
+
+
+def test_input_form_schema_restricts_end_to_end_uls_scope():
+    result = build_input_form_schema()
+    fields = {
+        field["name"]: field
+        for group in result.json_data["groups"]
+        for field in group["fields"]
+    }
+
+    assert fields["longitudinal_rebar_class"]["options"] == ["A400", "A500"]
+    assert fields["stirrup_rebar_class"]["options"] == ["A240", "A400", "A500"]
+    assert fields["load_duration"]["options"] == ["short"]
+
+
 def test_input_form_schema_validation_rules_and_warnings():
     result = build_input_form_schema()
     rule_ids = {rule["rule_id"] for rule in result.json_data["validation_rules"]}
 
     assert "positive_dimensions" in rule_ids
     assert "material_classes_exist" in rule_ids
+    assert "explicit_bending_orientation" in rule_ids
     assert "dataset_required_for_ml_readiness" in rule_ids
     assert "ml_ready_not_user_settable" in rule_ids
     assert any("future UI/input forms only" in warning for warning in result.warnings)

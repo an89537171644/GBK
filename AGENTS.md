@@ -66,7 +66,7 @@ python -m sp63_core validate --generate-dataset-limit 20 --json
 
 For dataset changes also run:
 
-python -m sp63_core generate-dataset --limit 20 --split --group-split --output-dir data/generated --prefix smoke_dataset --report reports/interim/smoke_dataset_report.json
+python -m sp63_core generate-dataset --limit 20 --load-duration short --split --group-split --output-dir data/generated --prefix smoke_dataset --report reports/interim/smoke_dataset_report.json
 
 For ML changes also run:
 

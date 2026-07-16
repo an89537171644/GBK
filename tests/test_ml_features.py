@@ -3,7 +3,7 @@ from sp63_core.ml import build_feature_matrix
 
 
 def test_build_feature_matrix_returns_features_and_targets():
-    cases = generate_dataset_cases(limit=5)
+    cases = generate_dataset_cases(limit=5, load_duration="short")
 
     features, targets = build_feature_matrix(cases)
 
@@ -17,7 +17,7 @@ def test_build_feature_matrix_returns_features_and_targets():
 
 
 def test_build_feature_matrix_does_not_leak_targets_to_features():
-    cases = generate_dataset_cases(limit=5)
+    cases = generate_dataset_cases(limit=5, load_duration="short")
 
     features, _ = build_feature_matrix(cases)
 
@@ -36,7 +36,7 @@ def test_build_feature_matrix_does_not_leak_targets_to_features():
 
 
 def test_build_feature_matrix_uses_cover_and_geometry_stirrup_as_inputs():
-    cases = generate_dataset_cases(limit=5)
+    cases = generate_dataset_cases(limit=5, load_duration="short")
 
     features, _ = build_feature_matrix(cases)
 
@@ -45,7 +45,7 @@ def test_build_feature_matrix_uses_cover_and_geometry_stirrup_as_inputs():
 
 
 def test_stirrup_diameter_is_not_target():
-    cases = generate_dataset_cases(limit=5)
+    cases = generate_dataset_cases(limit=5, load_duration="short")
 
     _, targets = build_feature_matrix(cases)
 

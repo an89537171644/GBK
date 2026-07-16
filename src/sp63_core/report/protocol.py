@@ -4,8 +4,10 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Literal
 
-ProtocolStatus = Literal["pass", "fail", "review_or_fail"]
-GroupStatus = Literal["pass", "fail", "review_or_fail", "not_checked"]
+ProtocolStatus = Literal["pass", "fail", "review_or_fail", "outside_applicability"]
+GroupStatus = Literal[
+    "pass", "fail", "review_or_fail", "outside_applicability", "not_checked"
+]
 
 STRENGTH_CHECKS = frozenset(("bending", "shear"))
 SERVICEABILITY_CHECKS = frozenset(("crack_formation", "crack_width", "deflection"))
@@ -26,6 +28,10 @@ class CalculationProtocol:
     serviceability_status: GroupStatus
     overall_status: ProtocolStatus
     status: ProtocolStatus
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
     def as_dict(self) -> dict[str, Any]:
@@ -41,6 +47,10 @@ class CalculationProtocol:
             "serviceability_status": self.serviceability_status,
             "overall_status": self.overall_status,
             "status": self.status,
+            "completeness_status": self.completeness_status,
+            "evidence_status": self.evidence_status,
+            "project_use_status": self.project_use_status,
+            "project_use": self.project_use,
             "requires_engineer_review": self.requires_engineer_review,
         }
 
@@ -101,6 +111,8 @@ def _strength_status(checks: Mapping[str, Mapping[str, Any]]) -> GroupStatus:
     strength_checks = [check for name, check in checks.items() if name in STRENGTH_CHECKS]
     if not strength_checks:
         return "not_checked"
+    if any(check.get("status") == "outside_applicability" for check in strength_checks):
+        return "outside_applicability"
     if all(check.get("status") == "pass" for check in strength_checks):
         return "pass"
     return "fail"
@@ -138,6 +150,11 @@ def _overall_status(
     strength_status: GroupStatus,
     serviceability_status: GroupStatus,
 ) -> ProtocolStatus:
+    if (
+        strength_status == "outside_applicability"
+        or serviceability_status == "outside_applicability"
+    ):
+        return "outside_applicability"
     if strength_status == "fail" or serviceability_status == "fail":
         return "fail"
     if serviceability_status == "review_or_fail":

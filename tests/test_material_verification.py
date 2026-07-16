@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 
 from sp63_core.materials import (
@@ -90,6 +91,35 @@ def test_material_verification_templates_exist():
     header = csv_template.read_text(encoding="utf-8").splitlines()[0].split(",")
     assert tuple(header) == MATERIAL_VERIFICATION_REQUIRED_COLUMNS
     assert "engineer_verified" in markdown_template.read_text(encoding="utf-8")
+
+
+def test_shared_sample_is_synthetic_non_evidence_after_step3_recheck():
+    fixture = Path("tests/fixtures/material_verification_sample.csv")
+    with fixture.open(encoding="utf-8", newline="") as csv_file:
+        rows = tuple(dict(row) for row in csv.DictReader(csv_file))
+
+    report = build_material_verification_report(rows)
+    step3_rows = tuple(
+        row
+        for row in report.rows
+        if (row.material_type, row.class_name, row.property_name)
+        in {
+            ("concrete", "B15", "Rbtser"),
+            ("rebar", "A400", "Rsn"),
+            ("rebar", "A400", "Rs"),
+            ("rebar", "A400", "Rsser"),
+            ("rebar", "A400", "Rsc_short"),
+            ("rebar", "A400", "Rsc_long"),
+        }
+    )
+
+    assert report.status == "review_required"
+    assert report.engineer_verified_count == report.required_rows_count - 6
+    assert report.needs_review_count == 6
+    assert any("test-only non-evidence" in warning for warning in report.warnings)
+    assert all(row.verification_status == "needs_review" for row in step3_rows)
+    assert all(row.engineer_name == "" and row.review_date == "" for row in step3_rows)
+    assert all(row.requires_engineer_review is True for row in step3_rows)
 
 
 def _engineer_verified_rows() -> tuple[dict[str, str], ...]:

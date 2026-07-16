@@ -38,6 +38,10 @@ class BatchDesignReportResult:
     index_markdown: str
     index_json: dict[str, Any]
     warnings: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -80,6 +84,9 @@ def build_batch_design_reports(
                 serviceability_status=report.serviceability_status,
                 overall_status=report.overall_status,
                 warnings_count=len(report.warnings),
+                completeness_status=report.completeness_status,
+                evidence_status=report.evidence_status,
+                project_use_status=report.project_use_status,
             )
             write_report_manifest_json(manifest, manifest_path)
             case_manifest_paths.append(manifest_path)
@@ -113,6 +120,9 @@ def build_batch_design_reports(
                 serviceability_status="input_error",
                 overall_status="input_error",
                 warnings_count=1,
+                completeness_status="incomplete",
+                evidence_status="needs_engineer_review",
+                project_use_status="prohibited",
             )
             write_report_manifest_json(manifest, manifest_path)
             case_manifest_paths.append(manifest_path)
@@ -123,6 +133,10 @@ def build_batch_design_reports(
                     "strength_status": "input_error",
                     "serviceability_status": "input_error",
                     "overall_status": "input_error",
+                    "completeness_status": "incomplete",
+                    "evidence_status": "needs_engineer_review",
+                    "project_use_status": "prohibited",
+                    "project_use": False,
                     "warnings_count": 1,
                     "report_path": "",
                     "manifest_path": str(manifest_path),
@@ -157,6 +171,10 @@ def build_batch_design_reports(
         "failed_count": failed_count,
         "output_dir": str(output_dir),
         "warnings": warnings,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
         "requires_engineer_review": True,
         "cases": cases,
     }
@@ -180,6 +198,9 @@ def build_batch_design_reports(
         serviceability_status=None,
         overall_status=status,
         warnings_count=len(warnings),
+        completeness_status="incomplete",
+        evidence_status="needs_engineer_review",
+        project_use_status="prohibited",
         metadata={
             "case_count": len(cases),
             "passed_count": passed_count,
@@ -215,6 +236,9 @@ def build_batch_design_reports(
         serviceability_status=None,
         overall_status=status,
         warnings_count=len(warnings),
+        completeness_status="incomplete",
+        evidence_status="needs_engineer_review",
+        project_use_status="prohibited",
         metadata={
             "case_count": len(cases),
             "passed_count": passed_count,
@@ -280,6 +304,10 @@ def _design_report_json_payload(report: DesignCalculationReport) -> dict[str, An
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "completeness_status": report.completeness_status,
+        "evidence_status": report.evidence_status,
+        "project_use_status": report.project_use_status,
+        "project_use": report.project_use,
         "requires_engineer_review": report.requires_engineer_review,
         "warnings": list(report.warnings),
         "input_data": data["input_data"],
@@ -305,6 +333,10 @@ def _case_index_row(
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "completeness_status": report.completeness_status,
+        "evidence_status": report.evidence_status,
+        "project_use_status": report.project_use_status,
+        "project_use": report.project_use,
         "warnings_count": len(report.warnings),
         "report_path": output_files["markdown"],
         "manifest_path": output_files["manifest"],
@@ -332,17 +364,23 @@ def _render_index_markdown(index_json: dict[str, Any]) -> str:
         f"| passed_count | {index_json['passed_count']} |",
         f"| review_count | {index_json['review_count']} |",
         f"| failed_count | {index_json['failed_count']} |",
+        f"| completeness_status | {index_json['completeness_status']} |",
+        f"| evidence_status | {index_json['evidence_status']} |",
+        f"| project_use_status | {index_json['project_use_status']} |",
+        f"| project_use | {str(index_json['project_use']).lower()} |",
         "",
         "## Cases",
         "",
         "| case_id | input_file | strength_status | serviceability_status | "
-        "overall_status | warnings_count | report_path | requires_engineer_review |",
-        "|---|---|---|---|---|---|---|---|",
+        "overall_status | project_use_status | project_use | warnings_count | report_path | "
+        "requires_engineer_review |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for case in index_json["cases"]:
         lines.append(
             "| {case_id} | {input_file} | {strength_status} | {serviceability_status} | "
-            "{overall_status} | {warnings_count} | {report_path} | "
+            "{overall_status} | {project_use_status} | {project_use} | {warnings_count} | "
+            "{report_path} | "
             "{requires_engineer_review} |".format(**case)
         )
     lines.extend(["", "## Warnings", ""])

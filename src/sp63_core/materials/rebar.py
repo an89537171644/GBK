@@ -1,11 +1,10 @@
 """Draft reinforcement catalog and diameter helpers for MVP inputs."""
 
 from math import pi
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-LoadDuration = Literal["short", "long"]
+from sp63_core.materials.uls_context import LoadDuration
 
 
 class Rebar(BaseModel):
@@ -50,11 +49,11 @@ REBAR_CATALOG: dict[str, Rebar] = {
     ),
     "A400": Rebar(
         class_name="A400",
-        Rsn=400,
-        Rs=350,
-        Rsser=400,
-        Rsc_long=350,
-        Rsc_short=350,
+        Rsn=390,
+        Rs=340,
+        Rsser=390,
+        Rsc_long=340,
+        Rsc_short=340,
         Rsw=280,
         Es=200_000,
     ),
