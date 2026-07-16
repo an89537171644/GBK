@@ -160,6 +160,7 @@ from sp63_core.workflows import (
     render_self_check_markdown,
     render_traceability_matrix_markdown,
     render_v09_freeze_report_markdown,
+    render_v09_package_verification_markdown,
     render_v09_release_candidate_package_markdown,
     render_v09_review_build_markdown,
     render_v09_review_closure_markdown,
@@ -173,6 +174,7 @@ from sp63_core.workflows import (
     run_protected_files_guard,
     run_user_acceptance_smoke,
     verify_clean_demo_artifacts,
+    verify_v09_release_candidate_package,
 )
 
 
@@ -1300,6 +1302,41 @@ def build_parser() -> ArgumentParser:
         help="print Markdown release candidate package report",
     )
     v09_release_candidate_package.set_defaults(handler=_handle_v09_release_candidate_package)
+
+    v09_package_verify = subparsers.add_parser(
+        "v09-package-verify",
+        help="verify a v0.9 release candidate package",
+    )
+    v09_package_verify.add_argument(
+        "--package-dir",
+        help="existing package directory, or build target when --build is used",
+    )
+    v09_package_verify.add_argument(
+        "--output-dir",
+        required=True,
+        help="output directory for v0.9 package verification artifacts",
+    )
+    v09_package_verify.add_argument(
+        "--build",
+        action="store_true",
+        help="build the release candidate package before verification",
+    )
+    v09_package_verify.add_argument(
+        "--version",
+        default="0.9.0-rc1",
+        help="v0.9 release candidate package version label",
+    )
+    v09_package_verify.add_argument(
+        "--json",
+        action="store_true",
+        help="print JSON output",
+    )
+    v09_package_verify.add_argument(
+        "--markdown",
+        action="store_true",
+        help="print Markdown package verification report",
+    )
+    v09_package_verify.set_defaults(handler=_handle_v09_package_verify)
 
     next_release_roadmap = subparsers.add_parser(
         "next-release-roadmap",
@@ -4025,6 +4062,44 @@ def _handle_v09_release_candidate_package(args: Namespace) -> int:
     print(f"critical_failures: {len(result.critical_failures)}")
     print(f"review_required_gates: {len(result.review_required_gates)}")
     print(f"zip_path: {result.zip_path}")
+    _print_warnings(result.warnings)
+    if result.errors:
+        print("errors:")
+        for error in result.errors:
+            print(f"- {error}")
+    return 1 if result.status == "fail" else 0
+
+
+def _handle_v09_package_verify(args: Namespace) -> int:
+    package_dir = Path(args.package_dir) if args.package_dir else None
+    result = verify_v09_release_candidate_package(
+        package_dir=package_dir,
+        output_dir=Path(args.output_dir),
+        build=args.build,
+        version=args.version,
+    )
+    payload = {
+        "command": "v09-package-verify",
+        **asdict(result),
+    }
+    if args.json:
+        print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if result.status == "fail" else 0
+    if args.markdown:
+        print(render_v09_package_verification_markdown(result), end="")
+        return 1 if result.status == "fail" else 0
+
+    print("v0.9 package verification")
+    print(f"status: {result.status}")
+    print(f"verification_status: {result.verification_status}")
+    print(f"ready_for_manual_review: {result.ready_for_manual_review}")
+    print("ready_for_project_use: false")
+    print("ml_ready_for_project_use: false")
+    print(f"missing_required_paths: {len(result.missing_required_paths)}")
+    print(f"missing_zip_entries: {len(result.missing_zip_entries)}")
+    print(f"forbidden_package_paths: {len(result.forbidden_package_paths)}")
+    print(f"forbidden_zip_entries: {len(result.forbidden_zip_entries)}")
+    print(f"manual_review_gates: {len(result.manual_review_gates)}")
     _print_warnings(result.warnings)
     if result.errors:
         print("errors:")

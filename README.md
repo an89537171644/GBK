@@ -1428,3 +1428,32 @@ a SHA256 manifest, a ZIP archive, and compact review evidence under
 The package is review evidence only. It does not publish a release, approve
 project use, change formulas or materials, implement a GUI, or make ML a
 calculator.
+
+## K109 v0.9 package verification
+
+K109 adds a release candidate package verification command:
+
+```bash
+python -m sp63_core v09-package-verify \
+  --package-dir reports/v09_release_candidate_package_smoke \
+  --output-dir reports/v09_package_verification_smoke \
+  --json
+```
+
+Build-and-verify mode is also available:
+
+```bash
+python -m sp63_core v09-package-verify \
+  --build \
+  --output-dir reports/v09_package_verification_smoke \
+  --version 0.9.0-rc1 \
+  --json
+```
+
+The verifier writes JSON/Markdown reports, a README, and a manual acceptance log
+template. It checks required package files, ZIP contents, forbidden file
+exclusions, and manifest checksum coverage where practical.
+
+Expected normal status is `review_required` while manual review gates remain
+open. With no critical verification errors, `ready_for_manual_review = true`.
+Project use and ML project readiness remain false.

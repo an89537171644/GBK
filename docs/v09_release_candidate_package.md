@@ -59,3 +59,25 @@ Safety flags:
 
 K108 does not publish a release, certify calculations, approve project use,
 change formulas, change material values, implement UI, or make ML a calculator.
+
+## Verification
+
+K109 adds a verifier for this package:
+
+```bash
+python -m sp63_core v09-package-verify \
+  --package-dir reports/v09_release_candidate_package_smoke \
+  --output-dir reports/v09_package_verification_smoke \
+  --json
+```
+
+Use `--build` to create a fresh K108 package before verification. The verifier
+checks required package files, ZIP contents, forbidden file exclusions, and
+manifest checksum coverage where practical. It writes
+`v09_package_verification.json`, `v09_package_verification.md`,
+`README_V09_PACKAGE_VERIFICATION.md`, and
+`manual_acceptance_log_template.md`.
+
+Manual review gates keep the expected status at `review_required`, while
+`ready_for_manual_review = true` is possible when critical verification errors
+are zero. Project use and ML project readiness remain false.

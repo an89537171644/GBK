@@ -176,6 +176,11 @@ from sp63_core.workflows.v09_freeze_report import (
     build_v09_freeze_report,
     render_v09_freeze_report_markdown,
 )
+from sp63_core.workflows.v09_package_verify import (
+    V09PackageVerificationResult,
+    render_v09_package_verification_markdown,
+    verify_v09_release_candidate_package,
+)
 from sp63_core.workflows.v09_readiness import (
     V09ReadinessResult,
     build_v09_readiness_gate,
@@ -249,6 +254,7 @@ __all__ = [
     "UserAcceptanceSmokeResult",
     "V09FinalAuditResult",
     "V09FreezeReportResult",
+    "V09PackageVerificationResult",
     "V09ReadinessResult",
     "V09ReleaseCandidatePackageResult",
     "V09ReviewBuildResult",
@@ -301,6 +307,7 @@ __all__ = [
     "render_self_check_markdown",
     "render_traceability_matrix_markdown",
     "render_v09_freeze_report_markdown",
+    "render_v09_package_verification_markdown",
     "render_v09_release_candidate_package_markdown",
     "render_v09_review_build_markdown",
     "render_v09_review_closure_markdown",
@@ -319,5 +326,6 @@ __all__ = [
     "run_protected_files_guard",
     "run_user_acceptance_smoke",
     "verify_clean_demo_artifacts",
+    "verify_v09_release_candidate_package",
     "validate_payload_against_json_contract",
 ]
