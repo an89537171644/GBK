@@ -9,8 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sp63_core.dataset.generator import DATASET_VERSION
 from sp63_core.report import validate_batch_report_archive, validate_report_bundle
 from sp63_core.report.manifest import compute_file_sha256
+from sp63_core.sections import RectangularBendingOrientation
 
 REPORT_DATASET_SOURCE = "validated_report_archive"
 SUPPORTED_REPORT_DATASET_FORMATS = ("jsonl", "json", "csv")
@@ -136,6 +138,7 @@ def extract_dataset_row_from_report_json(
 
     row: dict[str, Any] = {
         "dataset_source": REPORT_DATASET_SOURCE,
+        "dataset_version": DATASET_VERSION,
         "case_id": report_path.parent.name,
         "source_archive_path": str(report_path.parent),
         "report_json_path": str(report_path),
@@ -145,9 +148,17 @@ def extract_dataset_row_from_report_json(
         "report_json_sha256": compute_file_sha256(report_path),
         "manifest_sha256": compute_file_sha256(manifest) if manifest.exists() else None,
         "archive_validation_status": "not_checked",
-        "requires_engineer_review": True,
+        "requires_engineer_review": report.get("requires_engineer_review"),
         "ml_is_advisory_only": True,
         "deterministic_checks_required": True,
+        "local_axes_id": _first_present(input_data, report_input, "local_axes_id"),
+        "moment_axis": _first_present(input_data, report_input, "moment_axis"),
+        "tension_face": _first_present(input_data, report_input, "tension_face"),
+        "load_duration": _first_present(input_data, report_input, "load_duration"),
+        "completeness_status": report.get("completeness_status"),
+        "evidence_status": report.get("evidence_status"),
+        "project_use_status": report.get("project_use_status"),
+        "project_use": report.get("project_use"),
         "b": _first_present(input_data, report_input, "b"),
         "h": _first_present(input_data, report_input, "h"),
         "cover": _first_present(input_data, report_input, "cover"),
@@ -202,6 +213,7 @@ def extract_dataset_row_from_report_json(
         "external_validation_status": _optional_status(report, "external_validation_status"),
         "material_verification_status": _optional_status(report, "material_verification_status"),
     }
+    _validate_report_dataset_safety_contract(row)
     return row
 
 
@@ -298,6 +310,7 @@ def _write_csv_rows(rows: list[dict[str, Any]], output_path: Path) -> None:
 def _fieldnames(rows: Iterable[Mapping[str, Any]]) -> list[str]:
     preferred = [
         "dataset_source",
+        "dataset_version",
         "case_id",
         "source_archive_path",
         "report_json_path",
@@ -307,6 +320,14 @@ def _fieldnames(rows: Iterable[Mapping[str, Any]]) -> list[str]:
         "report_json_sha256",
         "manifest_sha256",
         "archive_validation_status",
+        "local_axes_id",
+        "moment_axis",
+        "tension_face",
+        "load_duration",
+        "completeness_status",
+        "evidence_status",
+        "project_use_status",
+        "project_use",
         "requires_engineer_review",
         "ml_is_advisory_only",
         "deterministic_checks_required",
@@ -335,6 +356,38 @@ def _first_present(primary: Mapping[str, Any], secondary: Mapping[str, Any], key
 def _optional_status(report: Mapping[str, Any], field_name: str) -> str:
     value = report.get(field_name)
     return str(value) if value else "not_provided"
+
+
+def _validate_report_dataset_safety_contract(row: Mapping[str, Any]) -> None:
+    if row.get("dataset_version") != DATASET_VERSION:
+        raise ValueError(
+            f"report dataset_version must be {DATASET_VERSION!r}"
+        )
+    RectangularBendingOrientation(
+        local_axes_id=row.get("local_axes_id"),
+        moment_axis=row.get("moment_axis"),
+        tension_face=row.get("tension_face"),
+    )
+    if row.get("load_duration") != "short":
+        raise ValueError("report dataset load_duration must be 'short'")
+    if row.get("completeness_status") != "incomplete":
+        raise ValueError(
+            "report dataset completeness_status must be 'incomplete'"
+        )
+    if row.get("evidence_status") != "needs_engineer_review":
+        raise ValueError(
+            "report dataset evidence_status must be 'needs_engineer_review'"
+        )
+    if row.get("project_use_status") != "prohibited":
+        raise ValueError(
+            "report dataset project_use_status must be 'prohibited'"
+        )
+    if row.get("project_use") is not False:
+        raise ValueError("report dataset project_use must be false")
+    if row.get("requires_engineer_review") is not True:
+        raise ValueError(
+            "report dataset requires_engineer_review must be true"
+        )
 
 
 def _build_result(

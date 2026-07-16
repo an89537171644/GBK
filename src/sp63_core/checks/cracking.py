@@ -1,8 +1,8 @@
 """Draft serviceability checks for normal crack formation.
 
 SP 63 reference:
-    Section 8.2, normal crack formation, represented here by the issue-approved
-    draft gross-section elastic MVP formula from
+    Section 8.2, normal crack formation, represented here by the issue-scoped
+    draft gross-section elastic MVP formula requiring engineering review from
     docs/formulas/SP63_8_2_normal_crack_formation_rectangular.md.
 
 Inputs:

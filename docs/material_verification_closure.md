@@ -2,6 +2,12 @@
 
 K83 adds a closure workflow for the material verification review gate:
 
+`tests/fixtures/material_verification_sample.csv` is a synthetic, test-only,
+non-evidence fixture. The six rows changed or rechecked in Step 3 are deliberately marked
+`needs_review` with blank engineer identity/date fields, so this sample must
+produce `review_required`. It must never be substituted for an engineer-filled
+CSV or cited as material verification evidence.
+
 ```bash
 python -m sp63_core material-verification-closure \
   --material-verification-csv tests/fixtures/material_verification_sample.csv \
@@ -50,4 +56,3 @@ Status logic:
 This workflow does not change material values, does not update the material
 catalog, does not include full SP 63 text, and does not approve project use.
 Engineer review remains mandatory.
-

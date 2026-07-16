@@ -1,6 +1,6 @@
 {
   "M": 400000000,
-  "Mser": 238098502.49,
+  "Mser": 255339897.485,
   "Q": 35000,
   "acrc_limit": 0.3,
   "b": 450,
@@ -12,8 +12,11 @@
   "deflection_limit_ratio": 250,
   "h": 350,
   "load_duration": "short",
+  "local_axes_id": "synthetic-report-case-0001",
   "longitudinal_rebar_class": "A400",
-  "span": 3000,
+  "moment_axis": "local_z",
+  "span": 7000,
   "stirrup_diameter_for_geometry": 10,
-  "stirrup_rebar_class": "A240"
+  "stirrup_rebar_class": "A240",
+  "tension_face": "local_y_min"
 }

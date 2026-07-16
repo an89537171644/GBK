@@ -7,6 +7,10 @@ report-derived dataset and ML smoke experiments.
 - case_count: `10`
 - seed: `42`
 - synthetic_data_only: `true`
+- completeness_status: `incomplete`
+- evidence_status: `needs_engineer_review`
+- project_use_status: `prohibited`
+- project_use: `false`
 - requires_engineer_review: `true`
 - ml_is_advisory_only: `true`
 - deterministic_checks_required: `true`

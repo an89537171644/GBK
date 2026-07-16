@@ -1,5 +1,9 @@
 # Report archive validation
 
+completeness_status = incomplete
+evidence_status = needs_engineer_review
+project_use_status = prohibited
+project_use = false
 requires_engineer_review = true
 
 ## Purpose
@@ -28,6 +32,10 @@ The command checks:
 - `report.md`, `report.json`, `report.html`, and `input.json` exist;
 - manifest `input_files` and `output_files` exist;
 - SHA256 values match the files on disk;
+- `manifest_version = 2`;
+- `completeness_status = incomplete`;
+- `evidence_status = needs_engineer_review`;
+- `project_use_status = prohibited` and `project_use = false`;
 - `requires_engineer_review = true`.
 
 ## Batch Archive Check
@@ -62,6 +70,10 @@ The JSON result includes:
 - `index_consistency_status`;
 - `warnings`;
 - `errors`;
+- `completeness_status`;
+- `evidence_status`;
+- `project_use_status`;
+- `project_use`;
 - `requires_engineer_review`.
 
 `status = pass` means no missing files, checksum mismatches, or index

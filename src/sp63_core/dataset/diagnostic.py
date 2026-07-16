@@ -13,9 +13,10 @@ from sp63_core.checks import (
     check_normal_crack_width_rectangular,
     check_shear_rectangular,
 )
+from sp63_core.dataset.generator import DATASET_VERSION
 from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
 from sp63_core.report import build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
 DIAGNOSTIC_DATASET_SOURCE = "diagnostic_deterministic_sp63_core"
 DIAGNOSTIC_REQUIRED_OVERALL_STATUSES = ("pass", "fail", "review_or_fail")
@@ -29,6 +30,11 @@ _CANDIDATE_CASE_TYPES: tuple[str, ...] = (
     "crack_width_fail",
     "deflection_fail",
     "multiple_fail",
+)
+DIAGNOSTIC_BENDING_ORIENTATION = RectangularBendingOrientation(
+    local_axes_id="diagnostic-dataset-local-axes",
+    moment_axis="local_z",
+    tension_face="local_y_min",
 )
 
 
@@ -74,8 +80,55 @@ class DiagnosticDatasetCase:
     warnings_count: int
     warning_text: str
     failure_reason: str
+    local_axes_id: str
+    moment_axis: str
+    tension_face: str
+    load_duration: str
+    completeness_status: str
+    evidence_status: str
+    project_use_status: str
+    project_use: bool
     requires_engineer_review: bool
     dataset_source: str
+    dataset_version: str
+
+    def __post_init__(self) -> None:
+        """Reject incomplete or unsafe diagnostic provenance."""
+        if self.dataset_version != DATASET_VERSION:
+            raise ValueError(
+                f"unsupported dataset_version {self.dataset_version!r}; "
+                f"expected {DATASET_VERSION!r}"
+            )
+        RectangularBendingOrientation(
+            local_axes_id=self.local_axes_id,
+            moment_axis=self.moment_axis,
+            tension_face=self.tension_face,
+        )
+        if self.load_duration != "short":
+            raise ValueError("diagnostic dataset load_duration must be 'short'")
+        if self.completeness_status != "incomplete":
+            raise ValueError(
+                "diagnostic dataset completeness_status must be 'incomplete'"
+            )
+        if self.evidence_status != "needs_engineer_review":
+            raise ValueError(
+                "diagnostic dataset evidence_status must be 'needs_engineer_review'"
+            )
+        if self.project_use_status != "prohibited":
+            raise ValueError(
+                "diagnostic dataset project_use_status must be 'prohibited'"
+            )
+        if self.project_use is not False:
+            raise ValueError("diagnostic dataset project_use must be false")
+        if self.requires_engineer_review is not True:
+            raise ValueError(
+                "diagnostic dataset requires_engineer_review must be true"
+            )
+        if self.dataset_source != DIAGNOSTIC_DATASET_SOURCE:
+            raise ValueError(
+                "diagnostic dataset dataset_source must be "
+                f"{DIAGNOSTIC_DATASET_SOURCE!r}"
+            )
 
     def as_row(self) -> dict[str, Any]:
         """Return a JSON/CSV-like diagnostic row."""
@@ -241,7 +294,15 @@ def _pass_base_beam() -> DiagnosticDatasetCase:
     stirrup_rebar = get_rebar("A240")
     As = 3 * area_by_diameter(20)
     Asw = 2 * area_by_diameter(8)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=150_000_000)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=150_000_000,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(section, concrete, stirrup_rebar, Q=80_000, Asw=Asw, sw=200)
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=30_000_000)
     crack_width = check_normal_crack_width_rectangular(
@@ -297,7 +358,15 @@ def _bending_fail_low_as() -> DiagnosticDatasetCase:
     concrete = get_concrete("B25")
     rebar = get_rebar("A500")
     As = 2 * area_by_diameter(16)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=150_000_000)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=150_000_000,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     return _build_case(
         case_id="diagnostic_case_02",
         case_type="bending_fail_low_as",
@@ -329,7 +398,15 @@ def _crack_review_without_width() -> DiagnosticDatasetCase:
     stirrup_rebar = get_rebar("A240")
     As = 3 * area_by_diameter(20)
     Asw = 2 * area_by_diameter(8)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=150_000_000)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=150_000_000,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(section, concrete, stirrup_rebar, Q=80_000, Asw=Asw, sw=200)
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=30_000_000)
     return _build_case(
@@ -489,7 +566,15 @@ def _candidate_pass_base(index: int, variant: int) -> DiagnosticDatasetCase:
     span = (4000, 4500, 5000)[variant % 3]
     As = main_bar_count * area_by_diameter(main_bar_diameter)
     Asw = 2 * area_by_diameter(8)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=M)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=M,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(
         section,
         concrete,
@@ -565,7 +650,15 @@ def _candidate_bending_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     rebar = get_rebar(rebar_class)
     M = (170_000_000, 190_000_000, 220_000_000)[variant % 3]
     As = 2 * area_by_diameter(main_bar_diameter)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=M)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=M,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     return _build_case(
         case_id=_candidate_case_id(index),
         case_type="bending_fail",
@@ -663,7 +756,15 @@ def _candidate_crack_review_without_width(
     Mser = max(30_000_000, 0.35 * M)
     As = 4 * area_by_diameter(20)
     Asw = 2 * area_by_diameter(8)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=M)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=M,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(section, concrete, stirrup_rebar, Q=Q, Asw=Asw, sw=200)
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=Mser)
     return _build_case(
@@ -818,7 +919,15 @@ def _candidate_multiple_fail(index: int, variant: int) -> DiagnosticDatasetCase:
     span = (11_000, 12_000, 13_000)[variant % 3]
     As = 2 * area_by_diameter(main_bar_diameter)
     Asw = 2 * area_by_diameter(6)
-    bending = check_bending_rectangular(section, concrete, rebar, As=As, M=M)
+    bending = check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        As=As,
+        M=M,
+        orientation=DIAGNOSTIC_BENDING_ORIENTATION,
+        load_duration="short",
+    )
     shear = check_shear_rectangular(section, concrete, stirrup_rebar, Q=Q, Asw=Asw, sw=350)
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=Mser)
     crack_width = check_normal_crack_width_rectangular(
@@ -953,8 +1062,17 @@ def _build_case(
         warnings_count=len(protocol.warnings),
         warning_text=" | ".join(protocol.warnings),
         failure_reason=failure_reason,
-        requires_engineer_review=True,
+        local_axes_id=DIAGNOSTIC_BENDING_ORIENTATION.local_axes_id,
+        moment_axis=DIAGNOSTIC_BENDING_ORIENTATION.moment_axis,
+        tension_face=DIAGNOSTIC_BENDING_ORIENTATION.tension_face,
+        load_duration="short",
+        completeness_status=protocol.completeness_status,
+        evidence_status=protocol.evidence_status,
+        project_use_status=protocol.project_use_status,
+        project_use=protocol.project_use,
+        requires_engineer_review=protocol.requires_engineer_review,
         dataset_source=DIAGNOSTIC_DATASET_SOURCE,
+        dataset_version=DATASET_VERSION,
     )
 
 
@@ -1014,6 +1132,8 @@ def _value(checks: Mapping[str, Any], check_name: str, attr_name: str) -> float 
     if check is None:
         return None
     value = getattr(check, attr_name)
+    if value is None:
+        return None
     return float(value)
 
 

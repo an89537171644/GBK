@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 import json
 import tempfile
 from dataclasses import dataclass
@@ -11,6 +10,7 @@ from pathlib import Path
 from sp63_core.materials import build_material_audit_rows
 from sp63_core.validation import (
     build_external_validation_summary,
+    load_external_validation_csv,
     run_bending_golden_cases,
     run_crack_formation_golden_cases,
     run_crack_width_golden_cases,
@@ -185,14 +185,9 @@ def _materials_audit_status() -> str:
 def _external_validation_status() -> str:
     if not EXTERNAL_SAMPLE_CSV.exists():
         return "review_required"
-    rows = _load_external_validation_rows(EXTERNAL_SAMPLE_CSV)
+    rows = load_external_validation_csv(EXTERNAL_SAMPLE_CSV)
     summary = build_external_validation_summary(rows)
     return summary.status
-
-
-def _load_external_validation_rows(path: Path) -> tuple[dict[str, str], ...]:
-    with path.open(encoding="utf-8", newline="") as csv_file:
-        return tuple(csv.DictReader(csv_file))
 
 
 def _workflow_self_check_status() -> str:

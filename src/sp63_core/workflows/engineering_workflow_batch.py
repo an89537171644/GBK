@@ -42,6 +42,10 @@ class BatchEngineeringWorkflowResult:
     recommendations: tuple[str, ...]
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
     ml_is_advisory_only: bool = True
     deterministic_checks_required: bool = True
@@ -97,6 +101,11 @@ def run_engineering_workflow_batch(
                     "zip_status": workflow_result.zip_status,
                     "index_status": workflow_result.index_status,
                     "index_path": workflow_result.index_path,
+                    "completeness_status": workflow_result.completeness_status,
+                    "evidence_status": workflow_result.evidence_status,
+                    "project_use_status": workflow_result.project_use_status,
+                    "project_use": workflow_result.project_use,
+                    "requires_engineer_review": workflow_result.requires_engineer_review,
                     "warnings_count": len(workflow_result.warnings),
                     "errors_count": len(workflow_result.errors),
                     "warnings": list(workflow_result.warnings),
@@ -116,6 +125,11 @@ def run_engineering_workflow_batch(
                     "zip_status": "skipped",
                     "index_status": None,
                     "index_path": None,
+                    "completeness_status": "incomplete",
+                    "evidence_status": "needs_engineer_review",
+                    "project_use_status": "prohibited",
+                    "project_use": False,
+                    "requires_engineer_review": True,
                     "warnings_count": 0,
                     "errors_count": 1,
                     "warnings": [],
@@ -249,6 +263,10 @@ def _render_batch_summary_markdown(result: BatchEngineeringWorkflowResult) -> st
         BATCH_WORKFLOW_WARNING,
         "",
         "requires_engineer_review = true",
+        f"completeness_status = {result.completeness_status}",
+        f"evidence_status = {result.evidence_status}",
+        f"project_use_status = {result.project_use_status}",
+        f"project_use = {str(result.project_use).lower()}",
         "ml_is_advisory_only = true",
         "deterministic_checks_required = true",
         "ml_ready_for_project_use = false",
@@ -271,17 +289,22 @@ def _render_batch_summary_markdown(result: BatchEngineeringWorkflowResult) -> st
         "",
         "## Cases",
         "",
-        "| case_id | workflow_status | preflight_status | deterministic_report_status | index |",
-        "|---|---|---|---|---|",
+        "| case_id | workflow_status | preflight_status | deterministic_report_status | "
+        "project_use_status | project_use | engineer_review | index |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for case in result.case_results:
         lines.append(
             "| {case_id} | {workflow_status} | {preflight_status} | "
-            "{deterministic_report_status} | {index_path} |".format(
+            "{deterministic_report_status} | {project_use_status} | {project_use} | "
+            "{requires_engineer_review} | {index_path} |".format(
                 case_id=case["case_id"],
                 workflow_status=case["workflow_status"],
                 preflight_status=case["preflight_status"],
                 deterministic_report_status=case["deterministic_report_status"],
+                project_use_status=case["project_use_status"],
+                project_use=str(case["project_use"]).lower(),
+                requires_engineer_review=str(case["requires_engineer_review"]).lower(),
                 index_path=case["index_path"],
             )
         )
@@ -326,6 +349,8 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
             )
             + f"<td><code>{html.escape(str(case['preflight_status']))}</code></td>"
             f"<td><code>{html.escape(case['deterministic_report_status'])}</code></td>"
+            f"<td><code>{html.escape(case['project_use_status'])}</code></td>"
+            f"<td><code>{str(case['project_use']).lower()}</code></td>"
             f'<td><a href="{html.escape(href, quote=True)}">case report</a></td>'
             "</tr>"
         )
@@ -364,15 +389,20 @@ def _render_batch_index_html(result: BatchEngineeringWorkflowResult) -> str:
             f"<li>passed_count: <code>{result.passed_count}</code></li>",
             f"<li>review_required_count: <code>{result.review_required_count}</code></li>",
             f"<li>failed_count: <code>{result.failed_count}</code></li>",
+            f"<li>completeness_status: <code>{html.escape(result.completeness_status)}</code></li>",
+            f"<li>evidence_status: <code>{html.escape(result.evidence_status)}</code></li>",
+            f"<li>project_use_status: <code>{html.escape(result.project_use_status)}</code></li>",
+            f"<li>project_use: <code>{str(result.project_use).lower()}</code></li>",
             "<li>ml_ready_for_project_use: <code>false</code></li>",
             "</ul>",
             "</section>",
             "<section>",
             "<h2>Cases</h2>",
             "<table>",
-            "<thead><tr><th>Case</th><th>Status</th><th>Preflight</th><th>Report</th><th>Link</th></tr></thead>",
+            "<thead><tr><th>Case</th><th>Status</th><th>Preflight</th><th>Report</th>"
+            "<th>Project use status</th><th>Project use</th><th>Link</th></tr></thead>",
             "<tbody>",
-            *(rows or ["<tr><td colspan=\"5\">No cases found.</td></tr>"]),
+            *(rows or ["<tr><td colspan=\"7\">No cases found.</td></tr>"]),
             "</tbody>",
             "</table>",
             "</section>",
@@ -425,6 +455,10 @@ def _render_batch_readme(result: BatchEngineeringWorkflowResult) -> str:
         f"- failed_count: `{result.failed_count}`",
         f"- review_required_count: `{result.review_required_count}`",
         f"- failed_cases: `{', '.join(result.failed_cases) or 'none'}`",
+        f"- completeness_status: `{result.completeness_status}`",
+        f"- evidence_status: `{result.evidence_status}`",
+        f"- project_use_status: `{result.project_use_status}`",
+        f"- project_use: `{str(result.project_use).lower()}`",
         "",
         "## Recommendations",
         "",

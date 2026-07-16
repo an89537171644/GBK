@@ -1,150 +1,150 @@
-# Formula card: rectangular bending section
+# Карточка ULS-BEND-RECT-001: изгиб прямоугольного сечения
 
-`requires_engineer_review = true`
+```text
+requires_engineer_review = true
+evidence_status = needs_engineer_review
+project_use = false
+```
 
-## Normative link
+## Назначение карточки
 
-SP 63.13330.2018, clauses 8.1.8-8.1.9.
+Карточка связывает узкую реализацию версии 1 с участками provisional-
+профиля. Она не утверждает формулы, не заменяет текст СП и не
+разрешает проектное применение.
 
-This card contains MVP formulas for implementation after engineering review.
-It does not replace the source code document.
+| Поле | Значение |
+|---|---|
+| Нормативный профиль | `SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15` |
+| База доработки | K108, `086cd1c42dd8098b703e3880c2d9101f5ccf9635` |
+| Версия расчётной ветви | ULS-BEND-RECT-001 v1, одиночное армирование |
+| Артефакт источника | пользовательский скан СП 63.13330.2018 с Изменениями № 1 и № 2; SHA-256 `8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00` |
+| Статус источника | содержание указанного артефакта `CONFIRMED`; подлинность, юридический статус и актуальность после Изменения № 2 — `OPEN_QUESTION` |
+| Статус реализации | передана на инженерную проверку |
 
-## Scope
+Страница 2 артефакта подтверждает заявленные состав и даты Изменений № 1 и
+№ 2. Такой статус относится только к содержанию конкретного файла: он не
+утверждает формулы инженерно, не заменяет независимую проверку и не изменяет
+`project_use=false`.
 
-Rectangular reinforced concrete bending element without prestressing.
-Applicable in the MVP only for heavy concrete B15-B40.
+## Точная трассировка
 
-## Units
+| Операция | Источник | Статус | Влияние на архитектуру | Инженерная проверка |
+|---|---|---|---|---|
+| выбор метода и предпосылки | пп. 8.1.1, 8.1.4 | источник `CONFIRMED`; полнота машинного шлюза `OPEN_QUESTION` | предпосылки проверяются до расчётного ядра | обязательна |
+| рабочая высота и ориентация | пп. 3.5, 3.21; приложение А; рисунок 8.1 | источник `CONFIRMED`; однорядная геометрия `ASSUMPTION` | требуются локальные оси, растянутая грань и воспроизводимое `h0` | обязательна |
+| расчётное сопротивление бетона | п. 6.1.11, таблицы 6.8–6.9; `gamma_b1` — п. 6.1.12(a); PDF страницы 24–29 | содержание артефакта `CONFIRMED` для двух заявленных контекстов; полнота прочих факторов `OPEN_QUESTION` | централизованный контекст хранит `Rb_base`, `gamma_b1`, `Rb_effective` | обязательна |
+| свойства арматуры | пп. 6.2.7–6.2.8; таблицы 6.13–6.15; PDF страницы 35–37; п. 6.2.12 | содержание строк A400 390/340 `CONFIRMED`; инженерное утверждение и актуальность после Изменения № 2 не установлены | сопротивления разрешаются из provisional-профиля, без произвольного override | обязательна |
+| предельная деформация бетона | п. 6.1.20 | `CONFIRMED` только для принятой ветви | значение не является глобальной константой вне scope | обязательна |
+| предельная относительная высота сжатой зоны | пп. 8.1.5–8.1.6, формулы (8.1)–(8.2); PDF страницы 43–46 | источник и материальные строки в артефакте `CONFIRMED`; численные результаты требуют независимой проверки | результат хранит trace и контекст | обязательна |
+| высота сжатой зоны | п. 8.1.9, формула (8.5); PDF страницы 43–46 | `CONFIRMED` как содержание источника | сначала определяется диагностическое `x`, затем проверяется область | обязательна |
+| предельный момент и условие прочности | пп. 8.1.8–8.1.9, формулы (8.3)–(8.4); PDF страницы 43–46 | `CONFIRMED` как содержание источника; реализация инженерно не утверждена | численная способность формируется только при `0<x<=xi_R*h0` | обязательна |
+| превышение границы | п. 8.1.12; PDF страницы 43–46 | условный источник `CONFIRMED`; безусловная подстановка `REJECTED` | версия 1 возвращает `outside_applicability` | обязательна |
+| условие усилия трещинообразования | п. 8.1.3; PDF страницы 43–46 | содержание источника `CONFIRMED`; реализация отсутствует | итог полноты остаётся `incomplete` | обязательна |
 
-- b, h, h0, x, a_prime: mm
-- As, As_prime: mm2
-- Rb, Rs, Rsc, Es: MPa = N/mm2
-- M, Mult: N*mm
+## Область применимости версии 1
 
-## Inputs
+Все условия должны выполняться одновременно:
 
-- b: section width
-- h: section height
-- h0: effective depth
-- a_prime: compression reinforcement depth
-- Rb: concrete compression design resistance
-- Rs: tensile reinforcement design resistance
-- Rsc: compression reinforcement design resistance
-- Es: reinforcement modulus
-- As: tensile reinforcement area
-- As_prime: compression reinforcement area
-- M: design bending moment
+- обычное прямоугольное сечение без предварительного напряжения;
+- одноосный изгиб в плоскости симметрии, без продольной силы;
+- тяжёлый бетон B15–B40;
+- ненапрягаемая арматура A400 или A500 provisional-профиля;
+- один ряд растянутой арматуры и `As_prime=0`;
+- явно заданы `local_axes_id`, `moment_axis=local_z` и растянутая грань;
+- `M` передаётся как неотрицательный модуль после явного выбора грани;
+- `cover` означает расстояние от грани бетона до наружной поверхности хомута;
+- `h0` получено из заявленной геометрии, без произвольного override;
+- выбран один из двух поддержанных контекстов воздействий;
+- выполнены предпосылки п. 8.1.4;
+- выполняется `0<x<=xi_R*h0`.
 
-## Outputs
+Проектное сужение до A400/A500 и `As_prime=0`, а также машинная конвенция
+ориентации имеют статус `ASSUMPTION` до инженерного утверждения.
 
-- x: compression zone height
-- xi = x / h0
-- xi_R: limiting relative compression zone height
-- Mult: ultimate bending moment
-- utilization = M / Mult
-- status: pass, fail, or review_or_fail
-- warnings
-- intermediate_values for report protocol
+## Единицы и входная семантика
 
-## MVP formulas
+- геометрия: мм;
+- площади арматуры: мм²;
+- сопротивления и модуль упругости: МПа = Н/мм²;
+- моменты: Н·мм;
+- деформации и относительные высоты: безразмерные;
+- `short`: сочетание содержит кратковременные воздействия,
+  `gamma_b1=1,0`;
+- `long`: только постоянные и длительные воздействия,
+  `gamma_b1=0,9`.
 
-Concrete ultimate strain for MVP:
+Полнота остальных коэффициентов условий работы имеет статус
+`OPEN_QUESTION`. Модуль не формирует сочетания и не определяет знак момента за
+пользователя.
+
+## Транскрипция выражений для сверки реализации
+
+Ниже сохранена существовавшая в проекте транскрипция для сопоставления кода с
+пп. 8.1.5–8.1.9. Она приведена исключительно для трассировки и не получает
+статуса утверждённой настоящей карточкой.
 
 ```text
 eb2 = 0.0035
-```
-
-Limiting relative compression zone height:
-
-```text
 xi_R = 0.8 / (1 + (Rs / Es) / eb2)
-```
-
-Compression zone height:
-
-```text
-x = (Rs * As - Rsc * As_prime) / (Rb * b)
-```
-
-If As_prime = 0:
-
-```text
-x = Rs * As / (Rb * b)
-```
-
-Relative compression zone height:
-
-```text
+x = Rs * As / (Rb_effective * b)
 xi = x / h0
+M_ult = Rb_effective * b * x * (h0 - 0.5 * x)
+utilization = M / M_ult
 ```
 
-Ultimate bending moment:
+Значения `0,8`, `0,0035` и `0,5` подтверждены только в контексте источников и
+условий, перечисленных выше; переносить их в иные ветви запрещено без новой
+трассировки и инженерной проверки.
 
-```text
-Mult = Rb * b * x * (h0 - 0.5 * x) + Rsc * As_prime * (h0 - a_prime)
-```
+## Порядок безопасного вычисления
 
-## Status rule
+1. Проверить единицы, конечность, профили, ориентацию и область применимости.
+2. Получить `Rb_base`, `gamma_b1`, `Rb_effective`, `Rs`, `Rsc` и `Es` из
+   единого material/load context.
+3. Определить диагностические `xi_R`, `x`, `xi`.
+4. До расчёта способности проверить `As_prime=0` и
+   `0<x<=xi_R*h0`.
+5. Только внутри подтверждённой границы определить `M_ult`, utilization и
+   исход узкого сравнения.
+6. Сформировать раздельные расчётный, доказательный, полнотный и проектный
+   статусы.
 
-```text
-status = pass if M <= Mult and x <= xi_R * h0
-status = fail if M > Mult and x <= xi_R * h0
-status = review_or_fail if x > xi_R * h0
-```
+## Выходной контракт
 
-If x > xi_R * h0, the MVP must return a warning. The implementation must not
-automatically substitute x = xi_R * h0 without a separate flag and explanation.
+| Ситуация | Расчётный исход | `M_ult` / utilization | Полнота и проектное применение |
+|---|---|---|---|
+| `As_prime>0` | `outside_applicability` | отсутствуют | `incomplete`; `project_use=false` |
+| `x<=0` | `outside_applicability` | отсутствуют | `incomplete`; `project_use=false` |
+| `x>xi_R*h0` | `outside_applicability` | отсутствуют | `incomplete`; `project_use=false` |
+| `M<=M_ult` внутри scope | `pass` | публикуются | п. 8.1.3 остаётся `not_checked`; `project_use=false` |
+| `M>M_ult` внутри scope | `fail` | публикуются | `incomplete`; `project_use=false` |
 
-## Draft golden case 1: pass
+Автоматическая замена `x` на `xi_R*h0` не выполняется. Диагностические `x`,
+`xi`, `xi_R`, контекст материала и причина остановки должны сохраняться.
 
-`requires_engineer_review = true`
+## Проверочные случаи
 
-- b = 300 mm
-- h = 500 mm
-- h0 = 450 mm
-- a_prime = 40 mm
-- concrete B25
-- rebar A500
-- Rb = 14.5 MPa
-- Rs = 435 MPa
-- Rsc = 400 MPa
-- Es = 200000 MPa
-- As = 3D20 = 942.48 mm2
-- As_prime = 0
-- M = 150000000 N*mm
+Обязательная регрессионная матрица — BMR-01—BMR-05 из
+`docs/step3_uls_bend_rect_remediation.md`:
 
-Expected draft values:
+- BMR-01 — `pass` узкого сравнения;
+- BMR-02 — `fail` после актуализации A400;
+- BMR-03 — `fail` при `gamma_b1=0,9`;
+- BMR-04 — `outside_applicability` для `As_prime>0`;
+- BMR-05 — `outside_applicability` без опубликованной способности.
 
-- x ~= 94.25 mm
-- xi ~= 0.209
-- xi_R ~= 0.493
-- Mult ~= 165.17 kN*m
-- utilization ~= 0.908
-- status = pass
+Ожидаемые числа имеют статус `ASSUMPTION` до независимой подписи. Успешные
+автоматизированные тесты сами по себе не утверждают формулы.
 
-## Draft golden case 2: fail
+## Незакрытые вопросы
 
-`requires_engineer_review = true`
+1. Полный шлюз предпосылок п. 8.1.4.
+2. Условие п. 8.1.3.
+3. Полный набор применимых `gamma_bi`.
+4. Двойное и многорядное армирование.
+5. Условная ветвь п. 8.1.12.
+6. Независимые подписанные расчёты, реальные внешние сопоставления и
+   утверждённая политика допусков.
 
-- b = 300 mm
-- h = 500 mm
-- h0 = 450 mm
-- concrete B25
-- rebar A500
-- As = 2D16 = 402.12 mm2
-- As_prime = 0
-- M = 150000000 N*mm
-
-Expected draft values:
-
-- x ~= 40.21 mm
-- Mult ~= 75.20 kN*m
-- utilization ~= 1.995
-- status = fail
-
-## Implementation notes
-
-- Validate positive dimensions, resistances, and reinforcement areas.
-- Return intermediate values for the calculation protocol.
-- Do not accept the result as final until the formula card and golden cases are
-  reviewed by the engineering reviewer.
+До закрытия этих вопросов карточка остаётся на инженерной проверке,
+`requires_engineer_review=true`, `project_use=false`.

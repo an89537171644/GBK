@@ -1,6 +1,8 @@
 import csv
 import json
 
+import pytest
+
 from sp63_core.cli import main
 from sp63_core.materials import build_material_verification_rows
 from sp63_core.validation import ExternalComparisonRow, export_external_comparison_csv
@@ -21,11 +23,23 @@ def section_args() -> list[str]:
     ]
 
 
+def orientation_args() -> list[str]:
+    return [
+        "--local-axes-id",
+        "cli-test-local-axes",
+        "--moment-axis",
+        "local_z",
+        "--tension-face",
+        "local_y_min",
+    ]
+
+
 def test_cli_bending_command_text_output(capsys):
     exit_code = main(
         [
             "bending",
             *section_args(),
+            *orientation_args(),
             "--concrete",
             "B25",
             "--rebar",
@@ -43,6 +57,173 @@ def test_cli_bending_command_text_output(capsys):
     assert exit_code == 0
     assert "Bending check" in captured.out
     assert "status: pass" in captured.out
+    assert "completeness_status: incomplete" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+    assert "requires_engineer_review: true" in captured.out
+    assert "material_source_clauses:" in captured.out
+    assert "layout_applicability_status: not_checked_area_only" in captured.out
+    assert "manual_applicability_confirmation_required: true" in captured.out
+
+
+def test_cli_bmr_03_json_exposes_resolved_long_term_context(capsys):
+    exit_code = main(
+        [
+            "bending",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--as-area",
+            "942.4777960769379",
+            "--moment",
+            "164000000",
+            "--load-duration",
+            "long",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["status"] == "fail"
+    assert payload["result"]["Rb_base"] == 14.5
+    assert payload["result"]["gamma_b1"] == 0.9
+    assert payload["result"]["Rb_effective"] == 13.05
+    assert payload["result"]["Mult"] == pytest.approx(163_023_639.01)
+    assert payload["result"]["project_use"] is False
+    assert payload["result"]["requires_engineer_review"] is True
+
+
+def test_cli_bmr_05_omits_capacity_outside_applicability(capsys):
+    exit_code = main(
+        [
+            "bending",
+            "--b",
+            "300",
+            "--h",
+            "500",
+            "--cover",
+            "29.5",
+            "--stirrup-diameter",
+            "8",
+            "--main-bar-diameter",
+            "25",
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--as-area",
+            "2454.369260617026",
+            "--moment",
+            "250000000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["status"] == "outside_applicability"
+    assert payload["result"]["capacity_applicable"] is False
+    assert "Mult" not in payload["result"]
+    assert "utilization" not in payload["result"]
+
+
+def test_cli_bending_never_emits_infinity_for_large_finite_input(capsys):
+    exit_code = main(
+        [
+            "bending",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--as-area",
+            "1e308",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    output = capsys.readouterr().out
+    payload = json.loads(output, parse_constant=lambda value: pytest.fail(value))
+    assert exit_code == 0
+    assert payload["status"] == "outside_applicability"
+    assert payload["result"]["x"] is None
+    assert "Mult" not in payload["result"]
+
+
+def test_cli_bending_unsupported_material_profile_is_fail_closed(capsys):
+    exit_code = main(
+        [
+            "bending",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A240",
+            "--as-area",
+            "942.48",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["status"] == "outside_applicability"
+    assert payload["result"]["xi_R"] is None
+    assert payload["result"]["normative_profile_id"] is None
+    assert payload["result"]["layout_applicability_status"] == "not_checked_area_only"
+    assert payload["result"]["manual_applicability_confirmation_required"] is True
+    assert payload["result"]["project_use_status"] == "prohibited"
+    assert payload["result"]["project_use"] is False
+    assert "Mult" not in payload["result"]
+
+
+def test_cli_bending_text_handles_unavailable_unsupported_profile_values(capsys):
+    exit_code = main(
+        [
+            "bending",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A240",
+            "--as-area",
+            "942.48",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+        ]
+    )
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "status: outside_applicability" in output
+    assert "x: not available" in output
+    assert "xi: not available" in output
+    assert "xi_R: not available" in output
+    assert "M_ult not available: outside applicability" in output
+    assert "project_use_status: prohibited" in output
+    assert "project_use: false" in output
+    assert "requires_engineer_review: true" in output
 
 
 def test_cli_shear_command_text_output(capsys):
@@ -218,6 +399,7 @@ def test_cli_select_longitudinal_command_text_output(capsys):
         [
             "select-longitudinal",
             *section_args(),
+            *orientation_args(),
             "--concrete",
             "B25",
             "--rebar",
@@ -235,6 +417,63 @@ def test_cli_select_longitudinal_command_text_output(capsys):
     assert "status: pass" in captured.out
     assert "constructive" in captured.out
     assert "reinforcement ratio" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+
+
+def test_cli_select_longitudinal_json_exposes_top_level_and_option_safety(capsys):
+    exit_code = main(
+        [
+            "select-longitudinal",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A500",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
+    assert payload["requires_engineer_review"] is True
+    assert payload["result"]
+    assert all(option["project_use_status"] == "prohibited" for option in payload["result"])
+    assert all(option["project_use"] is False for option in payload["result"])
+
+
+def test_cli_select_longitudinal_marks_unsupported_profile_outside_applicability(capsys):
+    exit_code = main(
+        [
+            "select-longitudinal",
+            *section_args(),
+            *orientation_args(),
+            "--concrete",
+            "B25",
+            "--rebar",
+            "A240",
+            "--moment",
+            "150000000",
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["status"] == "outside_applicability"
+    assert payload["result"] == []
+    assert payload["project_use"] is False
+    assert any("unsupported ULS longitudinal rebar" in item for item in payload["warnings"])
 
 
 def test_cli_select_transverse_command_text_output(capsys):
@@ -257,6 +496,36 @@ def test_cli_select_transverse_command_text_output(capsys):
     assert "status: pass" in captured.out
     assert "constructive" in captured.out
     assert "max_spacing" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+
+
+def test_cli_select_transverse_json_preserves_candidate_geometry_and_safety(capsys):
+    exit_code = main(
+        [
+            "select-transverse",
+            *section_args(),
+            "--concrete",
+            "B25",
+            "--stirrup-rebar",
+            "A240",
+            "--Q",
+            "80000",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["project_use"] is False
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["result"]
+    assert all(
+        float(option["geometry_stirrup_diameter"])
+        == float(option["scheme"].split("/")[0][1:])
+        for option in payload["result"]
+    )
+    assert all(option["project_use"] is False for option in payload["result"])
 
 
 def test_cli_design_rectangular_command_text_output(capsys):
@@ -281,6 +550,7 @@ def test_cli_design_rectangular_command_text_output(capsys):
             "150000000",
             "--shear",
             "80000",
+            *orientation_args(),
             "--load-duration",
             "short",
         ]
@@ -293,6 +563,10 @@ def test_cli_design_rectangular_command_text_output(capsys):
     assert "strength_status: pass" in captured.out
     assert "serviceability_status: not_checked" in captured.out
     assert "overall_status: pass" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+    assert "requires_engineer_review: true" in captured.out
     assert "constructive" in captured.out
     assert "max_spacing" in captured.out
     assert "reinforcement ratio" in captured.out
@@ -320,6 +594,9 @@ def test_cli_design_rectangular_with_cracks(capsys):
             "150000000",
             "--shear",
             "80000",
+            *orientation_args(),
+            "--load-duration",
+            "short",
             "--check-cracks",
             "--moment-ser",
             "30000000",
@@ -354,6 +631,9 @@ def test_cli_design_rectangular_with_crack_width(capsys):
             "150000000",
             "--shear",
             "80000",
+            *orientation_args(),
+            "--load-duration",
+            "short",
             "--check-crack-width",
             "--moment-ser",
             "30000000",
@@ -390,6 +670,9 @@ def test_cli_design_rectangular_with_deflection(capsys):
             "150000000",
             "--shear",
             "80000",
+            *orientation_args(),
+            "--load-duration",
+            "short",
             "--check-deflection",
             "--moment-ser",
             "30000000",
@@ -426,6 +709,7 @@ def test_cli_design_rectangular_json_output(capsys):
             "150000000",
             "--shear",
             "80000",
+            *orientation_args(),
             "--load-duration",
             "short",
             "--json",
@@ -441,6 +725,10 @@ def test_cli_design_rectangular_json_output(capsys):
     assert data["result"]["strength_status"] == "pass"
     assert data["result"]["serviceability_status"] == "not_checked"
     assert data["result"]["overall_status"] == "pass"
+    assert data["result"]["evidence_status"] == "needs_engineer_review"
+    assert data["result"]["project_use_status"] == "prohibited"
+    assert data["result"]["project_use"] is False
+    assert data["result"]["requires_engineer_review"] is True
     assert data["result"]["protocol_strength_status"] == "pass"
     assert data["result"]["protocol_serviceability_status"] == "not_checked"
     assert data["result"]["protocol_overall_status"] == "pass"
@@ -461,6 +749,8 @@ def test_cli_generate_dataset_command(tmp_path, capsys):
             "2",
             "--output",
             str(output_path),
+            "--load-duration",
+            "short",
         ]
     )
 
@@ -468,6 +758,11 @@ def test_cli_generate_dataset_command(tmp_path, capsys):
     assert exit_code == 0
     assert output_path.exists()
     assert "rows: 2" in captured.out
+    assert "dataset_version: 0.3" in captured.out
+    assert "completeness_status: incomplete" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
 
 
 def test_cli_generate_dataset_split_command(tmp_path, capsys):
@@ -485,6 +780,8 @@ def test_cli_generate_dataset_split_command(tmp_path, capsys):
             "dataset_test",
             "--report",
             str(report_path),
+            "--load-duration",
+            "short",
         ]
     )
 
@@ -515,6 +812,8 @@ def test_cli_generate_dataset_split_group_command(tmp_path, capsys):
             "dataset_group",
             "--report",
             str(report_path),
+            "--load-duration",
+            "short",
         ]
     )
 
@@ -528,6 +827,141 @@ def test_cli_generate_dataset_split_group_command(tmp_path, capsys):
     assert "unsafe_rows_count" in captured.out
 
 
+def test_cli_generate_dataset_json_exposes_v03_provenance(tmp_path, capsys):
+    output_path = tmp_path / "dataset_v003.csv"
+
+    exit_code = main(
+        [
+            "generate-dataset",
+            "--limit",
+            "2",
+            "--output",
+            str(output_path),
+            "--load-duration",
+            "short",
+            "--json",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["dataset_version"] == "0.3"
+    assert payload["load_duration"] == "short"
+    assert payload["local_axes_id"] == "synthetic-dataset-local-axes"
+    assert payload["moment_axis"] == "local_z"
+    assert payload["tension_face"] == "local_y_min"
+    assert payload["completeness_status"] == "incomplete"
+    assert payload["evidence_status"] == "needs_engineer_review"
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
+
+
+def test_cli_generate_dataset_rejects_long_until_shear_context(tmp_path):
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "generate-dataset",
+                "--limit",
+                "1",
+                "--output",
+                str(tmp_path / "long.csv"),
+                "--load-duration",
+                "long",
+            ]
+        )
+
+
+def test_cli_dataset_loader_rejects_legacy_dataset_version(tmp_path):
+    path = tmp_path / "legacy.csv"
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--limit",
+                "1",
+                "--output",
+                str(path),
+                "--load-duration",
+                "short",
+            ]
+        )
+        == 0
+    )
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        fieldnames = list(reader.fieldnames or ())
+        rows = list(reader)
+    rows[0]["dataset_version"] = "0.2"
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    with pytest.raises(ValueError, match="unsupported dataset_version"):
+        main(["validate", "--dataset", str(path), "--json"])
+
+
+def test_cli_dataset_loader_rejects_long_duration_row(tmp_path):
+    path = tmp_path / "long.csv"
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--limit",
+                "1",
+                "--output",
+                str(path),
+                "--load-duration",
+                "short",
+            ]
+        )
+        == 0
+    )
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        fieldnames = list(reader.fieldnames or ())
+        rows = list(reader)
+    rows[0]["load_duration"] = "long"
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    with pytest.raises(ValueError, match="rows must use load_duration='short'"):
+        main(["validate", "--dataset", str(path), "--json"])
+
+
+def test_cli_dataset_loader_rejects_missing_orientation_column(tmp_path):
+    path = tmp_path / "missing_orientation.csv"
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--limit",
+                "1",
+                "--output",
+                str(path),
+                "--load-duration",
+                "short",
+            ]
+        )
+        == 0
+    )
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        fieldnames = [
+            field for field in (reader.fieldnames or ()) if field != "local_axes_id"
+        ]
+        rows = list(reader)
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    with pytest.raises(ValueError, match="local_axes_id"):
+        main(["validate", "--dataset", str(path), "--json"])
+
+
 def test_cli_validate_golden(capsys):
     exit_code = main(["validate", "--golden"])
 
@@ -535,7 +969,19 @@ def test_cli_validate_golden(capsys):
     assert exit_code == 0
     assert "Validation" in captured.out
     assert "status: pass" in captured.out
-    assert "golden:" in captured.out
+    assert "completeness_status: incomplete" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+    assert "requires_engineer_review: true" in captured.out
+    assert "golden: 12/12 passed" in captured.out
+    assert "BMR-01: regression_match=pass" in captured.out
+    assert "expected_calculation_status=pass" in captured.out
+    assert "BMR-02: regression_match=pass; expected_calculation_status=fail" in captured.out
+    assert (
+        "BMR-05: regression_match=pass; "
+        "expected_calculation_status=outside_applicability"
+    ) in captured.out
 
 
 def test_cli_validate_generated_dataset_json(capsys):
@@ -546,6 +992,11 @@ def test_cli_validate_generated_dataset_json(capsys):
     assert exit_code == 0
     assert data["command"] == "validate"
     assert data["status"] == "pass"
+    assert data["completeness_status"] == "incomplete"
+    assert data["evidence_status"] == "needs_engineer_review"
+    assert data["project_use_status"] == "prohibited"
+    assert data["project_use"] is False
+    assert data["requires_engineer_review"] is True
     assert data["dataset"]["total_rows"] == 10
     assert data["dataset"]["group_leakage_count"] == 0
 
@@ -574,6 +1025,8 @@ def test_cli_validate_external_template_and_acceptance_report(tmp_path, capsys):
     assert external_template.exists()
     assert acceptance_report.exists()
     assert data["acceptance"]["status"] == "warning"
+    assert data["acceptance"]["golden_case_count"] == 12
+    assert data["acceptance"]["golden_passed_count"] == 12
     assert data["acceptance_report"] == str(acceptance_report)
 
 
@@ -930,11 +1383,23 @@ def test_cli_train_baseline_command(tmp_path, capsys):
         in captured.out
     )
     assert "ml_quality_status" in captured.out
+    assert "completeness_status: incomplete" in captured.out
+    assert "evidence_status: needs_engineer_review" in captured.out
+    assert "project_use_status: prohibited" in captured.out
+    assert "project_use: false" in captured.out
+    assert "ml_ready_for_project_use: false" in captured.out
+    assert "requires_engineer_review: true" in captured.out
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert "safety_metrics" in metrics
     assert "quality_gate" in metrics
     assert "unsafe_prediction_rate" in metrics["safety_metrics"]
+    assert metrics["completeness_status"] == "incomplete"
+    assert metrics["evidence_status"] == "needs_engineer_review"
+    assert metrics["project_use_status"] == "prohibited"
+    assert metrics["project_use"] is False
+    assert metrics["ml_ready_for_project_use"] is False
+    assert metrics["requires_engineer_review"] is True
     if metrics["quality_gate"]["status"] != "pass":
         assert "model remains sandbox-only" in captured.out
 
@@ -977,12 +1442,21 @@ def _filled_external_row(scad_As: float | None = 101.0) -> ExternalComparisonRow
         h=500,
         concrete_class="B25",
         rebar_class="A500",
+        local_axes_id="cli-external-case-000001-local-axes",
+        moment_axis="local_z",
+        tension_face="local_y_min",
+        load_duration="short",
         M=150_000_000,
         Q=80_000,
         program_As=100.0,
         program_stirrups="D8/200, 2 legs",
         program_Mult=100.0,
         program_Qult=100.0,
+        completeness_status="incomplete",
+        evidence_status="needs_engineer_review",
+        project_use_status="prohibited",
+        project_use=False,
+        requires_engineer_review=True,
         scad_As=scad_As,
         scad_Mult=102.0,
         scad_Qult=103.0,

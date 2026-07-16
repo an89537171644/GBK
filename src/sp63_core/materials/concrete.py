@@ -31,7 +31,7 @@ CONCRETE_CATALOG: dict[str, Concrete] = {
         Rb=8.5,
         Rbt=0.75,
         Rbser=11.0,
-        Rbtser=1.15,
+        Rbtser=1.10,
         Eb=24_000,
     ),
     "B20": Concrete(

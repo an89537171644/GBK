@@ -2,12 +2,15 @@ import csv
 import json
 from pathlib import Path
 
+import pytest
+
 from sp63_core.cli import main
 from sp63_core.validation import (
     EXTERNAL_VALIDATION_COLUMNS,
     EXTERNAL_VALUES_REQUIRED_WARNING,
     ExternalValidationTolerance,
     build_external_validation_summary,
+    load_external_validation_csv,
 )
 
 TEMPLATE_PATH = Path("docs/validation/templates/external_validation_cases_template.csv")
@@ -74,6 +77,55 @@ def test_external_validation_summary_passes_for_accepted_rows():
     assert summary.max_crack_width_delta_mm == 0.001
     assert summary.max_deflection_delta_mm == 0.01
     assert summary.requires_engineer_review is True
+    assert summary.completeness_status == "incomplete"
+    assert summary.evidence_status == "needs_engineer_review"
+    assert summary.project_use_status == "prohibited"
+    assert summary.project_use is False
+
+
+def test_external_validation_summary_fails_closed_for_missing_provenance():
+    row = _accepted_row()
+    row.pop("local_axes_id")
+
+    summary = build_external_validation_summary((row,))
+
+    assert summary.status == "fail"
+    assert summary.invalid_provenance_count == 1
+    assert "calculation provenance" in " ".join(summary.warnings)
+
+
+def test_external_validation_summary_fails_closed_for_long_duration():
+    row = {**_accepted_row(), "load_duration": "long"}
+
+    summary = build_external_validation_summary((row,))
+
+    assert summary.status == "fail"
+    assert summary.invalid_provenance_count == 1
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "message"),
+    (
+        ("local_axes_id", "", "missing provenance fields: local_axes_id"),
+        ("moment_axis", "global_y", "moment_axis must be 'local_z'"),
+        ("load_duration", "long", "load_duration must be 'short'"),
+        ("project_use", "true", "project_use must be false"),
+    ),
+)
+def test_external_validation_loader_rejects_invalid_provenance(
+    tmp_path,
+    field_name,
+    invalid_value,
+    message,
+):
+    csv_path = tmp_path / f"invalid_{field_name}.csv"
+    _write_external_rows(
+        csv_path,
+        [{**_accepted_row(), field_name: invalid_value}],
+    )
+
+    with pytest.raises(ValueError, match=message):
+        load_external_validation_csv(csv_path)
 
 
 def test_external_validation_summary_fails_for_failed_rows():
@@ -239,6 +291,10 @@ def _accepted_row() -> dict[str, str]:
         "concrete_class": "B25",
         "main_rebar_class": "A500",
         "stirrup_rebar_class": "A240",
+        "local_axes_id": "external-case-01-local-axes",
+        "moment_axis": "local_z",
+        "tension_face": "local_y_min",
+        "load_duration": "short",
         "moment_nmm": "150000000",
         "shear_n": "80000",
         "moment_service_nmm": "30000000",
@@ -266,5 +322,9 @@ def _accepted_row() -> dict[str, str]:
         "delta_deflection_mm": "0.01",
         "acceptance_status": "accepted",
         "engineer_comment": "synthetic public fixture",
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": "false",
         "requires_engineer_review": "true",
     }

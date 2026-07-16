@@ -1,3 +1,4 @@
+import csv
 import json
 from dataclasses import asdict
 
@@ -19,7 +20,7 @@ from sp63_core.validation.golden import GoldenCaseResult
 
 
 def test_build_external_comparison_rows_returns_program_fields():
-    cases = generate_dataset_cases(limit=3)
+    cases = generate_dataset_cases(limit=3, load_duration="short")
 
     rows = build_external_comparison_rows(cases, limit=2)
 
@@ -28,6 +29,15 @@ def test_build_external_comparison_rows_returns_program_fields():
     assert rows[0].program_stirrups == cases[0].stirrup_scheme
     assert rows[0].program_Mult == cases[0].Mult
     assert rows[0].program_Qult == cases[0].Qult
+    assert rows[0].local_axes_id == cases[0].local_axes_id
+    assert rows[0].moment_axis == cases[0].moment_axis
+    assert rows[0].tension_face == cases[0].tension_face
+    assert rows[0].load_duration == "short"
+    assert rows[0].completeness_status == "incomplete"
+    assert rows[0].evidence_status == "needs_engineer_review"
+    assert rows[0].project_use_status == "prohibited"
+    assert rows[0].project_use is False
+    assert rows[0].requires_engineer_review is True
     assert rows[0].scad_As is None
 
 
@@ -52,7 +62,9 @@ def test_compute_external_deltas_calculates_percent_deltas():
 
 
 def test_load_external_comparison_csv_roundtrip(tmp_path):
-    rows = build_external_comparison_rows(generate_dataset_cases(limit=2))
+    rows = build_external_comparison_rows(
+        generate_dataset_cases(limit=2, load_duration="short")
+    )
     path = export_external_comparison_csv(rows, tmp_path / "external.csv")
 
     loaded = load_external_comparison_csv(path)
@@ -77,6 +89,32 @@ def test_load_external_comparison_csv_parses_filled_values(tmp_path):
     assert loaded[0].scad_Mult == 102.0
     assert loaded[0].scad_Qult == 103.0
     assert loaded[0].accepted is True
+
+
+def test_load_external_comparison_csv_rejects_missing_provenance_column(tmp_path):
+    raw_row = asdict(_accepted_external_row())
+    raw_row.pop("local_axes_id")
+    path = tmp_path / "missing_provenance.csv"
+    _write_raw_external_comparison_row(path, raw_row)
+
+    with pytest.raises(ValueError, match="missing columns: local_axes_id"):
+        load_external_comparison_csv(path)
+
+
+def test_load_external_comparison_csv_rejects_long_duration(tmp_path):
+    raw_row = {**asdict(_accepted_external_row()), "load_duration": "long"}
+    path = tmp_path / "long_duration.csv"
+    _write_raw_external_comparison_row(path, raw_row)
+
+    with pytest.raises(ValueError, match="load_duration must be 'short'"):
+        load_external_comparison_csv(path)
+
+
+def test_external_comparison_row_rejects_unsafe_project_flag():
+    raw_row = {**asdict(_accepted_external_row()), "project_use": True}
+
+    with pytest.raises(ValueError, match="project_use must be false"):
+        ExternalComparisonRow(**raw_row)
 
 
 def test_external_row_has_completed_source():
@@ -125,6 +163,11 @@ def test_evaluate_acceptance_gates_passes_with_accepted_external_rows():
     assert report["external_accepted"] is True
     assert report["completed_external_rows"] == 1
     assert report["external_incomplete_count"] == 0
+    assert report["completeness_status"] == "incomplete"
+    assert report["evidence_status"] == "needs_engineer_review"
+    assert report["project_use_status"] == "prohibited"
+    assert report["project_use"] is False
+    assert report["requires_engineer_review"] is True
     assert report["warnings"] == ()
 
 
@@ -245,12 +288,21 @@ def _accepted_external_row(
         h=500,
         concrete_class="B25",
         rebar_class="A500",
+        local_axes_id="external-case-000001-local-axes",
+        moment_axis="local_z",
+        tension_face="local_y_min",
+        load_duration="short",
         M=150_000_000,
         Q=80_000,
         program_As=100.0,
         program_stirrups="D8/200, 2 legs",
         program_Mult=100.0,
         program_Qult=100.0,
+        completeness_status="incomplete",
+        evidence_status="needs_engineer_review",
+        project_use_status="prohibited",
+        project_use=False,
+        requires_engineer_review=True,
         scad_As=scad_As,
         scad_Mult=scad_Mult,
         scad_Qult=scad_Qult,
@@ -259,3 +311,10 @@ def _accepted_external_row(
         lira_Qult=lira_Qult,
         accepted=True,
     )
+
+
+def _write_raw_external_comparison_row(path, row: dict[str, object]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=tuple(row))
+        writer.writeheader()
+        writer.writerow(row)

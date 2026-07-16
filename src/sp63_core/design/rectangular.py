@@ -1,6 +1,7 @@
 """End-to-end rectangular reinforced concrete element design."""
 
 from dataclasses import dataclass
+from math import isfinite
 
 from sp63_core.checks import (
     CrackFormationResult,
@@ -16,8 +17,10 @@ from sp63_core.materials import (
     Concrete,
     LoadDuration,
     Rebar,
+    UnsupportedULSMaterialProfileError,
     get_concrete,
     get_rebar,
+    resolve_uls_material_context,
 )
 from sp63_core.rebar import (
     LongitudinalRebarOption,
@@ -28,7 +31,8 @@ from sp63_core.rebar import (
 from sp63_core.rebar.longitudinal import DEFAULT_BAR_COUNTS
 from sp63_core.rebar.transverse import DEFAULT_STIRRUP_LEGS, DEFAULT_STIRRUP_SPACINGS
 from sp63_core.report import CalculationProtocol, build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
+from sp63_core.sections.orientation import MomentAxis, TensionFace
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,10 @@ class RectangularDesignInput:
     stirrup_rebar_class: str
     M: float
     Q: float
-    load_duration: LoadDuration = "short"
+    local_axes_id: str
+    moment_axis: MomentAxis
+    tension_face: TensionFace
+    load_duration: LoadDuration
     main_bar_counts: tuple[int, ...] = DEFAULT_BAR_COUNTS
     main_bar_diameters: tuple[int, ...] = LONGITUDINAL_DIAMETERS
     stirrup_diameters: tuple[int, ...] = STIRRUP_DIAMETERS
@@ -62,6 +69,14 @@ class RectangularDesignInput:
     deflection_limit: float | None = None
     deflection_limit_ratio: float = 250.0
     deflection_loading_scheme: str = "simply_supported_uniform"
+
+    def bending_orientation(self) -> RectangularBendingOrientation:
+        """Build and validate the mandatory local-axis contract."""
+        return RectangularBendingOrientation(
+            local_axes_id=self.local_axes_id,
+            moment_axis=self.moment_axis,
+            tension_face=self.tension_face,
+        )
 
 
 @dataclass(frozen=True)
@@ -86,11 +101,19 @@ class RectangularDesignResult:
     overall_status: str
     status: str
     warnings: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
 def design_rectangular_element(input_data: RectangularDesignInput) -> RectangularDesignResult:
     """Design a rectangular element using existing draft selection and check modules."""
+    orientation = input_data.bending_orientation()
+    for name, value in (("M", input_data.M), ("Q", input_data.Q)):
+        if not isfinite(value) or value < 0:
+            raise ValueError(f"{name} must be a finite non-negative value")
     base_section = RectangularSection(
         b=input_data.b,
         h=input_data.h,
@@ -98,19 +121,51 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         stirrup_diameter=input_data.stirrup_diameter_for_geometry,
         main_bar_diameter=20,
     )
+    base_section.validate_geometry()
     concrete = get_concrete(input_data.concrete_class)
     longitudinal_rebar = get_rebar(input_data.longitudinal_rebar_class)
     stirrup_rebar = get_rebar(input_data.stirrup_rebar_class)
+
+    try:
+        resolve_uls_material_context(
+            concrete,
+            longitudinal_rebar,
+            input_data.load_duration,
+        )
+    except UnsupportedULSMaterialProfileError as exc:
+        return _outside_applicability_result(
+            input_data=input_data,
+            section=base_section,
+            concrete=concrete,
+            longitudinal_rebar=longitudinal_rebar,
+            stirrup_rebar=stirrup_rebar,
+            warning=f"{exc}; rectangular ULS design was not performed",
+        )
+
+    if input_data.load_duration == "long":
+        return _outside_applicability_result(
+            input_data=input_data,
+            section=base_section,
+            concrete=concrete,
+            longitudinal_rebar=longitudinal_rebar,
+            stirrup_rebar=stirrup_rebar,
+            warning=(
+                "long load context is verified for the isolated bending check only; "
+                "concrete working-condition factors are not propagated to shear, so "
+                "the end-to-end design is outside applicability"
+            ),
+        )
 
     longitudinal_options = select_longitudinal_rebar(
         section=base_section,
         concrete=concrete,
         rebar=longitudinal_rebar,
         M=input_data.M,
+        orientation=orientation,
+        load_duration=input_data.load_duration,
         bar_counts=input_data.main_bar_counts,
         diameters=input_data.main_bar_diameters,
         max_results=input_data.max_longitudinal_options,
-        load_duration=input_data.load_duration,
         min_clear_spacing=input_data.min_clear_spacing,
     )
     if not longitudinal_options:
@@ -136,12 +191,42 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         )
 
     selected_longitudinal = longitudinal_options[0]
+    geometry_stirrup_diameter = input_data.stirrup_diameter_for_geometry
+    geometry_consistent_stirrup_diameters = tuple(
+        diameter
+        for diameter in input_data.stirrup_diameters
+        if float(diameter) == float(geometry_stirrup_diameter)
+    )
+    if not geometry_consistent_stirrup_diameters:
+        return RectangularDesignResult(
+            input_data=input_data,
+            section=selected_longitudinal.section,
+            concrete=concrete,
+            longitudinal_rebar=longitudinal_rebar,
+            stirrup_rebar=stirrup_rebar,
+            longitudinal_options=longitudinal_options,
+            selected_longitudinal=selected_longitudinal,
+            transverse_options=(),
+            selected_transverse=None,
+            crack_formation=None,
+            crack_width=None,
+            deflection=None,
+            protocol=None,
+            strength_status="outside_applicability",
+            serviceability_status="not_checked",
+            overall_status="outside_applicability",
+            status="outside_applicability",
+            warnings=(
+                "no transverse candidate matches stirrup_diameter_for_geometry; "
+                "h0 cannot be kept consistent",
+            ),
+        )
     transverse_options = select_transverse_rebar(
         section=selected_longitudinal.section,
         concrete=concrete,
         stirrup_rebar=stirrup_rebar,
         Q=input_data.Q,
-        diameters=input_data.stirrup_diameters,
+        diameters=geometry_consistent_stirrup_diameters,
         legs_options=input_data.stirrup_legs_options,
         spacings=input_data.stirrup_spacings,
         max_results=input_data.max_transverse_options,
@@ -149,7 +234,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
     if not transverse_options:
         return RectangularDesignResult(
             input_data=input_data,
-            section=base_section,
+            section=selected_longitudinal.section,
             concrete=concrete,
             longitudinal_rebar=longitudinal_rebar,
             stirrup_rebar=stirrup_rebar,
@@ -214,6 +299,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
     longitudinal_constructive_values = selected_longitudinal.constructive.intermediate_values
     constructive_values = selected_transverse.constructive.intermediate_values
     shear_values = selected_transverse.shear.intermediate_values
+    bending_values = selected_longitudinal.bending.intermediate_values
     checks = {
         "bending": selected_longitudinal.bending,
         "shear": selected_transverse.shear,
@@ -245,18 +331,34 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             "deflection_limit_ratio": input_data.deflection_limit_ratio,
             "deflection_loading_scheme": input_data.deflection_loading_scheme,
             "load_duration": input_data.load_duration,
+            "local_axes_id": input_data.local_axes_id,
+            "moment_axis": input_data.moment_axis,
+            "tension_face": input_data.tension_face,
+            "moment_value_semantics": "non_negative_magnitude",
         },
         materials={
             "concrete_class": concrete.class_name,
             "longitudinal_rebar_class": longitudinal_rebar.class_name,
             "stirrup_rebar_class": stirrup_rebar.class_name,
+            "normative_profile_id": bending_values["normative_profile_id"],
+            "load_combination": bending_values["load_combination"],
+            "Rb_base": bending_values["Rb_base"],
+            "gamma_b1": bending_values["gamma_b1"],
+            "Rb_effective": bending_values["Rb_effective"],
+            "Rsc": bending_values["Rsc"],
         },
         geometry={
             "b": input_data.b,
             "h": input_data.h,
             "h0": selected_longitudinal.section.effective_depth(),
             "cover": input_data.cover,
+            "cover_reference": bending_values["cover_reference"],
+            "h0_source": bending_values["h0_source"],
             "stirrup_diameter_for_geometry": input_data.stirrup_diameter_for_geometry,
+            "local_axes_id": input_data.local_axes_id,
+            "moment_axis": input_data.moment_axis,
+            "tension_face": input_data.tension_face,
+            "compression_face": orientation.compression_face,
         },
         reinforcement={
             "main": selected_longitudinal.scheme,
@@ -302,7 +404,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
 
     return RectangularDesignResult(
         input_data=input_data,
-        section=base_section,
+        section=selected_longitudinal.section,
         concrete=concrete,
         longitudinal_rebar=longitudinal_rebar,
         stirrup_rebar=stirrup_rebar,
@@ -319,4 +421,36 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         overall_status=overall_status,
         status=status,
         warnings=tuple(warnings),
+    )
+
+
+def _outside_applicability_result(
+    *,
+    input_data: RectangularDesignInput,
+    section: RectangularSection,
+    concrete: Concrete,
+    longitudinal_rebar: Rebar,
+    stirrup_rebar: Rebar,
+    warning: str,
+) -> RectangularDesignResult:
+    """Build a fail-closed design result before any candidate enumeration."""
+    return RectangularDesignResult(
+        input_data=input_data,
+        section=section,
+        concrete=concrete,
+        longitudinal_rebar=longitudinal_rebar,
+        stirrup_rebar=stirrup_rebar,
+        longitudinal_options=(),
+        selected_longitudinal=None,
+        transverse_options=(),
+        selected_transverse=None,
+        crack_formation=None,
+        crack_width=None,
+        deflection=None,
+        protocol=None,
+        strength_status="outside_applicability",
+        serviceability_status="not_checked",
+        overall_status="outside_applicability",
+        status="outside_applicability",
+        warnings=(warning,),
     )

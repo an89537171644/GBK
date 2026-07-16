@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
 import shutil
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
 
 from sp63_core.validation.external_report import (
     ExternalValidationSummary,
     build_external_validation_summary,
+    load_external_validation_csv,
 )
 
 EXTERNAL_EVIDENCE_WARNING = (
@@ -170,12 +169,12 @@ def _build_summary(
     if not csv_path.exists():
         errors.append(f"external validation CSV missing: {csv_path}")
         return build_external_validation_summary((), strict_mode=strict_mode)
-    return build_external_validation_summary(_load_csv_rows(csv_path), strict_mode=strict_mode)
-
-
-def _load_csv_rows(path: Path) -> tuple[dict[str, Any], ...]:
-    with path.open("r", encoding="utf-8-sig", newline="") as csv_file:
-        return tuple(csv.DictReader(csv_file))
+    try:
+        rows = load_external_validation_csv(csv_path)
+    except (OSError, ValueError) as exc:
+        errors.append(f"external validation CSV cannot be read: {exc}")
+        return build_external_validation_summary((), strict_mode=strict_mode)
+    return build_external_validation_summary(rows, strict_mode=strict_mode)
 
 
 def _package_status(

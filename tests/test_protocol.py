@@ -3,7 +3,24 @@ import pytest
 from sp63_core.checks import check_bending_rectangular, check_shear_rectangular
 from sp63_core.materials import area_by_diameter, get_concrete, get_rebar
 from sp63_core.report import build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
+
+ORIENTATION = RectangularBendingOrientation(
+    local_axes_id="protocol-test-local-axes",
+    moment_axis="local_z",
+    tension_face="local_y_min",
+)
+
+
+def _bending(section, concrete, rebar, **kwargs):
+    return check_bending_rectangular(
+        section,
+        concrete,
+        rebar,
+        orientation=ORIENTATION,
+        load_duration="short",
+        **kwargs,
+    )
 
 
 def mvp_section() -> RectangularSection:
@@ -31,7 +48,7 @@ def test_build_calculation_protocol_for_passing_scheme():
     concrete = get_concrete("B25")
     rebar = get_rebar("A500")
     stirrup_rebar = get_rebar("A240")
-    bending = check_bending_rectangular(section, concrete, rebar, As=942.48, M=150_000_000)
+    bending = _bending(section, concrete, rebar, As=942.48, M=150_000_000)
     shear = check_shear_rectangular(
         section,
         concrete,
@@ -63,6 +80,9 @@ def test_build_calculation_protocol_for_passing_scheme():
     assert protocol_dict["overall_status"] == "pass"
     assert protocol_dict["status"] == "pass"
     assert protocol.requires_engineer_review is True
+    assert protocol.completeness_status == "incomplete"
+    assert protocol.evidence_status == "needs_engineer_review"
+    assert protocol.project_use is False
 
 
 def test_build_calculation_protocol_collects_fail_warnings():
@@ -70,7 +90,7 @@ def test_build_calculation_protocol_collects_fail_warnings():
     concrete = get_concrete("B25")
     rebar = get_rebar("A500")
     stirrup_rebar = get_rebar("A240")
-    bending = check_bending_rectangular(section, concrete, rebar, As=942.48, M=150_000_000)
+    bending = _bending(section, concrete, rebar, As=942.48, M=150_000_000)
     shear = check_shear_rectangular(
         section,
         concrete,
@@ -118,6 +138,41 @@ def test_protocol_strength_fail_sets_overall_fail():
     assert protocol.overall_status == "fail"
     assert protocol.status == "fail"
     assert protocol.warnings == ("shear: not enough stirrups",)
+
+
+def test_protocol_preserves_outside_applicability_status():
+    protocol = base_protocol(
+        bending={"status": "outside_applicability", "warnings": ("outside",)},
+        shear={"status": "pass", "warnings": ()},
+    )
+
+    assert protocol.checks["bending"]["status"] == "outside_applicability"
+    assert protocol.strength_status == "outside_applicability"
+    assert protocol.overall_status == "outside_applicability"
+    assert protocol.status == "outside_applicability"
+
+
+def test_protocol_contains_no_numeric_capacity_for_actual_overreinforced_result():
+    section = RectangularSection(
+        b=300,
+        h=500,
+        cover=29.5,
+        stirrup_diameter=8,
+        main_bar_diameter=25,
+    )
+    bending = _bending(
+        section,
+        get_concrete("B25"),
+        get_rebar("A500"),
+        As=5 * area_by_diameter(25),
+        M=250_000_000,
+    )
+    protocol = base_protocol(bending=bending)
+
+    assert protocol.checks["bending"]["status"] == "outside_applicability"
+    assert protocol.checks["bending"]["Mult"] is None
+    assert protocol.checks["bending"]["utilization"] is None
+    assert "Mult" not in protocol.checks["bending"]["intermediate_values"]
 
 
 def test_protocol_crack_formation_without_crack_width_needs_review():

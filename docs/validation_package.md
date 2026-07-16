@@ -46,7 +46,7 @@ checks:
 An existing CSV can be checked with:
 
 ```bash
-python -m sp63_core validate --dataset data/generated/dataset_v001.csv
+python -m sp63_core validate --dataset data/generated/dataset_v003.csv
 ```
 
 ## JSON Report

@@ -28,6 +28,10 @@ def build_dataset_report(
         "counts_by_strength_status": _counts(cases, "strength_status"),
         "counts_by_serviceability_status": _counts(cases, "serviceability_status"),
         "counts_by_overall_status": _counts(cases, "overall_status"),
+        "counts_by_completeness_status": _counts(cases, "completeness_status"),
+        "counts_by_evidence_status": _counts(cases, "evidence_status"),
+        "counts_by_project_use_status": _counts(cases, "project_use_status"),
+        "project_use_true_count": sum(1 for case in cases if case.project_use),
         "geometry_stirrup_mismatch_count": _geometry_stirrup_mismatch_count(cases),
         "duplicate_case_id_count": _duplicate_case_id_count(cases),
         "unsafe_rows_count": _unsafe_rows_count(cases),
@@ -109,6 +113,7 @@ def _is_unsafe(case: DatasetCase) -> bool:
         or case.strength_status != "pass"
         or case.serviceability_status != "pass"
         or case.overall_status != "pass"
+        or case.project_use is not False
         or case.bending_utilization > 1.0
         or case.shear_utilization > 1.0
         or case.main_rebar_constructive_status != "pass"

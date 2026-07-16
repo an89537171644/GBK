@@ -43,6 +43,11 @@ def train_baseline_models(
     """Train simple RandomForest baselines on deterministic dataset rows."""
     if not train_cases:
         raise ValueError("train_cases must not be empty")
+    if any(case.load_duration != "short" for case in train_cases):
+        raise ValueError(
+            "baseline training requires load_duration='short' until the "
+            "shear load-combination context is implemented"
+        )
 
     from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
@@ -91,6 +96,12 @@ def predict_baseline_targets(
     """Predict all trained targets for dataset cases."""
     if not cases:
         raise ValueError("cases must not be empty")
+    _validate_bundle_version(model_bundle)
+    if any(case.load_duration != "short" for case in cases):
+        raise ValueError(
+            "baseline prediction requires load_duration='short' until the "
+            "shear load-combination context is implemented"
+        )
 
     features, _ = build_feature_matrix(cases)
     matrix = _features_to_matrix(features, model_bundle.feature_columns)
@@ -120,7 +131,16 @@ def load_baseline_model_bundle(path: str | Path) -> BaselineModelBundle:
         loaded = pickle.load(input_file)
     if not isinstance(loaded, BaselineModelBundle):
         raise TypeError("pickle file does not contain a BaselineModelBundle")
+    _validate_bundle_version(loaded)
     return loaded
+
+
+def _validate_bundle_version(bundle: BaselineModelBundle) -> None:
+    if bundle.dataset_version != DATASET_VERSION:
+        raise ValueError(
+            f"baseline model dataset_version {bundle.dataset_version!r} is incompatible; "
+            f"expected {DATASET_VERSION!r}"
+        )
 
 
 def _features_to_matrix(

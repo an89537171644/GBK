@@ -14,6 +14,10 @@ def test_batch_design_reports_from_example_directory(tmp_path):
     result = build_batch_design_reports(input_paths=input_paths, output_dir=output_dir)
 
     assert result.requires_engineer_review is True
+    assert result.completeness_status == "incomplete"
+    assert result.evidence_status == "needs_engineer_review"
+    assert result.project_use_status == "prohibited"
+    assert result.project_use is False
     assert result.input_count == 3
     assert result.report_count == 3
     assert result.passed_count >= 1
@@ -24,9 +28,13 @@ def test_batch_design_reports_from_example_directory(tmp_path):
     assert (output_dir / "manifest.json").exists()
     index = json.loads((output_dir / "index.json").read_text(encoding="utf-8"))
     assert index["report_type"] == "batch_design_report_index"
+    assert index["project_use_status"] == "prohibited"
+    assert index["project_use"] is False
     assert {"case_id", "strength_status", "serviceability_status", "overall_status"}.issubset(
         index["cases"][0]
     )
+    assert all(case["project_use_status"] == "prohibited" for case in index["cases"])
+    assert all(case["project_use"] is False for case in index["cases"])
     for case_id in ("case_001", "case_002", "case_003"):
         case_dir = output_dir / case_id
         assert (case_dir / "report.md").exists()
@@ -93,6 +101,10 @@ def test_cli_design_report_batch_json_output(tmp_path, capsys):
     assert "manifest_path" in payload["index"]
     assert payload["index"]["input_count"] == 3
     assert payload["index"]["report_count"] == 3
+    assert payload["project_use_status"] == "prohibited"
+    assert payload["project_use"] is False
+    assert payload["index"]["project_use_status"] == "prohibited"
+    assert payload["index"]["project_use"] is False
     assert payload["index"]["cases"][0]["requires_engineer_review"] is True
     assert "manifest_path" in payload["index"]["cases"][0]
     assert "report_json_sha256" in payload["index"]["cases"][0]

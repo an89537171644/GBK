@@ -20,6 +20,10 @@ REQUIRED_RECTANGULAR_DESIGN_INPUT_FIELDS = (
     "stirrup_rebar_class",
     "M",
     "Q",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
 )
 
 OPTIONAL_RECTANGULAR_DESIGN_INPUT_FIELDS = (
@@ -31,7 +35,6 @@ OPTIONAL_RECTANGULAR_DESIGN_INPUT_FIELDS = (
     "acrc_limit",
     "deflection_limit",
     "deflection_limit_ratio",
-    "load_duration",
 )
 
 ALLOWED_RECTANGULAR_DESIGN_INPUT_FIELDS = (
@@ -76,4 +79,8 @@ def rectangular_design_input_from_mapping(data: Mapping[str, Any]) -> Rectangula
             if field in data
         }
     )
-    return RectangularDesignInput(**input_values)
+    design_input = RectangularDesignInput(**input_values)
+    design_input.bending_orientation()
+    if design_input.load_duration not in ("short", "long"):
+        raise ValueError("load_duration must be 'short' or 'long'")
+    return design_input

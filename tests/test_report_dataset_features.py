@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from sp63_core.cli import main
 from sp63_core.dataset import (
     build_report_dataset_feature_set,
@@ -59,6 +61,9 @@ def test_report_dataset_feature_set_builds_from_jsonl(tmp_path):
     assert result.requires_engineer_review is True
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
+    assert "moment_axis" in result.feature_columns
+    assert "tension_face" in result.feature_columns
+    assert "load_duration" in result.feature_columns
 
 
 def test_report_dataset_feature_set_builds_from_csv(tmp_path):
@@ -84,8 +89,12 @@ def test_input_only_excludes_status_and_check_leakage_columns(tmp_path):
     assert "overall_status" not in result.feature_columns
     assert "Mult" not in result.feature_columns
     assert "Qult" not in result.feature_columns
+    assert "local_axes_id" not in result.feature_columns
+    assert "project_use" not in result.feature_columns
     assert "bending_status" in result.excluded_leakage_columns
     assert "Mult" in result.excluded_leakage_columns
+    assert "local_axes_id" in result.excluded_leakage_columns
+    assert "project_use" in result.excluded_leakage_columns
 
 
 def test_deterministic_derived_features_warn_about_review(tmp_path):
@@ -139,6 +148,39 @@ def test_report_dataset_features_missing_target_fails(tmp_path):
 
     assert result.status == "fail"
     assert "target column is missing: overall_status" in result.errors
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "error_text"),
+    (
+        ("dataset_version", "0.2", "dataset_version"),
+        ("local_axes_id", None, "orientation provenance"),
+        ("moment_axis", "local_y", "orientation provenance"),
+        ("tension_face", "unknown", "orientation provenance"),
+        ("load_duration", "long", "load_duration must be short"),
+        ("completeness_status", "complete", "hard safety statuses"),
+        ("evidence_status", "confirmed", "hard safety statuses"),
+        ("project_use_status", "allowed", "hard safety statuses"),
+        ("project_use", True, "hard safety statuses"),
+        ("requires_engineer_review", False, "hard safety statuses"),
+    ),
+)
+def test_report_dataset_feature_contract_rejects_unsafe_provenance(
+    tmp_path,
+    field_name,
+    invalid_value,
+    error_text,
+):
+    dataset_path = _write_batch_dataset(tmp_path)
+    rows = _read_jsonl(dataset_path)
+    rows[0][field_name] = invalid_value
+    broken_path = tmp_path / f"invalid_{field_name}.jsonl"
+    _write_jsonl(broken_path, rows)
+
+    result = build_report_dataset_feature_set(dataset_path=broken_path)
+
+    assert result.status == "fail"
+    assert any(error_text in error for error in result.errors)
 
 
 def test_report_dataset_features_small_dataset_requires_review(tmp_path):

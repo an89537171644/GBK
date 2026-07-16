@@ -43,6 +43,12 @@ def test_select_transverse_rebar_returns_passing_options():
     )
     assert all(option.utilization <= 1.0 for option in options)
     assert all(option.requires_engineer_review is True for option in options)
+    assert all(option.section.stirrup_diameter == option.diameter for option in options)
+    assert all(
+        option.shear.intermediate_values["h0"]
+        == pytest.approx(option.section.effective_depth())
+        for option in options
+    )
 
 
 def test_select_transverse_rebar_sorts_by_steel_consumption():
@@ -108,3 +114,25 @@ def test_select_transverse_rebar_rejects_invalid_max_results():
             Q=80_000,
             max_results=0,
         )
+
+
+def test_transverse_candidates_rebuild_geometry_for_each_diameter():
+    section = RectangularSection(
+        b=150,
+        h=300,
+        cover=25,
+        stirrup_diameter=6,
+        main_bar_diameter=18,
+    )
+    options = select_transverse_rebar(
+        section=section,
+        concrete=get_concrete("B40"),
+        stirrup_rebar=get_rebar("A240"),
+        Q=80_000,
+        diameters=(8,),
+    )
+
+    assert options
+    assert all(option.section.stirrup_diameter == 8 for option in options)
+    assert all(option.section.effective_depth() == pytest.approx(258) for option in options)
+    assert all(option.shear.intermediate_values["h0"] == pytest.approx(258) for option in options)

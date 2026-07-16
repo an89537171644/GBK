@@ -8,7 +8,7 @@ from sp63_core.dataset import (
 
 
 def test_build_dataset_report_contains_core_counts():
-    cases = generate_dataset_cases(limit=10)
+    cases = generate_dataset_cases(limit=10, load_duration="short")
 
     report = build_dataset_report(cases)
 
@@ -22,6 +22,10 @@ def test_build_dataset_report_contains_core_counts():
     assert report["counts_by_strength_status"] == {"pass": 10}
     assert report["counts_by_serviceability_status"] == {"pass": 10}
     assert report["counts_by_overall_status"] == {"pass": 10}
+    assert report["counts_by_completeness_status"] == {"incomplete": 10}
+    assert report["counts_by_evidence_status"] == {"needs_engineer_review": 10}
+    assert report["counts_by_project_use_status"] == {"prohibited": 10}
+    assert report["project_use_true_count"] == 0
     assert "counts_by_concrete_class" in report
     assert report["counts_by_element_type"] == {"beam": 10}
     assert report["min_b"] <= report["max_b"]
@@ -35,7 +39,7 @@ def test_build_dataset_report_contains_core_counts():
 
 
 def test_export_dataset_report_json_creates_file(tmp_path):
-    cases = generate_dataset_cases(limit=3)
+    cases = generate_dataset_cases(limit=3, load_duration="short")
     report = build_dataset_report(cases)
 
     path = export_dataset_report_json(report, tmp_path / "report.json")

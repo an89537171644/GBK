@@ -14,6 +14,9 @@ def mvp_input(**overrides) -> RectangularDesignInput:
         "stirrup_rebar_class": "A240",
         "M": 150_000_000,
         "Q": 80_000,
+        "local_axes_id": "design-test-local-axes",
+        "moment_axis": "local_z",
+        "tension_face": "local_y_min",
         "load_duration": "short",
     }
     data.update(overrides)
@@ -39,7 +42,14 @@ def test_design_rectangular_element_returns_passing_result():
     assert result.selected_transverse.shear.status == "pass"
     assert result.selected_transverse.constructive.status in ("pass", "warning")
     assert result.selected_longitudinal.section.effective_depth() > 0
+    assert result.section == result.selected_longitudinal.section
     assert result.selected_transverse.utilization <= 1.0
+    assert (
+        result.selected_transverse.diameter
+        == result.input_data.stirrup_diameter_for_geometry
+    )
+    assert result.completeness_status == "incomplete"
+    assert result.project_use is False
 
 
 def test_design_rectangular_element_fails_when_no_longitudinal_option():
@@ -65,6 +75,7 @@ def test_design_rectangular_element_fails_when_no_transverse_option():
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is None
     assert result.protocol is None
+    assert result.section == result.selected_longitudinal.section
     assert "no passing transverse reinforcement options" in result.warnings
 
 
@@ -86,13 +97,81 @@ def test_design_rectangular_protocol_contains_selected_reinforcement():
     assert result.protocol.geometry["h0"] == pytest.approx(
         result.selected_longitudinal.section.effective_depth()
     )
+    assert result.protocol.geometry["local_axes_id"] == "design-test-local-axes"
+    assert result.protocol.geometry["tension_face"] == "local_y_min"
+    assert result.protocol.geometry["cover_reference"] == (
+        "concrete_face_to_outer_stirrup_surface"
+    )
+    assert result.protocol.materials["Rb_base"] == pytest.approx(14.5)
+    assert result.protocol.materials["gamma_b1"] == pytest.approx(1.0)
+    assert result.protocol.materials["Rb_effective"] == pytest.approx(14.5)
 
 
 def test_design_rectangular_forwards_load_duration():
     result = design_rectangular_element(mvp_input(load_duration="long"))
 
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
+    assert result.overall_status == "outside_applicability"
+    assert result.selected_longitudinal is None
+    assert result.selected_transverse is None
+    assert result.protocol is None
+    assert any("long load context" in warning and "shear" in warning for warning in result.warnings)
+    assert result.project_use is False
+
+
+def test_design_rejects_invalid_load_context_before_empty_enumeration():
+    with pytest.raises(ValueError, match="load_duration"):
+        design_rectangular_element(
+            mvp_input(load_duration="bogus", main_bar_counts=())  # type: ignore[arg-type]
+        )
+
+
+def test_design_unsupported_longitudinal_material_is_outside_applicability():
+    result = design_rectangular_element(mvp_input(longitudinal_rebar_class="A240"))
+
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
+    assert result.selected_longitudinal is None
+    assert result.protocol is None
+    assert result.project_use is False
+
+
+def test_design_never_changes_stirrup_diameter_after_h0_is_derived():
+    result = design_rectangular_element(
+        mvp_input(
+            b=150,
+            h=300,
+            cover=25,
+            stirrup_diameter_for_geometry=6,
+            concrete_class="B40",
+            M=50_000_000,
+            Q=80_000,
+        )
+    )
+
+    assert result.status == "pass"
     assert result.selected_longitudinal is not None
-    assert result.selected_longitudinal.bending.intermediate_values["load_duration"] == "long"
+    assert result.selected_transverse is not None
+    assert result.selected_transverse.diameter == 6
+    assert result.selected_longitudinal.section.stirrup_diameter == 6
+    assert result.selected_transverse.section.effective_depth() == pytest.approx(
+        result.selected_longitudinal.section.effective_depth()
+    )
+
+
+def test_design_fails_closed_when_geometry_stirrup_is_not_a_candidate():
+    result = design_rectangular_element(
+        mvp_input(
+            stirrup_diameter_for_geometry=8,
+            stirrup_diameters=(6, 10, 12),
+        )
+    )
+
+    assert result.status == "outside_applicability"
+    assert result.selected_transverse is None
+    assert result.project_use is False
+    assert any("h0 cannot be kept consistent" in warning for warning in result.warnings)
 
 
 def test_design_rectangular_with_crack_check():

@@ -12,6 +12,7 @@ from sp63_core.materials.rebar import (
     REBAR_CATALOG,
     STIRRUP_DIAMETERS,
 )
+from sp63_core.materials.uls_context import SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES
 
 SCHEMA_WARNING = (
     "This schema is for future UI/input forms only. It does not perform design "
@@ -44,6 +45,12 @@ VALIDATION_RULES: tuple[dict[str, Any], ...] = (
         "rule_id": "cover_less_than_h",
         "fields": ("cover", "h"),
         "message": "cover must be less than h.",
+        "severity": "error",
+    },
+    {
+        "rule_id": "explicit_bending_orientation",
+        "fields": ("local_axes_id", "moment_axis", "tension_face"),
+        "message": "The local axes and tension face must be declared explicitly.",
         "severity": "error",
     },
     {
@@ -218,6 +225,7 @@ def render_input_form_schema_markdown(json_data: dict[str, Any]) -> str:
 def _schema_groups() -> list[dict[str, Any]]:
     concrete_options = tuple(sorted(CONCRETE_CATALOG))
     rebar_options = tuple(sorted(REBAR_CATALOG))
+    longitudinal_rebar_options = tuple(sorted(SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES))
     return [
         {
             "group": "geometry",
@@ -246,8 +254,8 @@ def _schema_groups() -> list[dict[str, Any]]:
                 ),
                 _number_field(
                     "cover",
-                    "Concrete cover",
-                    "Защитный слой",
+                    "Distance from concrete face to outer stirrup surface",
+                    "Расстояние от грани бетона до наружной поверхности хомута",
                     "mm",
                     True,
                     32,
@@ -264,6 +272,31 @@ def _schema_groups() -> list[dict[str, Any]]:
                     4,
                     32,
                     options=tuple(STIRRUP_DIAMETERS),
+                ),
+                _text_field(
+                    "local_axes_id",
+                    "Local axes identifier",
+                    "Идентификатор локальных осей",
+                    True,
+                    "section-local-v1",
+                ),
+                _select_field(
+                    "moment_axis",
+                    "Bending moment axis",
+                    "Локальная ось изгиба",
+                    True,
+                    "local_z",
+                    ("local_z",),
+                    "uls_bending_orientation",
+                ),
+                _select_field(
+                    "tension_face",
+                    "Tension face",
+                    "Растянутая грань",
+                    True,
+                    "local_y_min",
+                    ("local_y_min", "local_y_max"),
+                    "uls_bending_orientation",
                 ),
                 _number_field("span", "Span", "Prolet", "mm", False, 6000, 500, 30000),
             ],
@@ -288,7 +321,7 @@ def _schema_groups() -> list[dict[str, Any]]:
                     "Класс продольной арматуры",
                     True,
                     "A500",
-                    rebar_options,
+                    longitudinal_rebar_options,
                     "material_catalog",
                 ),
                 _select_field(
@@ -399,9 +432,9 @@ def _schema_groups() -> list[dict[str, Any]]:
                     "load_duration",
                     "Load duration",
                     "Длительность нагрузки",
-                    False,
+                    True,
                     "short",
-                    ("short", "long"),
+                    ("short",),
                     "design_input_options",
                 ),
             ],
@@ -522,8 +555,29 @@ def _select_field(
         "options": list(options),
         "options_source": options_source,
         "example": default,
-        "engineering_hint": "Material catalog values require engineer review.",
-        "validation_message": f"{name} must be one of the supported catalog options.",
+        "engineering_hint": "Verify the declared option and its engineering provenance.",
+        "validation_message": f"{name} must be one of the supported options.",
+    }
+
+
+def _text_field(
+    name: str,
+    label: str,
+    label_ru: str,
+    required: bool,
+    example: str,
+) -> dict[str, Any]:
+    return {
+        "name": name,
+        "label": label,
+        "label_ru": label_ru,
+        "type": "text",
+        "unit": None,
+        "required": required,
+        "default": example,
+        "example": example,
+        "engineering_hint": "Use the identifier from the declared local-axis source.",
+        "validation_message": f"{name} must be a non-empty string.",
     }
 
 

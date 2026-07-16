@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from sp63_core.dataset import DatasetCase
+from sp63_core.sections import RectangularBendingOrientation
 from sp63_core.validation.dataset_checks import DatasetValidationResult
 from sp63_core.validation.golden import GoldenCaseResult
 
@@ -21,12 +22,21 @@ class ExternalComparisonRow:
     h: float
     concrete_class: str
     rebar_class: str
+    local_axes_id: str
+    moment_axis: str
+    tension_face: str
+    load_duration: str
     M: float
     Q: float
     program_As: float
     program_stirrups: str
     program_Mult: float
     program_Qult: float
+    completeness_status: str
+    evidence_status: str
+    project_use_status: str
+    project_use: bool
+    requires_engineer_review: bool
     scad_As: float | None = None
     scad_Mult: float | None = None
     scad_Qult: float | None = None
@@ -41,6 +51,37 @@ class ExternalComparisonRow:
     delta_Qult_percent_lira: float | None = None
     engineer_comment: str = ""
     accepted: bool | None = None
+
+    def __post_init__(self) -> None:
+        """Reject incomplete or unsupported calculation provenance."""
+        RectangularBendingOrientation(
+            local_axes_id=self.local_axes_id,
+            moment_axis=self.moment_axis,
+            tension_face=self.tension_face,
+        )
+        if self.load_duration != "short":
+            raise ValueError(
+                "external comparison load_duration must be 'short' until the "
+                "shear load-combination context is implemented"
+            )
+        if self.completeness_status != "incomplete":
+            raise ValueError(
+                "external comparison completeness_status must be 'incomplete'"
+            )
+        if self.evidence_status != "needs_engineer_review":
+            raise ValueError(
+                "external comparison evidence_status must be 'needs_engineer_review'"
+            )
+        if self.project_use_status != "prohibited":
+            raise ValueError(
+                "external comparison project_use_status must be 'prohibited'"
+            )
+        if self.project_use is not False:
+            raise ValueError("external comparison project_use must be false")
+        if self.requires_engineer_review is not True:
+            raise ValueError(
+                "external comparison requires_engineer_review must be true"
+            )
 
 
 def build_external_comparison_rows(
@@ -59,12 +100,21 @@ def build_external_comparison_rows(
             h=case.h,
             concrete_class=case.concrete_class,
             rebar_class=case.rebar_class,
+            local_axes_id=case.local_axes_id,
+            moment_axis=case.moment_axis,
+            tension_face=case.tension_face,
+            load_duration=case.load_duration,
             M=case.M,
             Q=case.Q,
             program_As=case.As_provided,
             program_stirrups=case.stirrup_scheme,
             program_Mult=case.Mult,
             program_Qult=case.Qult,
+            completeness_status=case.completeness_status,
+            evidence_status=case.evidence_status,
+            project_use_status=case.project_use_status,
+            project_use=case.project_use,
+            requires_engineer_review=case.requires_engineer_review,
         )
         for case in cases[:limit]
     )
@@ -187,6 +237,8 @@ def evaluate_acceptance_gates(
     return {
         "status": status,
         "golden_passed": golden_passed,
+        "golden_case_count": len(golden_results),
+        "golden_passed_count": sum(1 for result in golden_results if result.passed),
         "dataset_passed": dataset_passed,
         "external_completed": external_completed,
         "external_accepted": external_accepted,
@@ -197,6 +249,11 @@ def evaluate_acceptance_gates(
         "external_incomplete_count": external_incomplete_count,
         "external_rejected_count": external_rejected_count,
         "external_delta_exceeded_count": external_delta_exceeded_count,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
         "warnings": tuple(warnings),
     }
 
@@ -267,12 +324,23 @@ def _row_from_csv(row: Mapping[str, str]) -> ExternalComparisonRow:
         h=_parse_required_float(row["h"], "h"),
         concrete_class=row["concrete_class"],
         rebar_class=row["rebar_class"],
+        local_axes_id=row["local_axes_id"],
+        moment_axis=row["moment_axis"],
+        tension_face=row["tension_face"],
+        load_duration=row["load_duration"],
         M=_parse_required_float(row["M"], "M"),
         Q=_parse_required_float(row["Q"], "Q"),
         program_As=_parse_required_float(row["program_As"], "program_As"),
         program_stirrups=row["program_stirrups"],
         program_Mult=_parse_required_float(row["program_Mult"], "program_Mult"),
         program_Qult=_parse_required_float(row["program_Qult"], "program_Qult"),
+        completeness_status=row["completeness_status"],
+        evidence_status=row["evidence_status"],
+        project_use_status=row["project_use_status"],
+        project_use=_parse_required_bool(row["project_use"], "project_use"),
+        requires_engineer_review=_parse_required_bool(
+            row["requires_engineer_review"], "requires_engineer_review"
+        ),
         scad_As=_parse_optional_float(row["scad_As"], "scad_As"),
         scad_Mult=_parse_optional_float(row["scad_Mult"], "scad_Mult"),
         scad_Qult=_parse_optional_float(row["scad_Qult"], "scad_Qult"),
@@ -327,3 +395,14 @@ def _parse_optional_bool(value: str) -> bool | None:
     if normalized in ("false", "0", "no", "нет"):
         return False
     raise ValueError(f"accepted value {value!r} is not supported")
+
+
+def _parse_required_bool(value: str, field_name: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    if normalized == "":
+        raise ValueError(f"{field_name} must be filled")
+    raise ValueError(f"{field_name} must be 'true' or 'false'")

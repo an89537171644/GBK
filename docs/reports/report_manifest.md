@@ -1,5 +1,10 @@
 # Report bundle manifest
 
+manifest_version = 2
+completeness_status = incomplete
+evidence_status = needs_engineer_review
+project_use_status = prohibited
+project_use = false
 requires_engineer_review = true
 
 ## Purpose
@@ -28,7 +33,15 @@ Each manifest includes:
 - `overall_status`;
 - `warnings_count`;
 - `metadata`;
+- `completeness_status = incomplete`;
+- `evidence_status = needs_engineer_review`;
+- `project_use_status = prohibited`;
+- `project_use = false`;
 - `requires_engineer_review = true`.
+
+Version 2 introduced the explicit completeness, evidence, and project-use
+fields. Archive validation rejects version 1 and any manifest that removes or
+relaxes these fail-closed values.
 
 File records include:
 

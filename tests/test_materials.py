@@ -21,6 +21,12 @@ def test_get_concrete_b25_draft_values():
     assert concrete.draft_requires_engineer_review is True
 
 
+def test_get_concrete_b15_uses_base_pdf_service_tension_value():
+    concrete = get_concrete("B15")
+
+    assert concrete.Rbtser == pytest.approx(1.10)
+
+
 def test_concrete_service_properties_b25():
     concrete = get_concrete("B25")
 
@@ -68,8 +74,11 @@ def test_get_rebar_a500_rsc_by_load_duration():
 def test_get_rebar_a400_rsc_same_for_short_and_long():
     rebar = get_rebar("A400")
 
-    assert rebar.get_Rsc("short") == 350
-    assert rebar.get_Rsc("long") == 350
+    assert rebar.Rsn == 390
+    assert rebar.Rs == 340
+    assert rebar.Rsser == 390
+    assert rebar.get_Rsc("short") == 340
+    assert rebar.get_Rsc("long") == 340
 
 
 def test_get_Rsc_rejects_unknown_load_duration():
@@ -83,7 +92,7 @@ def test_rebar_service_properties():
     a500 = get_rebar("A500")
 
     assert a240.Rsser == pytest.approx(240)
-    assert a400.Rsser == pytest.approx(400)
+    assert a400.Rsser == pytest.approx(390)
     assert a500.Rsser == pytest.approx(500)
     assert a400.Rsser > a400.Rs
     assert a500.Rsser > a500.Rs

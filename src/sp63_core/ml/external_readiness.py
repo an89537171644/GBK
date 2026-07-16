@@ -7,7 +7,6 @@ data or also have external validation and material verification evidence.
 
 from __future__ import annotations
 
-import csv
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,8 +15,8 @@ from typing import Any
 from sp63_core.dataset import load_report_dataset_rows
 from sp63_core.ml.material_readiness import evaluate_ml_material_verification_readiness
 from sp63_core.validation import (
-    EXTERNAL_VALIDATION_COLUMNS,
     build_external_validation_summary,
+    load_external_validation_csv,
 )
 
 NOT_PROVIDED = "not_provided"
@@ -101,11 +100,7 @@ def evaluate_ml_external_validation_readiness(
         recommendations.append("provide engineer-filled external validation CSV")
     else:
         try:
-            external_rows = _load_required_csv(
-                Path(external_validation_csv),
-                EXTERNAL_VALIDATION_COLUMNS,
-                csv_name="external validation",
-            )
+            external_rows = load_external_validation_csv(Path(external_validation_csv))
             external_summary = build_external_validation_summary(external_rows)
             external_case_count = external_summary.total_cases
             accepted_external_case_count = external_summary.accepted_cases
@@ -312,26 +307,6 @@ def render_ml_external_readiness_markdown(
         ]
     )
     return "\n".join(lines) + "\n"
-
-
-def _load_required_csv(
-    path: Path,
-    required_columns: tuple[str, ...],
-    *,
-    csv_name: str,
-) -> tuple[dict[str, str], ...]:
-    with path.open(newline="", encoding="utf-8") as csv_file:
-        reader = csv.DictReader(csv_file)
-        if reader.fieldnames is None:
-            raise ValueError(f"{csv_name} CSV is missing header")
-        missing_columns = [
-            column for column in required_columns if column not in reader.fieldnames
-        ]
-        if missing_columns:
-            raise ValueError(
-                f"{csv_name} CSV is missing columns: " + ", ".join(missing_columns)
-            )
-        return tuple(dict(row) for row in reader)
 
 
 def _status_counter(rows: list[dict[str, Any]], column: str) -> dict[str, int]:

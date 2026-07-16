@@ -28,6 +28,10 @@ class SyntheticReportInputGenerationResult:
     seed: int
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
     synthetic_data_only: bool = True
     ml_is_advisory_only: bool = True
@@ -74,6 +78,10 @@ def generate_synthetic_report_inputs(
                     "concrete_class": payload["concrete_class"],
                     "longitudinal_rebar_class": payload["longitudinal_rebar_class"],
                     "stirrup_rebar_class": payload["stirrup_rebar_class"],
+                    "local_axes_id": payload["local_axes_id"],
+                    "moment_axis": payload["moment_axis"],
+                    "tension_face": payload["tension_face"],
+                    "load_duration": payload["load_duration"],
                     "M": payload["M"],
                     "Q": payload["Q"],
                     "Mser": payload.get("Mser"),
@@ -99,6 +107,10 @@ def generate_synthetic_report_inputs(
         "case_count": case_count,
         "seed": seed,
         "synthetic_data_only": True,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
         "requires_engineer_review": True,
         "ml_is_advisory_only": True,
         "deterministic_checks_required": True,
@@ -155,7 +167,10 @@ def _build_case_payload(
         "stirrup_rebar_class": stirrup_rebar_class,
         "M": moment_knm * 1_000_000,
         "Q": shear_kn * 1_000,
-        "load_duration": rng.choice(("short", "short", "short", "long")),
+        "local_axes_id": f"synthetic-report-case-{index:04d}",
+        "moment_axis": "local_z",
+        "tension_face": "local_y_min",
+        "load_duration": "short",
     }
 
     if include_serviceability:
@@ -211,6 +226,10 @@ def _render_synthetic_readme(
             f"- case_count: `{case_count}`",
             f"- seed: `{seed}`",
             "- synthetic_data_only: `true`",
+            "- completeness_status: `incomplete`",
+            "- evidence_status: `needs_engineer_review`",
+            "- project_use_status: `prohibited`",
+            "- project_use: `false`",
             "- requires_engineer_review: `true`",
             "- ml_is_advisory_only: `true`",
             "- deterministic_checks_required: `true`",

@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sp63_core.dataset.quality_gate import load_report_dataset_rows
+from sp63_core.dataset.quality_gate import (
+    load_report_dataset_rows,
+    report_dataset_safety_contract_errors,
+)
 
 SUPPORTED_REPORT_DATASET_TARGETS = (
     "overall_status",
@@ -28,6 +31,9 @@ INPUT_ONLY_FEATURE_COLUMNS = (
     "concrete_class",
     "longitudinal_rebar_class",
     "stirrup_rebar_class",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
     "M",
     "Q",
     "Mser",
@@ -48,6 +54,9 @@ DETERMINISTIC_DERIVED_FEATURE_COLUMNS = (
 )
 
 EXPLICIT_LEAKAGE_COLUMNS = (
+    "dataset_source",
+    "dataset_version",
+    "local_axes_id",
     "bending_status",
     "shear_status",
     "crack_formation_status",
@@ -64,6 +73,13 @@ EXPLICIT_LEAKAGE_COLUMNS = (
     "deflection",
     "bending_utilization",
     "shear_utilization",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
+    "requires_engineer_review",
+    "ml_is_advisory_only",
+    "deterministic_checks_required",
 )
 
 
@@ -119,6 +135,7 @@ def build_report_dataset_feature_set(
 
     if not rows:
         errors.append("dataset contains no rows")
+    errors.extend(report_dataset_safety_contract_errors(rows))
 
     target_columns = (target,) if target in columns else ()
     if target not in columns:

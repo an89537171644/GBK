@@ -2,12 +2,22 @@
 
 ## Purpose
 
-The material catalog stores draft MVP values used by the deterministic
-`sp63_core` calculation modules. These values are not certified project-design
-values. They must be checked by an engineer against SP 63 material tables before
-final use.
+The material catalog stores MVP values used by the deterministic `sp63_core`
+calculation modules. The Step 3 corrections listed below use provisional profile
+`SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15`, but they are not a signed engineering
+approval for project design. All values retain the
+`requires_engineer_review = true` gate.
 
 The full text of SP 63 is not stored in this repository.
+
+The current source artifact is the user-provided scan of SP 63.13330.2018 with
+Amendments 1 and 2, SHA-256
+`8dfe7fc1af47d6adf2a4d91ed91ee92fe0762abe20a0c54b3c248c7ff138fe00`.
+PDF page 2 confirms the stated amendment composition and dates. The status
+`CONFIRMED` below means confirmation against the visible content of this
+specific artifact only. Its authenticity, legal status, and currentness beyond
+Amendment 2 remain `OPEN_QUESTION`; independent engineering review is still
+required and `project_use = false`.
 
 ## Usage In The Core
 
@@ -45,7 +55,7 @@ Heavy concrete MVP classes: B15, B20, B25, B30, B35, B40.
 
 | class_name | Rb | Rbt | Rbser | Rbtser | Eb | audit_status | requires_engineer_review |
 |---|---:|---:|---:|---:|---:|---|---|
-| B15 | 8.5 | 0.75 | 11.0 | 1.15 | 24000 | draft_requires_engineer_review | true |
+| B15 | 8.5 | 0.75 | 11.0 | 1.10 | 24000 | draft_requires_engineer_review | true |
 | B20 | 11.5 | 0.90 | 15.0 | 1.35 | 27500 | draft_requires_engineer_review | true |
 | B25 | 14.5 | 1.05 | 18.5 | 1.55 | 30000 | draft_requires_engineer_review | true |
 | B30 | 17.0 | 1.15 | 22.0 | 1.75 | 32500 | draft_requires_engineer_review | true |
@@ -59,7 +69,7 @@ MVP reinforcement classes: A240, A400, A500.
 | class_name | Rsn | Rs | Rsser | Rsc_short | Rsc_long | Rsw | Es | audit_status | requires_engineer_review |
 |---|---:|---:|---:|---:|---:|---:|---:|---|---|
 | A240 | 240 | 210 | 240 | 210 | 210 | 170 | 200000 | draft_requires_engineer_review | true |
-| A400 | 400 | 350 | 400 | 350 | 350 | 280 | 200000 | draft_requires_engineer_review | true |
+| A400 | 390 | 340 | 390 | 340 | 340 | 280 | 200000 | draft_requires_engineer_review | true |
 | A500 | 500 | 435 | 500 | 400 | 435 | 300 | 200000 | draft_requires_engineer_review | true |
 
 ## Properties Requiring Manual Review
@@ -70,8 +80,35 @@ All listed material values require manual engineering verification:
 - reinforcement `Rsn`, `Rs`, `Rsser`, `Rsc_short`, `Rsc_long`, `Rsw`, `Es`.
 
 Possible discrepancies must be resolved by an engineer before the values are
-used in final design decisions. K19 adds the audit structure only; it does not
-approve or change material values.
+used in final design decisions.
+
+## Step 3 Rechecked And Provisional Rows
+
+| Catalog row | Source | Status | Architecture impact | Engineering check |
+|---|---|---|---|---|
+| B15 `Rbtser = 1.10 MPa` | reviewed scan, PDF page 24, table 6.7; profile `SP63-2018-AMD1-AMD2-PROVISIONAL@2026-07-15` | artifact content `CONFIRMED` | service checks read the rechecked catalog row | independent review required before release |
+| A400 `Rsn = 390 MPa`, `Rsser = 390 MPa` | reviewed scan, PDF pages 35–37, clause 6.2.7 and table 6.13 | artifact content `CONFIRMED` | all A400 normative/service tensile consumers use one provisional catalog row | independent review required before release |
+| A400 `Rs = 340 MPa`, `Rsc = 340 MPa` | reviewed scan, PDF pages 35–37, clause 6.2.8 and table 6.14 | artifact content `CONFIRMED` | all A400 ULS tension/compression consumers use one provisional catalog row | independent review required before release |
+
+The two machine keys `Rsc_short` and `Rsc_long` both store 340 MPa for A400.
+They represent one applied `Rsc` selected by the declared load combination,
+not two different normative symbols.
+
+An artifact containing Amendments 1 and 2 has therefore been supplied and is
+identified by the SHA-256 above; the A400 390/340 MPa rows are no longer marked
+as assumptions about the artifact's content. This does not constitute an
+engineer sign-off for the combined profile. Artifact authenticity, legal
+status, currentness beyond Amendment 2, and permission for project use remain
+`OPEN_QUESTION` / pending independent review.
+
+## ULS Material Context
+
+`resolve_uls_material_context(...)` is the single material resolver for the
+provisional ULS path. It returns the profile identifier, the closed load-combination
+key, base and effective `Rb`, applied `gamma_b1`, selected `Rsc`, exact source
+clauses, and the engineering-review gate. The key `short` means that the
+combination contains short-term loads; `long` means only permanent and
+long-term loads. No unspecified third state is accepted.
 
 ## K34 Engineer Verification Gate
 
@@ -88,6 +125,11 @@ CSV has a value that differs from the current catalog value, the row remains
 `needs_review` until the discrepancy is resolved by an engineer.
 
 Templates:
+
+The repository sample `tests/fixtures/material_verification_sample.csv` is
+synthetic test data and is not evidence. Step 3 rechecked/provisional rows are kept as
+`needs_review` without a reviewer name or review date; only a separately
+engineer-filled CSV may close this gate.
 
 - `docs/materials/templates/material_catalog_verification_template.csv`;
 - `docs/materials/material_catalog_engineer_verification.md`.

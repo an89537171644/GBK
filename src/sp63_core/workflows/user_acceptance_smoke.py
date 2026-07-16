@@ -10,6 +10,7 @@ from typing import Any
 from sp63_core.materials import build_material_audit_rows
 from sp63_core.validation import (
     build_external_validation_summary,
+    load_external_validation_csv,
     run_bending_golden_cases,
     run_crack_formation_golden_cases,
     run_crack_width_golden_cases,
@@ -163,7 +164,7 @@ def _manual_cases_status() -> str:
 def _external_validation_status() -> str:
     if not EXTERNAL_SAMPLE_CSV.exists():
         return "review_required"
-    rows = _load_csv_rows(EXTERNAL_SAMPLE_CSV)
+    rows = load_external_validation_csv(EXTERNAL_SAMPLE_CSV)
     return build_external_validation_summary(rows).status
 
 
@@ -174,13 +175,6 @@ def _materials_audit_status() -> str:
     if any(row.requires_engineer_review for row in rows):
         return "review_required"
     return "pass"
-
-
-def _load_csv_rows(path: Path) -> tuple[dict[str, str], ...]:
-    import csv
-
-    with path.open(encoding="utf-8", newline="") as csv_file:
-        return tuple(csv.DictReader(csv_file))
 
 
 def _suite_status(*, failed_count: int, review_required_count: int) -> str:

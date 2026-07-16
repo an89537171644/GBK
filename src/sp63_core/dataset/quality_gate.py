@@ -9,10 +9,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sp63_core.dataset.from_reports import REPORT_DATASET_SOURCE
+from sp63_core.dataset.generator import DATASET_VERSION
+from sp63_core.sections import RectangularBendingOrientation
+
 SUPPORTED_REPORT_QUALITY_FORMATS = ("jsonl", "json", "csv")
 
 PROVENANCE_COLUMNS = (
     "dataset_source",
+    "dataset_version",
     "case_id",
     "source_archive_path",
     "report_json_path",
@@ -22,6 +27,14 @@ PROVENANCE_COLUMNS = (
     "report_json_sha256",
     "manifest_sha256",
     "archive_validation_status",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
 )
 
 INPUT_FEATURE_COLUMNS = (
@@ -56,6 +69,8 @@ REQUIRED_REPORT_DATASET_COLUMNS = (
 )
 
 KNOWN_LEAKAGE_COLUMNS = (
+    "dataset_version",
+    "local_axes_id",
     "bending_status",
     "shear_status",
     "crack_formation_status",
@@ -65,6 +80,8 @@ KNOWN_LEAKAGE_COLUMNS = (
     "serviceability_status",
     "overall_status",
     "failure_reason",
+    "project_use",
+    "requires_engineer_review",
 )
 
 
@@ -150,6 +167,7 @@ def run_report_dataset_quality_gate(
         errors.append("dataset contains empty critical values")
     if any(str(row.get("archive_validation_status")) != "pass" for row in rows):
         errors.append("archive_validation_status must be pass for every row")
+    errors.extend(report_dataset_safety_contract_errors(rows))
 
     if len(rows) < min_rows:
         warnings.append("dataset row count is below the configured minimum")
@@ -259,6 +277,50 @@ def _advisory_flags_present(rows: list[dict[str, Any]], columns: tuple[str, ...]
     )
 
 
+def report_dataset_safety_contract_errors(
+    rows: list[dict[str, Any]],
+) -> tuple[str, ...]:
+    """Return fail-closed errors for versioned report-dataset provenance."""
+    errors: list[str] = []
+    if any(row.get("dataset_source") != REPORT_DATASET_SOURCE for row in rows):
+        errors.append(
+            f"dataset_source must be {REPORT_DATASET_SOURCE!r} for every row"
+        )
+    if any(row.get("dataset_version") != DATASET_VERSION for row in rows):
+        errors.append(
+            f"dataset_version must be {DATASET_VERSION!r} for every row"
+        )
+    if any(not _orientation_is_valid(row) for row in rows):
+        errors.append("local-axis orientation provenance is invalid")
+    if any(row.get("load_duration") != "short" for row in rows):
+        errors.append("load_duration must be short for every row")
+    if any(not _hard_safety_statuses_are_valid(row) for row in rows):
+        errors.append("hard safety statuses are invalid")
+    return tuple(errors)
+
+
+def _orientation_is_valid(row: dict[str, Any]) -> bool:
+    try:
+        RectangularBendingOrientation(
+            local_axes_id=row.get("local_axes_id"),
+            moment_axis=row.get("moment_axis"),
+            tension_face=row.get("tension_face"),
+        )
+    except ValueError:
+        return False
+    return True
+
+
+def _hard_safety_statuses_are_valid(row: dict[str, Any]) -> bool:
+    return (
+        row.get("completeness_status") == "incomplete"
+        and row.get("evidence_status") == "needs_engineer_review"
+        and row.get("project_use_status") == "prohibited"
+        and _is_false(row.get("project_use"))
+        and _is_true(row.get("requires_engineer_review"))
+    )
+
+
 def _detect_leakage_columns(columns: tuple[str, ...], *, task: str) -> tuple[str, ...]:
     allowed_targets = {"overall_status"} if task == "classification" else set()
     detected = set()
@@ -283,4 +345,14 @@ def _is_true(value: Any) -> bool:
         return value == 1
     if isinstance(value, str):
         return value.strip().lower() in {"true", "1", "yes"}
+    return False
+
+
+def _is_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value is False
+    if isinstance(value, (int, float)):
+        return value == 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"false", "0", "no"}
     return False

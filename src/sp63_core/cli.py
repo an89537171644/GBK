@@ -44,6 +44,7 @@ from sp63_core.dataset import (
 from sp63_core.design import RectangularDesignInput, design_rectangular_element
 from sp63_core.materials import (
     MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
+    SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES,
     build_material_audit_rows,
     build_material_verification_report,
     build_material_verification_report_document,
@@ -90,7 +91,7 @@ from sp63_core.report import (
     validate_report_bundle,
     write_report_manifest_json,
 )
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 from sp63_core.validation import (
     EXTERNAL_VALIDATION_COLUMNS,
     EXTERNAL_VALUES_REQUIRED_WARNING,
@@ -109,7 +110,11 @@ from sp63_core.validation import (
     run_design_golden_cases,
     run_manual_verification_cases,
     run_shear_golden_cases,
+    run_step3_bending_benchmark_cases,
     validate_dataset_cases,
+)
+from sp63_core.validation import (
+    load_external_validation_csv as load_external_validation_rows_csv,
 )
 from sp63_core.workflows import (
     build_agent_sprint_guard,
@@ -185,11 +190,11 @@ def build_parser() -> ArgumentParser:
 
     bending = subparsers.add_parser("bending", help="check rectangular bending capacity")
     _add_section_arguments(bending)
+    _add_orientation_arguments(bending)
     _add_material_arguments(bending, include_rebar=True)
     bending.add_argument("--as-area", type=float, required=True, help="tensile area As, mm2")
-    bending.add_argument("--as-prime", type=float, default=0.0, help="compression area As', mm2")
     bending.add_argument("--moment", type=float, required=True, help="bending moment, N*mm")
-    bending.add_argument("--load-duration", choices=("short", "long"), default="short")
+    bending.add_argument("--load-duration", choices=("short", "long"), required=True)
     bending.add_argument("--json", action="store_true", help="print JSON output")
     bending.set_defaults(handler=_handle_bending)
 
@@ -277,9 +282,10 @@ def build_parser() -> ArgumentParser:
         "select-longitudinal", help="select longitudinal reinforcement"
     )
     _add_section_arguments(longitudinal)
+    _add_orientation_arguments(longitudinal)
     _add_material_arguments(longitudinal, include_rebar=True)
     longitudinal.add_argument("--moment", type=float, required=True, help="bending moment, N*mm")
-    longitudinal.add_argument("--load-duration", choices=("short", "long"), default="short")
+    longitudinal.add_argument("--load-duration", choices=("short", "long"), required=True)
     longitudinal.add_argument("--max-results", type=int, default=5)
     longitudinal.add_argument("--json", action="store_true", help="print JSON output")
     longitudinal.set_defaults(handler=_handle_select_longitudinal)
@@ -1635,12 +1641,12 @@ def build_parser() -> ArgumentParser:
     dataset.add_argument("--output")
     dataset.add_argument("--split", action="store_true", help="export train/validation/test split")
     dataset.add_argument("--output-dir", default="data/generated")
-    dataset.add_argument("--prefix", default="dataset_v001")
+    dataset.add_argument("--prefix", default="dataset_v003")
     dataset.add_argument("--report")
     dataset.add_argument("--seed", type=int, default=42)
     dataset.add_argument("--no-shuffle", action="store_true", help="preserve full-grid order")
     dataset.add_argument("--group-split", action="store_true", help="split by dataset group_key")
-    dataset.add_argument("--load-duration", choices=("short", "long"), default="short")
+    dataset.add_argument("--load-duration", choices=("short",), required=True)
     dataset.add_argument("--json", action="store_true", help="print JSON output")
     dataset.set_defaults(handler=_handle_generate_dataset)
 
@@ -2134,7 +2140,12 @@ def main(argv: list[str] | None = None) -> int:
 def _add_section_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--b", type=float, required=True, help="section width, mm")
     parser.add_argument("--h", type=float, required=True, help="section height, mm")
-    parser.add_argument("--cover", type=float, required=True, help="protective cover, mm")
+    parser.add_argument(
+        "--cover",
+        type=float,
+        required=True,
+        help="distance from concrete face to outer stirrup surface, mm",
+    )
     parser.add_argument(
         "--stirrup-diameter",
         type=float,
@@ -2147,13 +2158,20 @@ def _add_section_arguments(parser: ArgumentParser) -> None:
         default=20.0,
         help="main bar diameter for section geometry, mm",
     )
+
+
+def _add_orientation_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
-        "--compression-bar-diameter",
-        type=float,
-        default=None,
-        help="compression bar diameter, mm",
+        "--local-axes-id",
+        required=True,
+        help="identifier of the declared local section axes",
     )
-    parser.add_argument("--h0-override", type=float, default=None, help="explicit h0, mm")
+    parser.add_argument("--moment-axis", choices=("local_z",), required=True)
+    parser.add_argument(
+        "--tension-face",
+        choices=("local_y_min", "local_y_max"),
+        required=True,
+    )
 
 
 def _add_material_arguments(
@@ -2169,7 +2187,12 @@ def _add_material_arguments(
 def _add_design_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--b", type=float, required=True, help="section width, mm")
     parser.add_argument("--h", type=float, required=True, help="section height, mm")
-    parser.add_argument("--cover", type=float, required=True, help="protective cover, mm")
+    parser.add_argument(
+        "--cover",
+        type=float,
+        required=True,
+        help="distance from concrete face to outer stirrup surface, mm",
+    )
     parser.add_argument(
         "--stirrup-diameter",
         type=float,
@@ -2181,6 +2204,7 @@ def _add_design_arguments(parser: ArgumentParser) -> None:
     parser.add_argument("--stirrup-rebar", required=True, help="stirrup reinforcement class")
     parser.add_argument("--moment", type=float, required=True, help="bending moment, N*mm")
     parser.add_argument("--shear", type=float, required=True, help="shear force, N")
+    _add_orientation_arguments(parser)
     parser.add_argument("--moment-ser", type=float, default=None, help="service moment, N*mm")
     parser.add_argument("--check-cracks", action="store_true", help="run Mcrc crack check")
     parser.add_argument("--check-crack-width", action="store_true", help="run acrc crack check")
@@ -2199,7 +2223,7 @@ def _add_design_arguments(parser: ArgumentParser) -> None:
         default="simply_supported_uniform",
         help="draft deflection loading scheme",
     )
-    parser.add_argument("--load-duration", choices=("short", "long"), default="short")
+    parser.add_argument("--load-duration", choices=("short", "long"), required=True)
 
 
 def _section_from_args(args: Namespace) -> RectangularSection:
@@ -2209,8 +2233,14 @@ def _section_from_args(args: Namespace) -> RectangularSection:
         cover=args.cover,
         stirrup_diameter=args.stirrup_diameter,
         main_bar_diameter=args.main_bar_diameter,
-        compression_bar_diameter=args.compression_bar_diameter,
-        h0_override=args.h0_override,
+    )
+
+
+def _orientation_from_args(args: Namespace) -> RectangularBendingOrientation:
+    return RectangularBendingOrientation(
+        local_axes_id=args.local_axes_id,
+        moment_axis=args.moment_axis,
+        tension_face=args.tension_face,
     )
 
 
@@ -2223,28 +2253,73 @@ def _handle_bending(args: Namespace) -> int:
         concrete=concrete,
         rebar=rebar,
         As=args.as_area,
-        As_prime=args.as_prime,
         M=args.moment,
+        orientation=_orientation_from_args(args),
         load_duration=args.load_duration,
     )
+    intermediate_values = bending.intermediate_values
     result = {
         "x": bending.x,
         "xi": bending.xi,
         "xi_R": bending.xi_R,
-        "Mult": bending.Mult,
-        "utilization": bending.utilization,
+        "capacity_applicable": bending.capacity_applicable,
+        "clause_8_1_3_status": bending.clause_8_1_3_status,
+        "completeness_status": bending.completeness_status,
+        "evidence_status": bending.evidence_status,
+        "project_use_status": bending.project_use_status,
+        "project_use": bending.project_use,
+        "source_clause": bending.source_clause,
+        "requires_engineer_review": bending.requires_engineer_review,
     }
+    for field_name in (
+        "x_limit",
+        "Rb_base",
+        "gamma_b1",
+        "Rb_effective",
+        "Rsc",
+        "load_combination",
+        "normative_profile_id",
+        "local_axes_id",
+        "moment_axis",
+        "tension_face",
+        "material_source_clauses",
+        "layout_applicability_status",
+        "manual_applicability_confirmation_required",
+    ):
+        if field_name in intermediate_values:
+            result[field_name] = intermediate_values[field_name]
+    if bending.Mult is not None:
+        result["Mult"] = bending.Mult
+    if bending.utilization is not None:
+        result["utilization"] = bending.utilization
     if args.json:
         _print_json("bending", bending.status, result, bending.warnings)
         return 0
 
     print("Bending check")
     print(f"status: {bending.status}")
-    print(f"x: {bending.x:.2f} mm")
-    print(f"xi: {bending.xi:.3f}")
-    print(f"xi_R: {bending.xi_R:.3f}")
-    print(f"Mult: {bending.Mult:.2f} N*mm")
-    print(f"utilization: {bending.utilization:.3f}")
+    print("x: not available" if bending.x is None else f"x: {bending.x:.2f} mm")
+    print("xi: not available" if bending.xi is None else f"xi: {bending.xi:.3f}")
+    print("xi_R: not available" if bending.xi_R is None else f"xi_R: {bending.xi_R:.3f}")
+    if bending.Mult is None or bending.utilization is None:
+        print("M_ult not available: outside applicability")
+    else:
+        print(f"Mult: {bending.Mult:.2f} N*mm")
+        print(f"utilization: {bending.utilization:.3f}")
+    for field_name in (
+        "material_source_clauses",
+        "layout_applicability_status",
+        "manual_applicability_confirmation_required",
+    ):
+        if field_name in intermediate_values:
+            value = intermediate_values[field_name]
+            rendered_value = str(value).lower() if isinstance(value, bool) else value
+            print(f"{field_name}: {rendered_value}")
+    print(f"completeness_status: {bending.completeness_status}")
+    print(f"evidence_status: {bending.evidence_status}")
+    print(f"project_use_status: {bending.project_use_status}")
+    print(f"project_use: {str(bending.project_use).lower()}")
+    print(f"requires_engineer_review: {str(bending.requires_engineer_review).lower()}")
     _print_warnings(bending.warnings)
     return 0
 
@@ -2401,18 +2476,51 @@ def _handle_select_longitudinal(args: Namespace) -> int:
         concrete=concrete,
         rebar=rebar,
         M=args.moment,
-        max_results=args.max_results,
+        orientation=_orientation_from_args(args),
         load_duration=args.load_duration,
+        max_results=args.max_results,
     )
     result = [_longitudinal_option_to_dict(option) for option in options]
-    status = "pass" if options else "fail"
-    warnings = () if options else ("no passing longitudinal reinforcement options",)
+    unsupported_profile = (
+        rebar.class_name not in SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES
+    )
+    if unsupported_profile:
+        status = "outside_applicability"
+        warnings = (
+            f"unsupported ULS longitudinal rebar class {rebar.class_name!r}; "
+            "no options were evaluated",
+        )
+    else:
+        status = "pass" if options else "fail"
+        warnings = () if options else ("no passing longitudinal reinforcement options",)
+    selection_safety = {
+        "completeness_status": (
+            options[0].bending.completeness_status if options else "incomplete"
+        ),
+        "evidence_status": (
+            options[0].bending.evidence_status if options else "needs_engineer_review"
+        ),
+        "project_use_status": (
+            options[0].bending.project_use_status if options else "prohibited"
+        ),
+        "project_use": False,
+        "requires_engineer_review": True,
+    }
     if args.json:
-        _print_json("select-longitudinal", status, result, warnings)
+        _print_json(
+            "select-longitudinal",
+            status,
+            result,
+            warnings,
+            safety_statuses=selection_safety,
+        )
         return 0
 
     print("Longitudinal reinforcement options")
     print(f"status: {status}")
+    for field_name, value in selection_safety.items():
+        rendered_value = str(value).lower() if isinstance(value, bool) else value
+        print(f"{field_name}: {rendered_value}")
     for option in options:
         reinforcement_ratio = option.constructive.intermediate_values[
             "reinforcement_ratio_percent"
@@ -2443,18 +2551,35 @@ def _handle_select_transverse(args: Namespace) -> int:
     result = [_transverse_option_to_dict(option) for option in options]
     status = "pass" if options else "fail"
     warnings = () if options else ("no passing transverse reinforcement options",)
+    selection_safety = {
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
+    }
     if args.json:
-        _print_json("select-transverse", status, result, warnings)
+        _print_json(
+            "select-transverse",
+            status,
+            result,
+            warnings,
+            safety_statuses=selection_safety,
+        )
         return 0
 
     print("Transverse reinforcement options")
     print(f"status: {status}")
+    for field_name, value in selection_safety.items():
+        rendered_value = str(value).lower() if isinstance(value, bool) else value
+        print(f"{field_name}: {rendered_value}")
     for option in options:
         max_spacing = option.constructive.intermediate_values["max_spacing"]
         sw_max_by_shear_rule = option.shear.intermediate_values["sw_max_by_shear_rule"]
         print(
             f"{option.scheme}: Asw={option.Asw:.2f} mm2, spacing={option.spacing:g} mm, "
             f"legs={option.legs}, utilization={option.utilization:.3f}, "
+            f"h0={option.section.effective_depth():.2f} mm, "
             f"steel_consumption={option.steel_consumption:.4f}, "
             f"constructive={option.constructive.status}, max_spacing={max_spacing:.2f} mm, "
             f"sw_max_by_shear_rule={sw_max_by_shear_rule:.2f} mm, "
@@ -2478,6 +2603,9 @@ def _handle_design_rectangular(args: Namespace) -> int:
         stirrup_rebar_class=args.stirrup_rebar,
         M=args.moment,
         Q=args.shear,
+        local_axes_id=args.local_axes_id,
+        moment_axis=args.moment_axis,
+        tension_face=args.tension_face,
         load_duration=args.load_duration,
         Mser=args.moment_ser,
         check_cracks=args.check_cracks,
@@ -2500,6 +2628,14 @@ def _handle_design_rectangular(args: Namespace) -> int:
     print(f"strength_status: {design.strength_status}")
     print(f"serviceability_status: {design.serviceability_status}")
     print(f"overall_status: {design.overall_status}")
+    print(f"completeness_status: {design.completeness_status}")
+    print(f"evidence_status: {design.evidence_status}")
+    print(f"project_use_status: {design.project_use_status}")
+    print(f"project_use: {str(design.project_use).lower()}")
+    print(
+        "requires_engineer_review: "
+        f"{str(design.requires_engineer_review).lower()}"
+    )
     if design.selected_longitudinal is not None:
         longitudinal = design.selected_longitudinal
         print(f"selected longitudinal scheme: {longitudinal.scheme}")
@@ -2612,6 +2748,10 @@ def _handle_design_report_batch(args: Namespace) -> int:
             "failed_count": result.failed_count,
             "output_dir": result.output_dir,
             "warnings": list(result.warnings),
+            "completeness_status": result.completeness_status,
+            "evidence_status": result.evidence_status,
+            "project_use_status": result.project_use_status,
+            "project_use": result.project_use,
             "requires_engineer_review": result.requires_engineer_review,
             "index": result.index_json,
         }
@@ -2622,6 +2762,10 @@ def _handle_design_report_batch(args: Namespace) -> int:
     print(f"status: {result.status}")
     print(f"input_count: {result.input_count}")
     print(f"report_count: {result.report_count}")
+    print(f"completeness_status: {result.completeness_status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"project_use_status: {result.project_use_status}")
+    print(f"project_use: {str(result.project_use).lower()}")
     print(f"index.md: {Path(result.output_dir) / 'index.md'}")
     print(f"index.json: {Path(result.output_dir) / 'index.json'}")
     _print_warnings(result.warnings)
@@ -2694,6 +2838,10 @@ def _handle_guided_synthetic_inputs(args: Namespace) -> int:
     print(f"seed: {result.seed}")
     print(f"max_attempts: {result.max_attempts}")
     print(f"synthetic_data_only: {result.synthetic_data_only}")
+    print(f"completeness_status: {result.completeness_status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"project_use_status: {result.project_use_status}")
+    print(f"project_use: {str(result.project_use).lower()}")
     print(f"requires_engineer_review: {result.requires_engineer_review}")
     print(f"ml_is_advisory_only: {result.ml_is_advisory_only}")
     print(f"deterministic_checks_required: {result.deterministic_checks_required}")
@@ -2797,6 +2945,10 @@ def _handle_engineering_workflow(args: Namespace) -> int:
     print("Engineering workflow")
     print(f"status: {result.status}")
     print(f"workflow_status: {result.workflow_status}")
+    print(f"completeness_status: {result.completeness_status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"project_use_status: {result.project_use_status}")
+    print(f"project_use: {str(result.project_use).lower()}")
     print(f"preflight_status: {result.preflight_status}")
     print(f"deterministic_report_status: {result.deterministic_report_status}")
     print(f"archive_validation_status: {result.archive_validation_status}")
@@ -2834,6 +2986,10 @@ def _handle_engineering_workflow_batch(args: Namespace) -> int:
     print("Batch engineering workflow")
     print(f"status: {result.status}")
     print(f"batch_status: {result.batch_status}")
+    print(f"completeness_status: {result.completeness_status}")
+    print(f"evidence_status: {result.evidence_status}")
+    print(f"project_use_status: {result.project_use_status}")
+    print(f"project_use: {str(result.project_use).lower()}")
     print(f"command_exit_status: {result.command_exit_status}")
     print(f"case_count: {result.case_count}")
     print(f"passed_count: {result.passed_count}")
@@ -4661,6 +4817,10 @@ def _build_design_report_smoke_result() -> Any:
         stirrup_rebar_class="A240",
         M=150_000_000,
         Q=80_000,
+        local_axes_id="design-report-smoke-local-axes",
+        moment_axis="local_z",
+        tension_face="local_y_min",
+        load_duration="short",
         Mser=30_000_000,
         check_cracks=True,
         check_crack_width=True,
@@ -4680,6 +4840,10 @@ def _design_report_json_payload(report: Any, *, source: str) -> dict[str, Any]:
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "completeness_status": report.completeness_status,
+        "evidence_status": report.evidence_status,
+        "project_use_status": report.project_use_status,
+        "project_use": report.project_use,
         "requires_engineer_review": report.requires_engineer_review,
         "warnings": list(report.warnings),
         "input_data": data["input_data"],
@@ -4730,6 +4894,9 @@ def _write_design_report_bundle(
             serviceability_status=report.serviceability_status,
             overall_status=report.overall_status,
             warnings_count=len(report.warnings),
+            completeness_status=report.completeness_status,
+            evidence_status=report.evidence_status,
+            project_use_status=report.project_use_status,
         )
         write_report_manifest_json(manifest, manifest_path)
         readme_path = output_dir / "README_REVIEW.md"
@@ -4751,6 +4918,9 @@ def _write_design_report_bundle(
             serviceability_status=report.serviceability_status,
             overall_status=report.overall_status,
             warnings_count=len(report.warnings),
+            completeness_status=report.completeness_status,
+            evidence_status=report.evidence_status,
+            project_use_status=report.project_use_status,
         )
         write_report_manifest_json(manifest, manifest_path)
         output_files["manifest"] = str(manifest_path)
@@ -4764,6 +4934,16 @@ def _handle_generate_dataset(args: Namespace) -> int:
         shuffle=not args.no_shuffle,
         seed=args.seed,
     )
+    dataset_context = {
+        "load_duration": args.load_duration,
+        "local_axes_id": cases[0].local_axes_id if cases else None,
+        "moment_axis": cases[0].moment_axis if cases else None,
+        "tension_face": cases[0].tension_face if cases else None,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+    }
     if args.split:
         split = split_dataset_cases(
             cases,
@@ -4790,6 +4970,7 @@ def _handle_generate_dataset(args: Namespace) -> int:
             "output_files": {name: str(path) for name, path in output_paths.items()},
             "report_path": str(report_path),
             "dataset_version": DATASET_VERSION,
+            **dataset_context,
             "unique_group_count": report["unique_group_count"],
             "geometry_stirrup_mismatch_count": report["geometry_stirrup_mismatch_count"],
             "unsafe_rows_count": report["unsafe_rows_count"],
@@ -4813,6 +4994,14 @@ def _handle_generate_dataset(args: Namespace) -> int:
         )
         print(f"unsafe_rows_count: {payload['unsafe_rows_count']}")
         print(f"dataset_version: {DATASET_VERSION}")
+        print(f"load_duration: {dataset_context['load_duration']}")
+        print(f"local_axes_id: {dataset_context['local_axes_id']}")
+        print(f"moment_axis: {dataset_context['moment_axis']}")
+        print(f"tension_face: {dataset_context['tension_face']}")
+        print(f"completeness_status: {dataset_context['completeness_status']}")
+        print(f"evidence_status: {dataset_context['evidence_status']}")
+        print(f"project_use_status: {dataset_context['project_use_status']}")
+        print("project_use: false")
         return 0
 
     if args.output is None:
@@ -4827,6 +5016,7 @@ def _handle_generate_dataset(args: Namespace) -> int:
                     "output": str(output_path),
                     "rows": len(cases),
                     "dataset_version": DATASET_VERSION,
+                    **dataset_context,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -4838,6 +5028,14 @@ def _handle_generate_dataset(args: Namespace) -> int:
     print(f"output: {output_path}")
     print(f"rows: {len(cases)}")
     print(f"dataset_version: {DATASET_VERSION}")
+    print(f"load_duration: {dataset_context['load_duration']}")
+    print(f"local_axes_id: {dataset_context['local_axes_id']}")
+    print(f"moment_axis: {dataset_context['moment_axis']}")
+    print(f"tension_face: {dataset_context['tension_face']}")
+    print(f"completeness_status: {dataset_context['completeness_status']}")
+    print(f"evidence_status: {dataset_context['evidence_status']}")
+    print(f"project_use_status: {dataset_context['project_use_status']}")
+    print("project_use: false")
     return 0
 
 
@@ -4846,6 +5044,7 @@ def _handle_validate(args: Namespace) -> int:
     if args.golden:
         golden_results = [
             *run_bending_golden_cases(),
+            *run_step3_bending_benchmark_cases(),
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
             *run_crack_width_golden_cases(),
@@ -4855,7 +5054,10 @@ def _handle_validate(args: Namespace) -> int:
 
     dataset_result = None
     if args.generate_dataset_limit is not None:
-        cases = generate_dataset_cases(limit=args.generate_dataset_limit)
+        cases = generate_dataset_cases(
+            limit=args.generate_dataset_limit,
+            load_duration="short",
+        )
         split = split_dataset_cases(cases, group_by="group_key")
         dataset_result = validate_dataset_cases(cases, split)
     elif args.dataset is not None:
@@ -4880,7 +5082,7 @@ def _handle_validate(args: Namespace) -> int:
 
     external_template_path = None
     if args.external_template is not None:
-        external_cases = generate_dataset_cases(limit=10)
+        external_cases = generate_dataset_cases(limit=10, load_duration="short")
         template_rows = build_external_comparison_rows(external_cases, limit=10)
         external_template_path = export_external_comparison_csv(
             template_rows,
@@ -4892,6 +5094,7 @@ def _handle_validate(args: Namespace) -> int:
     if args.acceptance_report is not None:
         acceptance_golden_results = [
             *run_bending_golden_cases(),
+            *run_step3_bending_benchmark_cases(),
             *run_shear_golden_cases(),
             *run_crack_formation_golden_cases(),
             *run_crack_width_golden_cases(),
@@ -4900,6 +5103,7 @@ def _handle_validate(args: Namespace) -> int:
         ]
         acceptance_cases = generate_dataset_cases(
             limit=args.generate_dataset_limit or 100,
+            load_duration="short",
         )
         acceptance_split = split_dataset_cases(acceptance_cases, group_by="group_key")
         acceptance_dataset_result = validate_dataset_cases(
@@ -4928,6 +5132,11 @@ def _handle_validate(args: Namespace) -> int:
     payload: dict[str, Any] = {
         "command": "validate",
         "status": status,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "requires_engineer_review": True,
         "golden": [asdict(result) for result in golden_results],
         "dataset": None if dataset_result is None else asdict(dataset_result),
         "external_template": (
@@ -4958,11 +5167,22 @@ def _handle_validate(args: Namespace) -> int:
 
     print("Validation")
     print(f"status: {status}")
+    print("completeness_status: incomplete")
+    print("evidence_status: needs_engineer_review")
+    print("project_use_status: prohibited")
+    print("project_use: false")
+    print("requires_engineer_review: true")
     if golden_results:
         passed_count = sum(1 for result in golden_results if result.passed)
         print(f"golden: {passed_count}/{len(golden_results)} passed")
         for result in golden_results:
-            print(f"{result.case_id}: {result.status}")
+            expected_status = result.expected.get("calculation_status", "not_available")
+            actual_status = result.actual.get("calculation_status", "not_available")
+            print(
+                f"{result.case_id}: regression_match={result.status}; "
+                f"expected_calculation_status={expected_status}; "
+                f"actual_calculation_status={actual_status}"
+            )
     if dataset_result is not None:
         print(f"dataset: {dataset_result.status}")
         print(f"total_rows: {dataset_result.total_rows}")
@@ -5311,7 +5531,10 @@ def _handle_ml_readiness(args: Namespace) -> int:
         rows = (case.as_readiness_row() for case in cases)
         dataset_mode = "diagnostic"
     else:
-        cases = generate_dataset_cases(limit=args.generate_dataset_limit)
+        cases = generate_dataset_cases(
+            limit=args.generate_dataset_limit,
+            load_duration="short",
+        )
         rows = (case.as_row() for case in cases)
         dataset_mode = "safe_accepted"
     report = build_ml_readiness_report(rows)
@@ -5563,7 +5786,11 @@ def _handle_engineering_ml_readiness(args: Namespace) -> int:
 
 
 def _handle_ml_baseline(args: Namespace) -> int:
-    safe_cases = generate_dataset_cases(limit=args.safe_limit, seed=args.seed)
+    safe_cases = generate_dataset_cases(
+        limit=args.safe_limit,
+        load_duration="short",
+        seed=args.seed,
+    )
     diagnostic_cases = generate_diagnostic_dataset_cases(limit=args.diagnostic_limit)
     report = build_baseline_ml_report(
         safe_cases=safe_cases,
@@ -5975,6 +6202,10 @@ def _handle_ml_proposal_verify(args: Namespace) -> int:
         "accepted_count": accepted_count,
         "rejected_count": rejected_count,
         "results": [asdict(result) for result in results],
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
         "ml_is_advisory_only": True,
         "deterministic_checks_required": True,
         "requires_engineer_review": True,
@@ -5988,6 +6219,13 @@ def _handle_ml_proposal_verify(args: Namespace) -> int:
     print(f"verified_count: {len(results)}")
     print(f"accepted_count: {accepted_count}")
     print(f"rejected_count: {rejected_count}")
+    print("completeness_status: incomplete")
+    print("evidence_status: needs_engineer_review")
+    print("project_use_status: prohibited")
+    print("project_use: false")
+    print("requires_engineer_review: true")
+    print("ml_is_advisory_only: true")
+    print("accepted means only a narrow deterministic check; project use is prohibited")
     for result in results:
         print(
             f"{result.proposal_id}: {result.verification_status} "
@@ -6067,6 +6305,10 @@ def _ml_proposal_smoke_examples() -> tuple[MLProposal, ...]:
         "stirrup_rebar_class": "A240",
         "M": 150_000_000,
         "Q": 80_000,
+        "local_axes_id": "ml-proposal-smoke-local-axes",
+        "moment_axis": "local_z",
+        "tension_face": "local_y_min",
+        "load_duration": "short",
         "Mser": 30_000_000,
         "span": 6000,
     }
@@ -6115,6 +6357,7 @@ def _handle_train_baseline(args: Namespace) -> int:
     else:
         cases = generate_dataset_cases(
             limit=args.generate_dataset_limit,
+            load_duration="short",
             seed=args.seed,
         )
         dataset_source = "generated"
@@ -6140,6 +6383,12 @@ def _handle_train_baseline(args: Namespace) -> int:
         "dataset_version": bundle.dataset_version,
         "sp63_core_version": bundle.sp63_core_version,
         "requires_deterministic_check": bundle.requires_deterministic_check,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "ml_ready_for_project_use": False,
+        "requires_engineer_review": True,
     }
     metrics_path.write_text(
         jsonlib.dumps(metrics_payload, ensure_ascii=False, indent=2),
@@ -6163,6 +6412,12 @@ def _handle_train_baseline(args: Namespace) -> int:
         "ml_quality_status": quality_gate.status,
         "ml_quality_warnings": quality_gate.warnings,
         "dataset_version": bundle.dataset_version,
+        "completeness_status": "incomplete",
+        "evidence_status": "needs_engineer_review",
+        "project_use_status": "prohibited",
+        "project_use": False,
+        "ml_ready_for_project_use": False,
+        "requires_engineer_review": True,
     }
     warnings = [BASELINE_ML_WARNING]
     safety_warning = (
@@ -6197,6 +6452,12 @@ def _handle_train_baseline(args: Namespace) -> int:
     print(f"model_output: {model_path}")
     print(f"metrics_output: {metrics_path}")
     print(f"dataset_version: {bundle.dataset_version}")
+    print("completeness_status: incomplete")
+    print("evidence_status: needs_engineer_review")
+    print("project_use_status: prohibited")
+    print("project_use: false")
+    print("ml_ready_for_project_use: false")
+    print("requires_engineer_review: true")
     for metric_name, value in metrics.items():
         print(f"{metric_name}: {value:.6g}")
     for metric_name, value in safety_metrics.items():
@@ -6215,15 +6476,25 @@ def _handle_train_baseline(args: Namespace) -> int:
     return 0
 
 
-def _print_json(command: str, status: str, result: Any, warnings: tuple[str, ...]) -> None:
+def _print_json(
+    command: str,
+    status: str,
+    result: Any,
+    warnings: tuple[str, ...],
+    *,
+    safety_statuses: dict[str, Any] | None = None,
+) -> None:
+    payload = {
+        "command": command,
+        "status": status,
+        "result": result,
+        "warnings": list(warnings),
+    }
+    if safety_statuses is not None:
+        payload.update(safety_statuses)
     print(
         jsonlib.dumps(
-            {
-                "command": command,
-                "status": status,
-                "result": result,
-                "warnings": list(warnings),
-            },
+            payload,
             ensure_ascii=False,
             indent=2,
         )
@@ -6239,6 +6510,7 @@ def _print_warnings(warnings: tuple[str, ...]) -> None:
 
 
 def _longitudinal_option_to_dict(option: Any) -> dict[str, Any]:
+    bending_values = option.bending.intermediate_values
     return {
         "scheme": option.scheme,
         "As": option.As,
@@ -6249,6 +6521,16 @@ def _longitudinal_option_to_dict(option: Any) -> dict[str, Any]:
         "reinforcement_ratio_percent": option.constructive.intermediate_values[
             "reinforcement_ratio_percent"
         ],
+        "local_axes_id": bending_values["local_axes_id"],
+        "moment_axis": bending_values["moment_axis"],
+        "tension_face": bending_values["tension_face"],
+        "load_combination": bending_values["load_combination"],
+        "gamma_b1": bending_values["gamma_b1"],
+        "completeness_status": option.bending.completeness_status,
+        "evidence_status": option.bending.evidence_status,
+        "project_use_status": option.bending.project_use_status,
+        "project_use": option.bending.project_use,
+        "requires_engineer_review": option.requires_engineer_review,
         "status": option.status,
     }
 
@@ -6261,6 +6543,13 @@ def _transverse_option_to_dict(option: Any) -> dict[str, Any]:
         "legs": option.legs,
         "utilization": option.utilization,
         "steel_consumption": option.steel_consumption,
+        "h0": option.section.effective_depth(),
+        "geometry_stirrup_diameter": option.section.stirrup_diameter,
+        "completeness_status": option.completeness_status,
+        "evidence_status": option.evidence_status,
+        "project_use_status": option.project_use_status,
+        "project_use": option.project_use,
+        "requires_engineer_review": option.requires_engineer_review,
         "constructive_status": option.constructive.status,
         "constructive_max_spacing": option.constructive.intermediate_values["max_spacing"],
         "sw_max_by_shear_rule": option.shear.intermediate_values["sw_max_by_shear_rule"],
@@ -6278,6 +6567,11 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
         "strength_status": design.strength_status,
         "serviceability_status": design.serviceability_status,
         "overall_status": design.overall_status,
+        "completeness_status": design.completeness_status,
+        "evidence_status": design.evidence_status,
+        "project_use_status": design.project_use_status,
+        "project_use": design.project_use,
+        "requires_engineer_review": design.requires_engineer_review,
         "selected_longitudinal": (
             None
             if design.selected_longitudinal is None
@@ -6398,18 +6692,7 @@ def _material_verification_markdown_template_path() -> Path:
 
 
 def _load_external_validation_csv(path: Path) -> tuple[dict[str, str], ...]:
-    with path.open(encoding="utf-8", newline="") as csv_file:
-        reader = csv.DictReader(csv_file)
-        if reader.fieldnames is None:
-            raise ValueError("external validation CSV is missing header")
-        missing_columns = [
-            column for column in EXTERNAL_VALIDATION_COLUMNS if column not in reader.fieldnames
-        ]
-        if missing_columns:
-            raise ValueError(
-                "external validation CSV is missing columns: " + ", ".join(missing_columns)
-            )
-        return tuple(dict(row) for row in reader)
+    return load_external_validation_rows_csv(path)
 
 
 def _load_material_verification_csv(path: Path) -> tuple[dict[str, str], ...]:
@@ -6431,12 +6714,27 @@ def _load_material_verification_csv(path: Path) -> tuple[dict[str, str], ...]:
 
 def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
     with path.open(encoding="utf-8", newline="") as csv_file:
-        rows = list(csv.DictReader(csv_file))
-    cases = []
-    for row in rows:
-        missing_columns = [column for column in DATASET_COLUMNS if column not in row]
+        reader = csv.DictReader(csv_file)
+        if reader.fieldnames is None:
+            raise ValueError("dataset CSV is missing header")
+        missing_columns = [
+            column for column in DATASET_COLUMNS if column not in reader.fieldnames
+        ]
         if missing_columns:
             raise ValueError(f"dataset CSV is missing columns: {', '.join(missing_columns)}")
+        rows = list(reader)
+    cases = []
+    for row in rows:
+        if row["dataset_version"] != DATASET_VERSION:
+            raise ValueError(
+                f"unsupported dataset_version {row['dataset_version']!r}; "
+                f"expected {DATASET_VERSION!r}"
+            )
+        if row["load_duration"] != "short":
+            raise ValueError(
+                "dataset v0.3 rows must use load_duration='short' until the "
+                "shear load-combination context is implemented"
+            )
         cases.append(
             DatasetCase(
                 case_id=row["case_id"],
@@ -6450,6 +6748,9 @@ def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
                 concrete_class=row["concrete_class"],
                 rebar_class=row["rebar_class"],
                 stirrup_class=row["stirrup_class"],
+                local_axes_id=row["local_axes_id"],
+                moment_axis=row["moment_axis"],
+                tension_face=row["tension_face"],
                 load_duration=row["load_duration"],
                 M=float(row["M"]),
                 Q=float(row["Q"]),
@@ -6507,6 +6808,10 @@ def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
                 strength_status=row["strength_status"],
                 serviceability_status=row["serviceability_status"],
                 overall_status=row["overall_status"],
+                completeness_status=row["completeness_status"],
+                evidence_status=row["evidence_status"],
+                project_use_status=row["project_use_status"],
+                project_use=_parse_bool(row["project_use"]),
                 warnings_count=int(row["warnings_count"]),
                 requires_engineer_review=_parse_bool(row["requires_engineer_review"]),
                 unsafe_row=_parse_bool(row["unsafe_row"]),

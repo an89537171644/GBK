@@ -6,6 +6,7 @@ K3 is not a new normative formula. Each candidate is accepted only after
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from math import isfinite
 
 from sp63_core.checks import ShearResult, check_shear_rectangular
 from sp63_core.materials.concrete import Concrete
@@ -35,10 +36,15 @@ class TransverseRebarOption:
     scheme: str
     shear: ShearResult
     constructive: ConstructiveCheckResult
+    section: RectangularSection
     steel_consumption: float
     status: str
     utilization: float
     warnings: tuple[str, ...]
+    completeness_status: str = "incomplete"
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -54,19 +60,38 @@ def select_transverse_rebar(
     max_results: int = 5,
 ) -> tuple[TransverseRebarOption, ...]:
     """Return top passing transverse reinforcement options."""
+    section.validate_geometry()
+    if not isfinite(Q) or Q < 0:
+        raise ValueError("Q must be a finite non-negative value")
     if max_results <= 0:
         raise ValueError("max_results must be positive")
 
+    candidate_diameters = tuple(diameters)
+    candidate_legs = tuple(legs_options)
+    candidate_spacings = tuple(spacings)
+    if any(diameter <= 0 for diameter in candidate_diameters):
+        raise ValueError("diameter must be positive")
+    if any(legs <= 0 for legs in candidate_legs):
+        raise ValueError("legs must be positive")
+    if any(spacing <= 0 for spacing in candidate_spacings):
+        raise ValueError("spacing must be positive")
+
     options: list[TransverseRebarOption] = []
-    for diameter in diameters:
-        for legs in legs_options:
-            if legs <= 0:
-                raise ValueError("legs must be positive")
+    for diameter in candidate_diameters:
+        candidate_section = RectangularSection(
+            b=section.b,
+            h=section.h,
+            cover=section.cover,
+            stirrup_diameter=diameter,
+            main_bar_diameter=section.main_bar_diameter,
+        )
+        candidate_section.validate_geometry()
+        for legs in candidate_legs:
 
             Asw = legs * area_by_diameter(diameter)
-            for spacing in spacings:
+            for spacing in candidate_spacings:
                 shear = check_shear_rectangular(
-                    section=section,
+                    section=candidate_section,
                     concrete=concrete,
                     stirrup_rebar=stirrup_rebar,
                     Q=Q,
@@ -79,7 +104,7 @@ def select_transverse_rebar(
                     continue
 
                 constructive = check_transverse_constructive(
-                    section=section,
+                    section=candidate_section,
                     concrete=concrete,
                     stirrup_rebar=stirrup_rebar,
                     Q=Q,
@@ -101,6 +126,7 @@ def select_transverse_rebar(
                         scheme=f"D{diameter}/{spacing}, {legs} legs",
                         shear=shear,
                         constructive=constructive,
+                        section=candidate_section,
                         steel_consumption=steel_consumption,
                         status=shear.status,
                         utilization=shear.utilization,

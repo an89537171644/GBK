@@ -5,7 +5,7 @@
       "case_id": "case_0001",
       "input_summary": {
         "M": 400000000,
-        "Mser": 238098502.49,
+        "Mser": 255339897.485,
         "Q": 35000,
         "b": 450,
         "check_crack_width": false,
@@ -13,192 +13,236 @@
         "check_deflection": false,
         "concrete_class": "B25",
         "h": 350,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0001",
         "longitudinal_rebar_class": "A400",
-        "span": 3000,
-        "stirrup_rebar_class": "A240"
+        "moment_axis": "local_z",
+        "span": 7000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
       },
       "path": "case_0001.json",
-      "sha256": "229576300712c87cd5729ff221b052a1c67ab0608fe9651b022f108df0657466"
+      "sha256": "f7e2f96c39c4f61188a9a852126579776ce3e1c7febe6bd3d83e27ae90685322"
     },
     {
       "case_id": "case_0002",
       "input_summary": {
         "M": 75000000,
-        "Mser": 52853642.125,
-        "Q": 200000,
+        "Mser": 45075702.339,
+        "Q": 250000,
         "b": 200,
         "check_crack_width": true,
         "check_cracks": true,
         "check_deflection": false,
         "concrete_class": "B20",
-        "h": 350,
+        "h": 900,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0002",
         "longitudinal_rebar_class": "A400",
-        "span": 3000,
-        "stirrup_rebar_class": "A400"
+        "moment_axis": "local_z",
+        "span": 7000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
       },
       "path": "case_0002.json",
-      "sha256": "65001ab24d698bf67b798a2103eb7c1a31ab215bc8869987e374d8e4f10ee97b"
+      "sha256": "6c00f4a76135f41adee9009fbbd78db7ee15de2a2594929261c56c2b64a26574"
     },
     {
       "case_id": "case_0003",
       "input_summary": {
-        "M": 75000000,
-        "Mser": 25977969.127,
-        "Q": 125000,
-        "b": 500,
+        "M": 450000000,
+        "Mser": 292081363.872,
+        "Q": 50000,
+        "b": 250,
         "check_crack_width": true,
         "check_cracks": true,
         "check_deflection": true,
-        "concrete_class": "B30",
-        "h": 400,
+        "concrete_class": "B35",
+        "h": 800,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0003",
         "longitudinal_rebar_class": "A500",
-        "span": 3000,
-        "stirrup_rebar_class": "A240"
+        "moment_axis": "local_z",
+        "span": 5000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
       },
       "path": "case_0003.json",
-      "sha256": "647355ae99bb98dc61ff3437da88468af45129dd7ef7a413a9511067dd93eeed"
+      "sha256": "e33a60100e60366c2e12cec64870413a558a6c3c1554cee9ec01a177987eb3a8"
     },
     {
       "case_id": "case_0004",
       "input_summary": {
-        "M": 150000000,
-        "Mser": 107205349.819,
-        "Q": 35000,
+        "M": 35000000,
+        "Mser": 25331151.411,
+        "Q": 125000,
         "b": 300,
         "check_crack_width": false,
         "check_cracks": true,
         "check_deflection": true,
         "concrete_class": "B20",
-        "h": 550,
-        "longitudinal_rebar_class": "A500",
+        "h": 400,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0004",
+        "longitudinal_rebar_class": "A400",
+        "moment_axis": "local_z",
         "span": 7000,
-        "stirrup_rebar_class": "A240"
+        "stirrup_rebar_class": "A400",
+        "tension_face": "local_y_min"
       },
       "path": "case_0004.json",
-      "sha256": "cf10f85a30fa6b99135f1c4302fcd4864a524006851934d3a696d5dbe6407de4"
+      "sha256": "a88b7ab76d9c4e40c7e8957ba6339692cd07be2eff9df898cf9f6041175d139b"
     },
     {
       "case_id": "case_0005",
       "input_summary": {
-        "M": 450000000,
-        "Mser": 327446487.228,
+        "M": 250000000,
+        "Mser": 178675583.032,
         "Q": 100000,
-        "b": 500,
-        "check_crack_width": false,
-        "check_cracks": false,
-        "check_deflection": false,
-        "concrete_class": "B20",
-        "h": 550,
-        "longitudinal_rebar_class": "A400",
-        "span": 9000,
-        "stirrup_rebar_class": "A240"
-      },
-      "path": "case_0005.json",
-      "sha256": "a606fc88ab7983559789f92a97c4f33abdf297924e50ad311a19923e1c71dc84"
-    },
-    {
-      "case_id": "case_0006",
-      "input_summary": {
-        "M": 125000000,
-        "Mser": 81363769.591,
-        "Q": 75000,
-        "b": 200,
-        "check_crack_width": false,
-        "check_cracks": true,
-        "check_deflection": false,
-        "concrete_class": "B30",
-        "h": 600,
-        "longitudinal_rebar_class": "A400",
-        "span": 8000,
-        "stirrup_rebar_class": "A400"
-      },
-      "path": "case_0006.json",
-      "sha256": "a5a07d1abcc4dcb8f8051b3bc052d3089bff2cd3a265d03a9fc07381153f9ee7"
-    },
-    {
-      "case_id": "case_0007",
-      "input_summary": {
-        "M": 150000000,
-        "Mser": 96346068.824,
-        "Q": 100000,
-        "b": 450,
-        "check_crack_width": true,
-        "check_cracks": true,
-        "check_deflection": false,
-        "concrete_class": "B25",
-        "h": 350,
-        "longitudinal_rebar_class": "A400",
-        "span": 9000,
-        "stirrup_rebar_class": "A400"
-      },
-      "path": "case_0007.json",
-      "sha256": "d33bdf81ff98cffa7cb3d61c6a6579160da17e749bac8671db16302821b9c945"
-    },
-    {
-      "case_id": "case_0008",
-      "input_summary": {
-        "M": 35000000,
-        "Mser": 14220964.521,
-        "Q": 75000,
-        "b": 500,
-        "check_crack_width": true,
-        "check_cracks": true,
-        "check_deflection": true,
-        "concrete_class": "B30",
-        "h": 300,
-        "longitudinal_rebar_class": "A500",
-        "span": 6000,
-        "stirrup_rebar_class": "A400"
-      },
-      "path": "case_0008.json",
-      "sha256": "01afe21d628256f8122c753e3a0252f588726693ed06aae9fe09eb354072679d"
-    },
-    {
-      "case_id": "case_0009",
-      "input_summary": {
-        "M": 400000000,
-        "Mser": 299564576.72,
-        "Q": 300000,
-        "b": 350,
-        "check_crack_width": false,
-        "check_cracks": true,
-        "check_deflection": true,
-        "concrete_class": "B25",
-        "h": 700,
-        "longitudinal_rebar_class": "A400",
-        "span": 6000,
-        "stirrup_rebar_class": "A400"
-      },
-      "path": "case_0009.json",
-      "sha256": "992033ff54c50555ad6f23118c1df5248632dd83e9dbe5865d4fec8534d0edd1"
-    },
-    {
-      "case_id": "case_0010",
-      "input_summary": {
-        "M": 50000000,
-        "Mser": 29910225.768,
-        "Q": 50000,
         "b": 300,
         "check_crack_width": false,
         "check_cracks": false,
         "check_deflection": false,
         "concrete_class": "B20",
-        "h": 450,
+        "h": 300,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0005",
+        "longitudinal_rebar_class": "A500",
+        "moment_axis": "local_z",
+        "span": 7000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
+      },
+      "path": "case_0005.json",
+      "sha256": "aabb1b7ccefae2e7aabf0708f56e0f235dcb134248b5184391cb95f7517c1370"
+    },
+    {
+      "case_id": "case_0006",
+      "input_summary": {
+        "M": 450000000,
+        "Mser": 356674842.149,
+        "Q": 100000,
+        "b": 500,
+        "check_crack_width": false,
+        "check_cracks": true,
+        "check_deflection": false,
+        "concrete_class": "B20",
+        "h": 550,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0006",
         "longitudinal_rebar_class": "A400",
-        "span": 6000,
-        "stirrup_rebar_class": "A240"
+        "moment_axis": "local_z",
+        "span": 9000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
+      },
+      "path": "case_0006.json",
+      "sha256": "eb3b0270a454be6d2ef33aaaea09bdc6ffbc3018f2f8fe2cc5730ea17ab79366"
+    },
+    {
+      "case_id": "case_0007",
+      "input_summary": {
+        "M": 125000000,
+        "Mser": 50594189.423,
+        "Q": 125000,
+        "b": 250,
+        "check_crack_width": true,
+        "check_cracks": true,
+        "check_deflection": false,
+        "concrete_class": "B35",
+        "h": 350,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0007",
+        "longitudinal_rebar_class": "A500",
+        "moment_axis": "local_z",
+        "span": 5000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
+      },
+      "path": "case_0007.json",
+      "sha256": "e7aa35ae5a606e3689b6712d370ab807236418de63fa2fa2ea12928a1e637abf"
+    },
+    {
+      "case_id": "case_0008",
+      "input_summary": {
+        "M": 150000000,
+        "Mser": 119214251.298,
+        "Q": 100000,
+        "b": 450,
+        "check_crack_width": true,
+        "check_cracks": true,
+        "check_deflection": true,
+        "concrete_class": "B25",
+        "h": 350,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0008",
+        "longitudinal_rebar_class": "A400",
+        "moment_axis": "local_z",
+        "span": 8000,
+        "stirrup_rebar_class": "A400",
+        "tension_face": "local_y_min"
+      },
+      "path": "case_0008.json",
+      "sha256": "319da202799137ff9132eacf7450e4e96916abdff2547dd8cdceb700dd7ea97b"
+    },
+    {
+      "case_id": "case_0009",
+      "input_summary": {
+        "M": 450000000,
+        "Mser": 225262077.08,
+        "Q": 125000,
+        "b": 450,
+        "check_crack_width": false,
+        "check_cracks": true,
+        "check_deflection": true,
+        "concrete_class": "B20",
+        "h": 800,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0009",
+        "longitudinal_rebar_class": "A400",
+        "moment_axis": "local_z",
+        "span": 3000,
+        "stirrup_rebar_class": "A240",
+        "tension_face": "local_y_min"
+      },
+      "path": "case_0009.json",
+      "sha256": "1242a434b9580f779e4420269707382ea83d4731a0a4c48497e888000fd5204b"
+    },
+    {
+      "case_id": "case_0010",
+      "input_summary": {
+        "M": 350000000,
+        "Mser": 130002528.327,
+        "Q": 200000,
+        "b": 250,
+        "check_crack_width": false,
+        "check_cracks": false,
+        "check_deflection": false,
+        "concrete_class": "B25",
+        "h": 900,
+        "load_duration": "short",
+        "local_axes_id": "synthetic-report-case-0010",
+        "longitudinal_rebar_class": "A500",
+        "moment_axis": "local_z",
+        "span": 4000,
+        "stirrup_rebar_class": "A400",
+        "tension_face": "local_y_min"
       },
       "path": "case_0010.json",
-      "sha256": "5f0295aefb523e5e8f1f1ec1552cf3fae4c4ff01d5212160d6d985753fe3a462"
+      "sha256": "55122071a257de10708f021fdb115fccc9eec5ff365c8f9a70614fa40eabad2a"
     }
   ],
+  "completeness_status": "incomplete",
   "deterministic_checks_required": true,
+  "evidence_status": "needs_engineer_review",
   "generator": "synthetic_report_inputs",
   "include_serviceability": true,
   "ml_is_advisory_only": true,
+  "project_use": false,
+  "project_use_status": "prohibited",
   "readme": {
     "path": "README_SYNTHETIC.md",
-    "sha256": "960ff6825508acab1d41bfe8c7a3c5c5ef012d7f7cb489246bd2a899ed39f00b"
+    "sha256": "d5bca449e86ed50fee3a091e7b41b9874d0513036d42b4515b11fe8d47689375"
   },
   "requires_engineer_review": true,
   "seed": 42,

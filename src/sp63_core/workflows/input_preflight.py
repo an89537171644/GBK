@@ -13,6 +13,7 @@ from typing import Any
 
 from sp63_core.materials.concrete import CONCRETE_CATALOG
 from sp63_core.materials.rebar import REBAR_CATALOG
+from sp63_core.materials.uls_context import SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES
 from sp63_core.workflows.input_form_schema import (
     MANDATORY_WARNINGS,
     InputFormSchemaResult,
@@ -34,6 +35,10 @@ DESIGN_REQUIRED_FIELDS = (
     "stirrup_rebar_class",
     "M",
     "Q",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
+    "load_duration",
 )
 
 NONNEGATIVE_NUMERIC_FIELDS = ("M", "Q", "Mser")
@@ -148,6 +153,7 @@ def run_input_preflight(
 
     _validate_numeric_fields(data, schema_fields, issues)
     _validate_boolean_fields(data, schema_fields, issues)
+    _validate_declared_options(data, schema_fields, issues)
     _validate_geometry(data, issues)
     _validate_materials(data, issues)
     _validate_ml_and_paths(data, input_path, issues)
@@ -350,6 +356,40 @@ def _validate_boolean_fields(
             )
 
 
+def _validate_declared_options(
+    data: dict[str, Any],
+    schema_fields: dict[str, dict[str, Any]],
+    issues: list[InputPreflightIssue],
+) -> None:
+    for field, metadata in schema_fields.items():
+        if field not in data:
+            continue
+        value = data[field]
+        if metadata.get("type") == "text":
+            if not isinstance(value, str) or not value.strip():
+                _add_issue(
+                    issues,
+                    "text_field_invalid",
+                    "error",
+                    field,
+                    f"{field} must be a non-empty string.",
+                    "Declare the source identifier explicitly.",
+                )
+            continue
+        if metadata.get("type") != "select":
+            continue
+        options = metadata.get("options", ())
+        if value not in options:
+            _add_issue(
+                issues,
+                "select_field_invalid",
+                "error",
+                field,
+                f"{field} must be one of: {', '.join(str(option) for option in options)}.",
+                "Select an explicitly supported value from the input schema.",
+            )
+
+
 def _validate_geometry(data: dict[str, Any], issues: list[InputPreflightIssue]) -> None:
     h = _number_or_none(data.get("h"))
     cover = _number_or_none(data.get("cover"))
@@ -398,17 +438,39 @@ def _validate_materials(data: dict[str, Any], issues: list[InputPreflightIssue])
             "Select a concrete class available in the material catalog.",
         )
 
-    for field in ("longitudinal_rebar_class", "stirrup_rebar_class"):
-        rebar_class = data.get(field)
-        if rebar_class is not None and rebar_class not in REBAR_CATALOG:
-            _add_issue(
-                issues,
-                "unknown_rebar_class",
-                "error",
-                field,
-                f"Unsupported reinforcement class: {rebar_class}",
-                "Select a reinforcement class available in the material catalog.",
-            )
+    longitudinal_class = data.get("longitudinal_rebar_class")
+    if longitudinal_class is not None and longitudinal_class not in REBAR_CATALOG:
+        _add_issue(
+            issues,
+            "unknown_rebar_class",
+            "error",
+            "longitudinal_rebar_class",
+            f"Unsupported reinforcement class: {longitudinal_class}",
+            "Select a reinforcement class available in the material catalog.",
+        )
+    elif (
+        longitudinal_class is not None
+        and longitudinal_class not in SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES
+    ):
+        _add_issue(
+            issues,
+            "unsupported_uls_longitudinal_rebar_class",
+            "error",
+            "longitudinal_rebar_class",
+            f"Longitudinal reinforcement class is outside ULS v1 scope: {longitudinal_class}",
+            "Select A400 or A500 for the current rectangular ULS design workflow.",
+        )
+
+    stirrup_class = data.get("stirrup_rebar_class")
+    if stirrup_class is not None and stirrup_class not in REBAR_CATALOG:
+        _add_issue(
+            issues,
+            "unknown_rebar_class",
+            "error",
+            "stirrup_rebar_class",
+            f"Unsupported reinforcement class: {stirrup_class}",
+            "Select a reinforcement class available in the material catalog.",
+        )
 
 
 def _validate_ml_and_paths(

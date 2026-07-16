@@ -21,6 +21,7 @@ def build_review_readme_for_single_bundle(
     strength_status = _manifest_value(manifest, "strength_status")
     serviceability_status = _manifest_value(manifest, "serviceability_status")
     overall_status = _manifest_value(manifest, "overall_status")
+    safety_statuses = _manifest_safety_status_lines(manifest)
 
     lines = [
         "# Engineering Review Package",
@@ -77,6 +78,7 @@ def build_review_readme_for_single_bundle(
         f"- strength_status: `{strength_status}`",
         f"- serviceability_status: `{serviceability_status}`",
         f"- overall_status: `{overall_status}`",
+        *safety_statuses,
         "",
         *_warning_section(),
     ]
@@ -96,6 +98,7 @@ def build_review_readme_for_batch_archive(
     overall_status = _manifest_value(manifest, "overall_status")
     strength_status = _batch_status_summary(index, "strength_status")
     serviceability_status = _batch_status_summary(index, "serviceability_status")
+    safety_statuses = _manifest_safety_status_lines(manifest)
 
     lines = [
         "# Engineering Review Package",
@@ -162,6 +165,7 @@ def build_review_readme_for_batch_archive(
         f"- strength_status: `{strength_status}`",
         f"- serviceability_status: `{serviceability_status}`",
         f"- overall_status: `{overall_status}`",
+        *safety_statuses,
         "",
         *_warning_section(),
     ]
@@ -178,7 +182,21 @@ def _load_json_object(path: Path) -> dict[str, Any]:
 
 def _manifest_value(manifest: dict[str, Any], field_name: str) -> str:
     value = manifest.get(field_name)
+    if isinstance(value, bool):
+        return str(value).lower()
     return str(value) if value is not None else _UNKNOWN
+
+
+def _manifest_safety_status_lines(manifest: dict[str, Any]) -> list[str]:
+    return [
+        f"- manifest_version: `{_manifest_value(manifest, 'manifest_version')}`",
+        f"- completeness_status: `{_manifest_value(manifest, 'completeness_status')}`",
+        f"- evidence_status: `{_manifest_value(manifest, 'evidence_status')}`",
+        f"- project_use_status: `{_manifest_value(manifest, 'project_use_status')}`",
+        f"- project_use: `{_manifest_value(manifest, 'project_use')}`",
+        "- requires_engineer_review: "
+        f"`{_manifest_value(manifest, 'requires_engineer_review')}`",
+    ]
 
 
 def _batch_status_summary(index: dict[str, Any], field_name: str) -> str:

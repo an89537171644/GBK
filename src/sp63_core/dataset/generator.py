@@ -20,10 +20,15 @@ from sp63_core.checks import (
 from sp63_core.materials import STIRRUP_DIAMETERS, LoadDuration, get_concrete, get_rebar
 from sp63_core.rebar import select_longitudinal_rebar, select_transverse_rebar
 from sp63_core.report import build_calculation_protocol
-from sp63_core.sections import RectangularSection
+from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
-DATASET_VERSION = "0.1"
+DATASET_VERSION = "0.3"
 DATASET_SOURCE = "deterministic_sp63_core"
+SYNTHETIC_BENDING_ORIENTATION = RectangularBendingOrientation(
+    local_axes_id="synthetic-dataset-local-axes",
+    moment_axis="local_z",
+    tension_face="local_y_min",
+)
 _FULL_GRID_CACHE: dict[tuple[Any, ...], tuple["DatasetCase", ...]] = {}
 DATASET_COLUMNS: tuple[str, ...] = (
     "case_id",
@@ -37,6 +42,9 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "concrete_class",
     "rebar_class",
     "stirrup_class",
+    "local_axes_id",
+    "moment_axis",
+    "tension_face",
     "load_duration",
     "M",
     "Q",
@@ -92,6 +100,10 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "strength_status",
     "serviceability_status",
     "overall_status",
+    "completeness_status",
+    "evidence_status",
+    "project_use_status",
+    "project_use",
     "warnings_count",
     "requires_engineer_review",
     "unsafe_row",
@@ -116,6 +128,9 @@ class DatasetCase:
     concrete_class: str
     rebar_class: str
     stirrup_class: str
+    local_axes_id: str
+    moment_axis: str
+    tension_face: str
     load_duration: str
     M: float
     Q: float
@@ -171,12 +186,50 @@ class DatasetCase:
     strength_status: str
     serviceability_status: str
     overall_status: str
+    completeness_status: str
+    evidence_status: str
+    project_use_status: str
+    project_use: bool
     warnings_count: int
     requires_engineer_review: bool
     unsafe_row: bool
     dataset_source: str
     sp63_core_version: str
     dataset_version: str
+
+    def __post_init__(self) -> None:
+        """Reject legacy or incomplete provenance instead of inferring it."""
+        if self.dataset_version != DATASET_VERSION:
+            raise ValueError(
+                f"unsupported dataset_version {self.dataset_version!r}; "
+                f"expected {DATASET_VERSION!r}"
+            )
+        RectangularBendingOrientation(
+            local_axes_id=self.local_axes_id,
+            moment_axis=self.moment_axis,
+            tension_face=self.tension_face,
+        )
+        if self.load_duration != "short":
+            raise ValueError(
+                "dataset v0.3 load_duration must be 'short' until the "
+                "shear load-combination context is implemented"
+            )
+        if self.completeness_status != "incomplete":
+            raise ValueError("dataset v0.3 completeness_status must be 'incomplete'")
+        if self.evidence_status != "needs_engineer_review":
+            raise ValueError(
+                "dataset v0.3 evidence_status must be 'needs_engineer_review'"
+            )
+        if self.project_use_status != "prohibited":
+            raise ValueError("dataset v0.3 project_use_status must be 'prohibited'")
+        if self.project_use is not False:
+            raise ValueError("dataset v0.3 project_use must be false")
+        if self.requires_engineer_review is not True:
+            raise ValueError("dataset v0.3 requires_engineer_review must be true")
+        if self.dataset_source != DATASET_SOURCE:
+            raise ValueError(
+                f"dataset v0.3 dataset_source must be {DATASET_SOURCE!r}"
+            )
 
     def as_row(self) -> dict[str, Any]:
         """Return a CSV-ready row ordered by DATASET_COLUMNS."""
@@ -196,7 +249,7 @@ def generate_dataset_cases(
     concrete_classes: Iterable[str] = ("B20", "B25", "B30", "B35"),
     rebar_classes: Iterable[str] = ("A400", "A500"),
     stirrup_classes: Iterable[str] = ("A240", "A400"),
-    load_duration: LoadDuration = "short",
+    load_duration: LoadDuration,
     moments: Iterable[float] = (80_000_000, 120_000_000, 150_000_000, 200_000_000),
     shears: Iterable[float] = (50_000, 80_000, 120_000, 160_000),
     service_moment_ratio: float = 0.2,
@@ -215,6 +268,13 @@ def generate_dataset_cases(
         raise ValueError("service_moment_ratio must be non-negative")
     if span <= 0:
         raise ValueError("span must be positive")
+    if load_duration not in ("short", "long"):
+        raise ValueError("load_duration must be 'short' or 'long'")
+    if load_duration == "long":
+        raise ValueError(
+            "load_duration='long' is unsupported for dataset generation "
+            "until the shear load-combination context is implemented"
+        )
 
     normalized_element_types = tuple(element_types)
     normalized_widths = tuple(widths)
@@ -337,8 +397,9 @@ def _build_full_grid_rows(
                                         concrete=concrete,
                                         rebar=rebar,
                                         M=M,
-                                        max_results=1,
+                                        orientation=SYNTHETIC_BENDING_ORIENTATION,
                                         load_duration=load_duration,
+                                        max_results=1,
                                     )
                                     longitudinal_cache[longitudinal_key] = options
                                 if not options:
@@ -352,7 +413,6 @@ def _build_full_grid_rows(
                                         option.section.cover,
                                         option.section.stirrup_diameter,
                                         option.section.main_bar_diameter,
-                                        option.section.compression_bar_diameter,
                                         concrete_class,
                                         stirrup_class,
                                         Q,
@@ -460,6 +520,21 @@ def _build_full_grid_rows(
                                             concrete_class=concrete_class,
                                             rebar_class=rebar_class,
                                             stirrup_class=stirrup_class,
+                                            local_axes_id=(
+                                                option.bending.intermediate_values[
+                                                    "local_axes_id"
+                                                ]
+                                            ),
+                                            moment_axis=(
+                                                option.bending.intermediate_values[
+                                                    "moment_axis"
+                                                ]
+                                            ),
+                                            tension_face=(
+                                                option.bending.intermediate_values[
+                                                    "tension_face"
+                                                ]
+                                            ),
                                             load_duration=load_duration,
                                             M=M,
                                             Q=Q,
@@ -537,6 +612,12 @@ def _build_full_grid_rows(
                                                 protocol.serviceability_status
                                             ),
                                             overall_status=protocol.overall_status,
+                                            completeness_status=(
+                                                protocol.completeness_status
+                                            ),
+                                            evidence_status=protocol.evidence_status,
+                                            project_use_status=protocol.project_use_status,
+                                            project_use=protocol.project_use,
                                             warnings_count=len(protocol.warnings),
                                             requires_engineer_review=True,
                                             unsafe_row=unsafe_row,
