@@ -46,7 +46,7 @@ jobs:
           $wheel = Get-ChildItem dist -Filter "*.whl" | Select-Object -First 1
           if (-not $wheel) { throw "Project wheel was not built" }
           $package = Join-Path $env:RUNNER_TEMP "standalone_windows_package"
-          python -c "import sys; from pathlib import Path; from sp63_core.standalone.package import build_standalone_windows_package; result = build_standalone_windows_package(Path(sys.argv[1]), Path(sys.argv[2])); print(result); raise SystemExit(0 if result.status == 'pass' else 1)" $package $wheel.FullName
+          python -c "import sys; from pathlib import Path; from sp63_core.standalone.package import build_standalone_windows_package; result = build_standalone_windows_package(Path(sys.argv[1]), Path(sys.argv[2])); print('package_status=' + result.status); raise SystemExit(0 if result.status == 'pass' else 1)" $package $wheel.FullName
           "STANDALONE_PACKAGE=$package" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Reject committed-style native artifacts
