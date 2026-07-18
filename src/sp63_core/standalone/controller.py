@@ -776,9 +776,11 @@ def _build_review_bundle(
             ],
         }
         _write_json(manifest_path, manifest)
-        manifest_sha256_path.write_text(
-            f"{_sha256_file(manifest_path)}  {REVIEW_MANIFEST_FILENAME}\n",
-            encoding="utf-8",
+        manifest_sha256_path.write_bytes(
+            (
+                f"{_sha256_file(manifest_path)}  "
+                f"{REVIEW_MANIFEST_FILENAME}\n"
+            ).encode("ascii")
         )
         _remove_owned_artifact(temporary_bundle_path)
         with zipfile.ZipFile(
