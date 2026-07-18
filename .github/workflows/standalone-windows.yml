@@ -1,0 +1,282 @@
+name: standalone-windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/standalone-windows.yml"
+      - "docs/standalone/**"
+      - "src/sp63_core/**"
+      - "tests/test_standalone_*.py"
+      - "pyproject.toml"
+
+jobs:
+  package-and-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install development environment
+        run: |
+          python -m pip install --upgrade pip wheel
+          python -m pip install -e ".[dev]"
+
+      - name: Run standalone tests
+        shell: pwsh
+        run: |
+          $tests = Get-ChildItem tests -Filter "test_standalone_*.py" | ForEach-Object FullName
+          if (-not $tests) { throw "No standalone tests were found" }
+          python -m pytest -q $tests
+
+      - name: Run standalone lint
+        shell: pwsh
+        run: |
+          $tests = Get-ChildItem tests -Filter "test_standalone_*.py" | ForEach-Object FullName
+          ruff check src/sp63_core/standalone $tests
+
+      - name: Build pure Python project wheel
+        run: python -m pip wheel . --no-deps --no-build-isolation --wheel-dir dist
+
+      - name: Build standalone Windows package
+        shell: pwsh
+        run: |
+          $wheel = Get-ChildItem dist -Filter "*.whl" | Select-Object -First 1
+          if (-not $wheel) { throw "Project wheel was not built" }
+          $package = Join-Path $env:RUNNER_TEMP "standalone_windows_package"
+          python -c "import sys; from pathlib import Path; from sp63_core.standalone.package import build_standalone_windows_package; result = build_standalone_windows_package(Path(sys.argv[1]), Path(sys.argv[2])); print('package_status=' + result.status); raise SystemExit(0 if result.status == 'pass' else 1)" $package $wheel.FullName
+          "STANDALONE_PACKAGE=$package" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Reject committed-style native artifacts
+        shell: pwsh
+        run: |
+          $forbidden = Get-ChildItem $env:STANDALONE_PACKAGE -Recurse -File |
+            Where-Object { $_.Extension -in ".exe", ".dll", ".pyd", ".so", ".dylib", ".bin" }
+          if ($forbidden) {
+            $forbidden | ForEach-Object { Write-Error $_.FullName }
+            throw "Standalone package contains forbidden native artifacts"
+          }
+
+      - name: Verify complete package payload
+        shell: cmd
+        run: call "%STANDALONE_PACKAGE%\VERIFY_PACKAGE.cmd"
+
+      - name: Prove tampered lock wheel and documentation are rejected
+        shell: pwsh
+        run: |
+          $manifest = Get-Content "$env:STANDALONE_PACKAGE\standalone_manifest.json" -Raw |
+            ConvertFrom-Json
+          $tamperCases = @(
+            @{ Name = "lock"; Path = "requirements\runtime-py311.lock" },
+            @{ Name = "wheel"; Path = "wheel\$($manifest.wheel_filename)" },
+            @{ Name = "docs"; Path = "docs\WINDOWS_INSTALL.md" }
+          )
+          foreach ($case in $tamperCases) {
+            $copy = Join-Path $env:RUNNER_TEMP "standalone_tampered_$($case.Name)"
+            New-Item -ItemType Directory -Path $copy | Out-Null
+            Copy-Item "$env:STANDALONE_PACKAGE\*" $copy -Recurse -Force
+            Add-Content -LiteralPath (Join-Path $copy $case.Path) -Value "TAMPERED"
+            $verifier = Join-Path $copy "VERIFY_PACKAGE.cmd"
+            $arguments = "/d /c call `"$verifier`""
+            $process = Start-Process -FilePath $env:ComSpec -ArgumentList $arguments `
+              -Wait -PassThru -NoNewWindow
+            if ($process.ExitCode -eq 0) {
+              throw "Integrity verifier accepted tampered $($case.Name) payload"
+            }
+          }
+
+      - name: Archive review package before local installation
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "$env:STANDALONE_PACKAGE\*" -DestinationPath standalone-windows-oneclick.zip
+
+      - name: Prepare user-style path with spaces and Cyrillic
+        shell: pwsh
+        run: |
+          $userPackage = Join-Path $env:RUNNER_TEMP "проверка ЖБК"
+          New-Item -ItemType Directory -Path $userPackage | Out-Null
+          Copy-Item "$env:STANDALONE_PACKAGE\*" $userPackage -Recurse -Force
+          "STANDALONE_USER_PACKAGE=$userPackage" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install and run through one-click Windows launcher
+        shell: cmd
+        run: call "%STANDALONE_USER_PACKAGE%\01_START_HERE.cmd" --ci
+
+      - name: Prove failed staged reinstall preserves working environment
+        shell: pwsh
+        run: |
+          $buildIdPath = Join-Path $env:STANDALONE_USER_PACKAGE `
+            ".venv\.gbk_build_id"
+          $python = Join-Path $env:STANDALONE_USER_PACKAGE `
+            ".venv\Scripts\python.exe"
+          $beforeBuildId = Get-Content -LiteralPath $buildIdPath -Raw
+          $env:PIP_NO_INDEX = "1"
+          $env:PIP_NO_CACHE_DIR = "1"
+          try {
+            $installer = Join-Path $env:STANDALONE_USER_PACKAGE `
+              "INSTALL_FROM_WHEEL.cmd"
+            $arguments = "/d /c call `"$installer`""
+            $process = Start-Process -FilePath $env:ComSpec `
+              -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+          }
+          finally {
+            Remove-Item Env:PIP_NO_INDEX -ErrorAction SilentlyContinue
+            Remove-Item Env:PIP_NO_CACHE_DIR -ErrorAction SilentlyContinue
+          }
+          if ($process.ExitCode -eq 0) {
+            throw "Offline staged reinstall unexpectedly succeeded"
+          }
+          $afterBuildId = Get-Content -LiteralPath $buildIdPath -Raw
+          if ($afterBuildId -ne $beforeBuildId) {
+            throw "Failed staged reinstall changed the active build identity"
+          }
+          & $python -c "import sp63_core.standalone"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed staged reinstall damaged the active environment"
+          }
+
+      - name: Prove clean consecutive one-click rerun
+        shell: cmd
+        run: call "%STANDALONE_USER_PACKAGE%\01_START_HERE.cmd" --ci
+
+      - name: Prove corrupted review bundle is rejected
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $env:STANDALONE_USER_PACKAGE `
+            "output\beam_example\standalone_review_bundle.zip"
+          $backup = "$bundle.verified"
+          Copy-Item -LiteralPath $bundle -Destination $backup
+          $accepted = $false
+          try {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $archive = [IO.Compression.ZipFile]::Open(
+              $bundle, [IO.Compression.ZipArchiveMode]::Update
+            )
+            try {
+              $entry = $archive.GetEntry("README_REVIEW_BUNDLE.md")
+              if ($null -eq $entry) { throw "Tamper target is missing" }
+              $entry.Delete()
+              $replacement = $archive.CreateEntry("README_REVIEW_BUNDLE.md")
+              $writer = [IO.StreamWriter]::new(
+                $replacement.Open(), [Text.Encoding]::UTF8
+              )
+              try { $writer.Write("TAMPERED VALID ZIP PAYLOAD") }
+              finally { $writer.Dispose() }
+            }
+            finally {
+              $archive.Dispose()
+            }
+            $verifier = Join-Path $env:STANDALONE_USER_PACKAGE `
+              "VERIFY_ONE_CLICK_RESULT.ps1"
+            $process = Start-Process -FilePath "powershell" -ArgumentList @(
+              "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+              "-File", "`"$verifier`""
+            ) -Wait -PassThru -NoNewWindow
+            $accepted = $process.ExitCode -eq 0
+          }
+          finally {
+            Move-Item -LiteralPath $backup -Destination $bundle -Force
+          }
+          if ($accepted) {
+            throw "One-click verifier accepted a valid ZIP with tampered payload"
+          }
+
+      - name: Verify sanitized review bundle and build identity
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:STANDALONE_USER_PACKAGE "output\beam_example"
+          if (-not (Test-Path $output)) { throw "Standalone output directory was not created" }
+          $landing = Join-Path $output "standalone_index.html"
+          $bundle = Join-Path $output "standalone_review_bundle.zip"
+          $metadataPath = Join-Path $output "standalone_review_metadata.json"
+          $installLog = Join-Path $env:STANDALONE_USER_PACKAGE "INSTALLATION_LOG.txt"
+          $runLog = Join-Path $env:STANDALONE_USER_PACKAGE "EXAMPLE_RUN_LOG.txt"
+          foreach ($required in @($landing, $bundle, $metadataPath, $installLog, $runLog)) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+              throw "Required standalone review artifact is missing"
+            }
+          }
+
+          $packageManifest = Get-Content `
+            "$env:STANDALONE_USER_PACKAGE\standalone_manifest.json" -Raw | ConvertFrom-Json
+          $expectedBuildId = "wheel-sha256:$($packageManifest.wheel_sha256)"
+          $topLevelMetadata = Get-Content -LiteralPath $metadataPath -Raw |
+            ConvertFrom-Json
+          if ($topLevelMetadata.code_identity.code_identity_status -ne `
+            "recorded_from_launcher_requires_manifest_match") {
+            throw "Review metadata does not record launcher build identity"
+          }
+          if ($topLevelMetadata.code_identity.build_id -ne $expectedBuildId) {
+            throw "Review metadata build identity does not match package manifest"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [IO.Compression.ZipFile]::OpenRead($bundle)
+          try {
+            $metadataEntry = $archive.GetEntry("standalone_review_metadata.json")
+            if ($null -eq $metadataEntry) {
+              throw "Review ZIP metadata is missing"
+            }
+            $reader = [IO.StreamReader]::new(
+              $metadataEntry.Open(), [Text.Encoding]::UTF8, $true
+            )
+            try { $zipMetadata = $reader.ReadToEnd() | ConvertFrom-Json }
+            finally { $reader.Dispose() }
+            if ($zipMetadata.code_identity.code_identity_status -ne `
+              "recorded_from_launcher_requires_manifest_match") {
+              throw "Review ZIP code identity status is not acceptable"
+            }
+            if ($zipMetadata.code_identity.build_id -ne $expectedBuildId) {
+              throw "Review ZIP build identity does not match package manifest"
+            }
+
+            $forbiddenPaths = @(
+              $env:USERPROFILE,
+              $env:USERPROFILE.Replace("\", "/")
+            ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            foreach ($entry in $archive.Entries) {
+              $memory = [IO.MemoryStream]::new()
+              $stream = $entry.Open()
+              try { $stream.CopyTo($memory) }
+              finally { $stream.Dispose() }
+              $bytes = $memory.ToArray()
+              $memory.Dispose()
+              $decoded = @(
+                [Text.Encoding]::UTF8.GetString($bytes),
+                [Text.Encoding]::Unicode.GetString($bytes)
+              )
+              foreach ($text in $decoded) {
+                foreach ($forbidden in $forbiddenPaths) {
+                  if ($text.IndexOf($forbidden, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                    throw "Review ZIP contains a producer-local profile path"
+                  }
+                }
+              }
+            }
+          }
+          finally {
+            $archive.Dispose()
+          }
+
+          $rawBytes = [IO.File]::ReadAllBytes($bundle)
+          $rawDecoded = @(
+            [Text.Encoding]::UTF8.GetString($rawBytes),
+            [Text.Encoding]::Unicode.GetString($rawBytes)
+          )
+          foreach ($text in $rawDecoded) {
+            foreach ($forbidden in $forbiddenPaths) {
+              if ($text.IndexOf($forbidden, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                throw "Review ZIP raw bytes contain a producer-local profile path"
+              }
+            }
+          }
+
+      - name: Upload standalone review package
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-windows-python311-oneclick
+          path: standalone-windows-oneclick.zip
+          if-no-files-found: error

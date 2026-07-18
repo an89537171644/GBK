@@ -15,6 +15,7 @@ dev = ["pytest", "ruff"]
 
 [project.scripts]
 sp63-core = "sp63_core.cli:main"
+gbk-standalone = "sp63_core.standalone.app:main"
 
 [build-system]
 requires = ["setuptools>=68"]
