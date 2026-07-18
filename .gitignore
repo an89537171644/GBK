@@ -4,5 +4,8 @@ __pycache__/
 .ruff_cache/
 *.py[cod]
 *.egg-info/
+build/
+dist/
+GBK-output/
 data/generated/*
 !data/generated/.gitkeep
