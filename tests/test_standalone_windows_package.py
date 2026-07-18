@@ -41,8 +41,12 @@ def test_source_package_generates_beam_only_windows_skeleton(tmp_path):
     assert result.requires_engineer_review is True
     assert result.ml_included is False
     assert result.external_solver_required is False
-    assert result.script_count == 8
+    assert result.script_count == 12
     for relative_path in (
+        "01_START_HERE.cmd",
+        "ONE_CLICK_GUARD.ps1",
+        "ONE_CLICK_WORKER.cmd",
+        "VERIFY_ONE_CLICK_RESULT.ps1",
         "VERIFY_PACKAGE.ps1",
         "VERIFY_PACKAGE.cmd",
         "INSTALL_FROM_WHEEL.cmd",
@@ -79,6 +83,10 @@ def test_command_scripts_are_location_safe_and_use_standalone_cli(tmp_path):
     assert "scad" not in combined_lower
     assert "lira" not in combined_lower
 
+    powershell_scripts = tuple(tmp_path.glob("*.ps1"))
+    assert powershell_scripts
+    assert all(path.read_bytes().startswith(b"\xef\xbb\xbf") for path in powershell_scripts)
+
 
 def test_user_launchers_pause_but_automation_json_launcher_does_not(tmp_path):
     build_standalone_windows_package(tmp_path)
@@ -86,12 +94,61 @@ def test_user_launchers_pause_but_automation_json_launcher_does_not(tmp_path):
     interactive = (tmp_path / "RUN_INTERACTIVE.cmd").read_text(encoding="utf-8")
     user_json = (tmp_path / "RUN_JSON_USER.cmd").read_text(encoding="utf-8")
     automation_json = (tmp_path / "RUN_JSON.cmd").read_text(encoding="utf-8")
+    start_here = (tmp_path / "01_START_HERE.cmd").read_text(encoding="utf-8")
 
     assert "pause" in interactive.casefold()
     assert "pause" in user_json.casefold()
     assert "RUN_JSON.cmd" in user_json
     assert "%*" in user_json
     assert "pause" not in automation_json.casefold()
+    assert "pause" in start_here.casefold()
+
+
+def test_one_click_launcher_installs_runs_logs_and_opens_result(tmp_path):
+    wheel = _write_pure_wheel(tmp_path / "sp63_rc_ai-0.1.0-py3-none-any.whl")
+    output_dir = tmp_path / "package"
+    build_standalone_windows_package(output_dir, wheel)
+    launcher = (output_dir / "01_START_HERE.cmd").read_text(encoding="utf-8")
+    guard = (output_dir / "ONE_CLICK_GUARD.ps1").read_text(encoding="utf-8")
+    worker = (output_dir / "ONE_CLICK_WORKER.cmd").read_text(encoding="utf-8")
+    result_verifier = (output_dir / "VERIFY_ONE_CLICK_RESULT.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert worker.index("INSTALL_FROM_WHEEL.cmd") < worker.index("RUN_JSON.cmd")
+    assert "INSTALLATION_LOG.txt" in worker
+    assert "EXAMPLE_RUN_LOG.txt" in worker
+    assert "standalone_index.html" in worker
+    assert 'start "" "%RESULT_PATH%"' in worker
+    assert 'if /I "%~1"=="--ci"' in launcher
+    assert 'if "%CI_MODE%"=="0" pause' in launcher
+    assert "ONE_CLICK_GUARD.ps1" in launcher
+    assert "Threading.Mutex" in guard
+    assert "WaitOne(0" in guard
+    assert "AbandonedMutexException" in guard
+    assert ".gbk_start_lock" not in launcher + guard + worker
+    assert "VERIFY_ONE_CLICK_RESULT.ps1" in worker
+    assert worker.index("VERIFY_ONE_CLICK_RESULT.ps1") < worker.index(
+        'start "" "%RESULT_PATH%"'
+    )
+    assert "project_use=false" in worker
+    assert '$status.status -ne "review_required"' in result_verifier
+    assert '$status.calculation_status -ne "outside_applicability"' in result_verifier
+    assert '$status.evidence_status -ne "needs_engineer_review"' in result_verifier
+    assert "standalone_review_manifest.sha256" in result_verifier
+    assert "review bundle payload hash mismatch" in result_verifier
+    assert "ZipFile]::OpenRead" in result_verifier
+
+
+def test_source_skeleton_refuses_one_click_without_bundled_wheel(tmp_path):
+    build_standalone_windows_package(tmp_path)
+    launcher = (tmp_path / "01_START_HERE.cmd").read_text(encoding="utf-8")
+    readme = (tmp_path / "README_STANDALONE_WINDOWS.md").read_text(encoding="utf-8")
+
+    assert "исходный пакет разработчика без готового wheel" in launcher
+    assert "INSTALL_FROM_WHEEL.cmd" not in launcher
+    assert "намеренно остановится без установки" in readme
+    assert "wheel-ZIP" in readme
 
 
 def test_manifest_hashes_every_payload_file_and_has_own_sha256(tmp_path):
@@ -100,11 +157,19 @@ def test_manifest_hashes_every_payload_file_and_has_own_sha256(tmp_path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert manifest["report_type"] == "standalone_windows_package_manifest"
+    assert manifest["package_format_version"] == "1.1"
     assert manifest["status"] == "pass"
     assert manifest["element_type"] == "rectangular_beam"
     assert manifest["project_use"] is False
     assert manifest["native_binaries_included"] is False
     assert manifest["file_count"] == result.file_count == len(manifest["files"])
+    recorded_paths = {item["relative_path"] for item in manifest["files"]}
+    actual_payload_paths = {
+        path.relative_to(tmp_path).as_posix()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    } - {"standalone_manifest.json", "standalone_manifest.sha256"}
+    assert recorded_paths == actual_payload_paths
     for file_info in manifest["files"]:
         relative = PurePosixPath(file_info["relative_path"])
         assert not relative.is_absolute()
@@ -139,6 +204,15 @@ def test_valid_pure_python_wheel_is_copied_and_recorded(tmp_path):
     assert install_script.index("Get-FileHash") < install_script.index("pip install")
     assert "requirements\\runtime-py311.lock" in install_script
     assert "pip install --no-deps" in install_script
+    install_doc = (output_dir / "docs" / "WINDOWS_INSTALL.md").read_text(
+        encoding="utf-8"
+    )
+    checklist = (output_dir / "docs" / "USER_ACCEPTANCE_CHECKLIST.md").read_text(
+        encoding="utf-8"
+    )
+    assert "сам выполнит установку" in install_doc
+    assert "`INSTALLATION_LOG.txt`" in install_doc
+    assert "ручного ввода команд" in checklist
     for launcher_name in ("RUN_INTERACTIVE.cmd", "RUN_JSON.cmd"):
         launcher = (output_dir / launcher_name).read_text(encoding="utf-8")
         assert ".gbk_build_id" in launcher
@@ -151,7 +225,8 @@ def test_source_launchers_mark_build_identity_as_unverified(tmp_path):
     source_installer = (tmp_path / "INSTALL_FROM_SOURCE.cmd").read_text(encoding="utf-8")
     wheel_installer = (tmp_path / "INSTALL_FROM_WHEEL.cmd").read_text(encoding="utf-8")
     assert "echo source-unverified" in source_installer
-    assert "echo wheel-sha256:WHEEL_SHA256_NOT_AVAILABLE" in wheel_installer
+    assert "EXPECTED_BUILD_ID=wheel-sha256:WHEEL_SHA256_NOT_AVAILABLE" in wheel_installer
+    assert "echo %EXPECTED_BUILD_ID%" in wheel_installer
     for launcher_name in ("RUN_INTERACTIVE.cmd", "RUN_JSON.cmd"):
         launcher = (tmp_path / launcher_name).read_text(encoding="utf-8")
         assert ".gbk_build_id" in launcher
@@ -180,6 +255,9 @@ def test_verifier_checks_sidecar_and_every_manifest_payload_before_install(tmp_p
     assert '-PackageRoot "%ROOT%"' not in verifier_cmd
     assert "VERIFY_PACKAGE.ps1" in manifest_paths
     assert "VERIFY_PACKAGE.cmd" in manifest_paths
+    assert "VERIFY_ONE_CLICK_RESULT.ps1" in manifest_paths
+    assert "ONE_CLICK_GUARD.ps1" in manifest_paths
+    assert "ONE_CLICK_WORKER.cmd" in manifest_paths
     assert ".gbk_build_id" not in manifest_paths
     assert "VERIFY_PACKAGE.ps1" in verifier_cmd
 
@@ -198,10 +276,54 @@ def test_wheel_installer_records_identity_only_after_successful_import(tmp_path)
     identity = f"wheel-sha256:{result.wheel_sha256}"
     assert identity in installer
     assert installer.index('import sp63_core.standalone') < installer.index(
-        f"echo {identity}"
+        "echo %EXPECTED_BUILD_ID%"
     )
     assert ".gbk_build_id.tmp" in installer
-    assert 'move /y "%ROOT%.gbk_build_id.tmp" "%ROOT%.gbk_build_id"' in installer
+    assert (
+        'move /y "%NEW_VENV%\\.gbk_build_id.tmp" '
+        '"%NEW_VENV%\\.gbk_build_id"' in installer
+    )
+    assert installer.index('"%NEW_VENV%\\.gbk_build_id"') < installer.index(
+        'move "%NEW_VENV%" "%ROOT%.venv"'
+    )
+    run_json = (output_dir / "RUN_JSON.cmd").read_text(encoding="utf-8")
+    assert 'BUILD_ID_PATH=%ROOT%.venv\\.gbk_build_id' in run_json
+
+
+def test_installers_require_python_311_64_bit_and_stage_private_venv(tmp_path):
+    build_standalone_windows_package(tmp_path)
+
+    for installer_name in ("INSTALL_FROM_WHEEL.cmd", "INSTALL_FROM_SOURCE.cmd"):
+        installer = (tmp_path / installer_name).read_text(encoding="utf-8")
+        assert "struct.calcsize('P') * 8 == 64" in installer
+        assert 'set "NEW_VENV=%ROOT%.venv.new"' in installer
+        assert 'set "PREVIOUS_VENV=%ROOT%.venv.previous"' in installer
+        assert 'py -3.11 -m venv "%NEW_VENV%"' in installer
+        assert 'move "%NEW_VENV%" "%ROOT%.venv"' in installer
+        assert installer.index('py -3.11 -m venv "%NEW_VENV%"') < installer.index(
+            'move "%ROOT%.venv" "%PREVIOUS_VENV%"'
+        )
+        assert installer.index('move "%ROOT%.venv" "%PREVIOUS_VENV%"') < (
+            installer.index('move "%NEW_VENV%" "%ROOT%.venv"')
+        )
+
+
+def test_installers_restore_crash_backup_before_rebuilding(tmp_path):
+    wheel = _write_pure_wheel(tmp_path / "sp63_rc_ai-0.1.0-py3-none-any.whl")
+    output_dir = tmp_path / "package"
+    build_standalone_windows_package(output_dir, wheel)
+
+    for installer_name in ("INSTALL_FROM_WHEEL.cmd", "INSTALL_FROM_SOURCE.cmd"):
+        installer = (output_dir / installer_name).read_text(encoding="utf-8")
+        restore = 'if not exist "%ROOT%.venv" if exist "%PREVIOUS_VENV%"'
+        assert restore in installer
+        assert installer.index(restore) < installer.index("where py")
+        assert installer.index(restore) < installer.index(
+            'rmdir /s /q "%PREVIOUS_VENV%"'
+        )
+        assert ":activation_failed" in installer
+        assert ":restore_failed" in installer
+        assert "if errorlevel 1 goto :restore_failed" in installer
 
 
 def test_runtime_lock_is_fully_pinned_and_recorded_in_manifest(tmp_path):
@@ -324,6 +446,14 @@ def test_generated_install_docs_define_complete_json_contract_and_online_scope(t
 
     assert "не офлайн- или самодостаточный" in readme
     assert "обязательно подключение к интернету" in install
+    assert "`01_START_HERE.cmd`" in readme
+    assert "`01_START_HERE.cmd`" in install
+    assert "намеренно остановится" in readme
+    assert "wheel отсутствует" in install
+    checklist = (tmp_path / "docs" / "USER_ACCEPTANCE_CHECKLIST.md").read_text(
+        encoding="utf-8"
+    )
+    assert "не предназначен" in checklist
     for field in (
         "case_id",
         "b_mm",
@@ -367,6 +497,18 @@ def test_repository_windows_workflow_is_pr_gated_and_checks_review_bundle():
     assert "wheel_sha256" in workflow
     assert "USERPROFILE" in workflow
     assert "tampered lock wheel and documentation" in workflow
+    assert '01_START_HERE.cmd" --ci' in workflow
+    assert "INSTALLATION_LOG.txt" in workflow
+    assert "EXAMPLE_RUN_LOG.txt" in workflow
+    assert "standalone-windows-python311-oneclick" in workflow
+    assert "проверка ЖБК" in workflow
+    assert "STANDALONE_USER_PACKAGE" in workflow
+    assert 'src/sp63_core/**' in workflow
+    assert "timeout-minutes: 45" in workflow
+    assert "valid ZIP with tampered payload" in workflow
+    assert "PIP_NO_INDEX" in workflow
+    assert "Failed staged reinstall damaged the active environment" in workflow
+    assert workflow.count('01_START_HERE.cmd" --ci') == 2
 
 
 def test_generated_user_documents_are_russian(tmp_path):

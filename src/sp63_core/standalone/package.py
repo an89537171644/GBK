@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-PACKAGE_FORMAT_VERSION = "1.0"
+PACKAGE_FORMAT_VERSION = "1.1"
 PACKAGE_WARNING = (
     "Исследовательский пакет для прямоугольной балки. Все схемы и числовые "
     "результаты имеют статус diagnostic_only; их выдача или трактовка как "
@@ -149,6 +149,276 @@ catch {
     exit 2
 }
 """
+VERIFY_ONE_CLICK_RESULT_POWERSHELL = r"""Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Get-Sha256Hex([byte[]]$Bytes) {
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        return (($algorithm.ComputeHash($Bytes) | ForEach-Object {
+            $_.ToString("x2")
+        }) -join "")
+    }
+    finally {
+        $algorithm.Dispose()
+    }
+}
+
+function Read-ZipEntryBytes($Entry) {
+    $stream = $Entry.Open()
+    $memory = [IO.MemoryStream]::new()
+    try {
+        $stream.CopyTo($memory)
+        return ,$memory.ToArray()
+    }
+    finally {
+        $stream.Dispose()
+        $memory.Dispose()
+    }
+}
+
+try {
+    $root = [IO.Path]::GetFullPath($PSScriptRoot)
+    $output = Join-Path $root "output\beam_example"
+    $statusPath = Join-Path $output "standalone_latest_status.json"
+    $landingPath = Join-Path $output "standalone_index.html"
+    $bundlePath = Join-Path $output "standalone_review_bundle.zip"
+    $metadataPath = Join-Path $output "standalone_review_metadata.json"
+    $manifestPath = Join-Path $root "standalone_manifest.json"
+
+    foreach ($required in @(
+        $statusPath, $landingPath, $bundlePath, $metadataPath, $manifestPath
+    )) {
+        if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+            throw "required one-click result file is missing: $required"
+        }
+    }
+
+    $status = Get-Content -LiteralPath $statusPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    if ($status.status -ne "review_required") {
+        throw "standalone status is not review_required: $($status.status)"
+    }
+    if ($status.preflight_status -ne "pass") {
+        throw "standalone preflight did not pass"
+    }
+    if ($status.project_use -ne $false -or
+        $status.project_use_status -ne "prohibited") {
+        throw "standalone project-use guard is invalid"
+    }
+    if ($status.requires_engineer_review -ne $true) {
+        throw "standalone engineer-review guard is invalid"
+    }
+    if ($status.reinforcement_selection_status -ne "diagnostic_only") {
+        throw "reinforcement selection is not diagnostic_only"
+    }
+    if ($status.calculation_status -ne "outside_applicability") {
+        throw "control-example calculation status is unexpected"
+    }
+    if ($status.evidence_status -ne "needs_engineer_review") {
+        throw "control-example evidence status is unexpected"
+    }
+    if ($status.ml_included -ne $false) {
+        throw "ML must not be included in the standalone route"
+    }
+
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    $metadata = Get-Content -LiteralPath $metadataPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    $expectedBuildId = "wheel-sha256:$($manifest.wheel_sha256)"
+    if (
+        $metadata.code_identity.code_identity_status -ne
+        "recorded_from_launcher_requires_manifest_match"
+    ) {
+        throw "standalone build identity status is not acceptable"
+    }
+    if ($metadata.code_identity.build_id -ne $expectedBuildId) {
+        throw "standalone build identity does not match the package manifest"
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $expectedPayloadNames = @(
+        "standalone_input.json",
+        "canonical_input.json",
+        "standalone_bundle_status.json",
+        "standalone_review_metadata.json",
+        "workflow_summary.json",
+        "index.html",
+        "README_REVIEW_BUNDLE.md",
+        "deterministic_report/input.json",
+        "deterministic_report/report.json",
+        "deterministic_report/report.md",
+        "deterministic_report/report.html"
+    )
+    $reviewManifestName = "standalone_review_manifest.json"
+    $reviewSidecarName = "standalone_review_manifest.sha256"
+    $expectedNames = @(
+        $expectedPayloadNames + @($reviewManifestName, $reviewSidecarName)
+    )
+    $archive = [IO.Compression.ZipFile]::OpenRead($bundlePath)
+    try {
+        $names = @($archive.Entries | ForEach-Object { $_.FullName })
+        if (@($names | Sort-Object -Unique).Count -ne $names.Count) {
+            throw "review bundle contains duplicate members"
+        }
+        if (@(Compare-Object $expectedNames $names).Count -ne 0) {
+            throw "review bundle members do not match the required contract"
+        }
+
+        $reviewManifestEntry = $archive.GetEntry($reviewManifestName)
+        $reviewSidecarEntry = $archive.GetEntry($reviewSidecarName)
+        [byte[]]$reviewManifestBytes = Read-ZipEntryBytes $reviewManifestEntry
+        [byte[]]$reviewSidecarBytes = Read-ZipEntryBytes $reviewSidecarEntry
+        $reviewManifestHash = Get-Sha256Hex $reviewManifestBytes
+        $reviewSidecar = [Text.Encoding]::ASCII.GetString(
+            $reviewSidecarBytes
+        ).Trim()
+        $expectedSidecar = "$reviewManifestHash  $reviewManifestName"
+        if ($reviewSidecar -ne $expectedSidecar) {
+            throw "review bundle manifest sidecar mismatch"
+        }
+        $reviewManifest = (
+            [Text.Encoding]::UTF8.GetString($reviewManifestBytes) |
+            ConvertFrom-Json
+        )
+        if ($reviewManifest.report_type -ne "standalone_review_bundle_manifest" -or
+            $reviewManifest.path_scope -ne "bundle_relative") {
+            throw "review bundle manifest identity is invalid"
+        }
+        if ($reviewManifest.project_use -ne $false -or
+            $reviewManifest.requires_engineer_review -ne $true -or
+            $reviewManifest.reinforcement_selection_status -ne "diagnostic_only") {
+            throw "review bundle manifest safety guards are invalid"
+        }
+
+        $records = @($reviewManifest.files)
+        $recordNames = @($records | ForEach-Object { [string]$_.path })
+        if (@(Compare-Object $expectedPayloadNames $recordNames).Count -ne 0 -or
+            @($recordNames | Sort-Object -Unique).Count -ne $recordNames.Count) {
+            throw "review bundle manifest file records are incomplete"
+        }
+        foreach ($record in $records) {
+            $relative = [string]$record.path
+            if ([string]::IsNullOrWhiteSpace($relative) -or
+                [IO.Path]::IsPathRooted($relative) -or
+                $relative.Contains("\") -or $relative.Contains(":") -or
+                @($relative.Split('/')) -contains "..") {
+                throw "review bundle manifest contains an unsafe path"
+            }
+            $entry = $archive.GetEntry($relative)
+            if ($null -eq $entry) {
+                throw "review bundle payload is missing: $relative"
+            }
+            [byte[]]$entryBytes = Read-ZipEntryBytes $entry
+            if ([int64]$record.size_bytes -ne $entryBytes.LongLength) {
+                throw "review bundle payload size mismatch: $relative"
+            }
+            if ([string]$record.sha256 -ne (Get-Sha256Hex $entryBytes)) {
+                throw "review bundle payload hash mismatch: $relative"
+            }
+        }
+
+        [byte[]]$zipMetadataBytes = Read-ZipEntryBytes (
+            $archive.GetEntry("standalone_review_metadata.json")
+        )
+        $zipMetadata = (
+            [Text.Encoding]::UTF8.GetString($zipMetadataBytes) |
+            ConvertFrom-Json
+        )
+        if ($zipMetadata.code_identity.code_identity_status -ne
+            "recorded_from_launcher_requires_manifest_match" -or
+            $zipMetadata.code_identity.build_id -ne $expectedBuildId) {
+            throw "review bundle code identity does not match the package"
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+
+    Write-Host "one_click_verification=pass"
+    Write-Host "status=$($status.status)"
+    Write-Host "calculation_status=$($status.calculation_status)"
+    Write-Host "evidence_status=$($status.evidence_status)"
+    Write-Host "project_use=false"
+    Write-Host "requires_engineer_review=true"
+    Write-Host "reinforcement_selection_status=diagnostic_only"
+    Write-Host "build_id=$expectedBuildId"
+    exit 0
+}
+catch {
+    [Console]::Error.WriteLine(
+        "One-click result verification failed: $($_.Exception.Message)"
+    )
+    exit 2
+}
+"""
+
+ONE_CLICK_GUARD_POWERSHELL = r"""param(
+    [ValidateSet("0", "1")]
+    [string]$CiMode = "0"
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+$mutex = $null
+$acquired = $false
+
+try {
+    $root = [IO.Path]::GetFullPath($PSScriptRoot)
+    $worker = Join-Path $root "ONE_CLICK_WORKER.cmd"
+    if (-not (Test-Path -LiteralPath $worker -PathType Leaf)) {
+        throw "ONE_CLICK_WORKER.cmd is missing"
+    }
+    $rootBytes = [Text.Encoding]::UTF8.GetBytes($root.ToUpperInvariant())
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        $digest = (($algorithm.ComputeHash($rootBytes) | ForEach-Object {
+            $_.ToString("x2")
+        }) -join "")
+    }
+    finally {
+        $algorithm.Dispose()
+    }
+    $mutex = [Threading.Mutex]::new(
+        $false,
+        "Local\GBK_Standalone_$digest"
+    )
+    try {
+        $acquired = $mutex.WaitOne(0, $false)
+    }
+    catch [Threading.AbandonedMutexException] {
+        $acquired = $true
+    }
+    if (-not $acquired) {
+        [Console]::Error.WriteLine(
+            "ОШИБКА: установка уже запущена в другом окне."
+        )
+        exit 3
+    }
+
+    $workerArgument = if ($CiMode -eq "1") { "--ci" } else { "" }
+    $command = "call `"$worker`" $workerArgument"
+    $process = Start-Process -FilePath $env:ComSpec -ArgumentList @(
+        "/d", "/c", $command
+    ) -Wait -PassThru -NoNewWindow
+    exit $process.ExitCode
+}
+catch {
+    [Console]::Error.WriteLine(
+        "Ошибка защищённого запуска: $($_.Exception.Message)"
+    )
+    exit 2
+}
+finally {
+    if ($acquired -and $null -ne $mutex) {
+        $mutex.ReleaseMutex()
+    }
+    if ($null -ne $mutex) {
+        $mutex.Dispose()
+    }
+}
+"""
 
 BEAM_EXAMPLE: dict[str, str | float] = {
     "case_id": "beam-demo-001",
@@ -242,7 +512,8 @@ def build_standalone_windows_package(
     scripts = _script_specs(bundled_wheel, wheel_sha256)
     for filename, content in scripts.items():
         path = output_path / filename
-        path.write_text(content, encoding="utf-8", newline="\r\n")
+        encoding = "utf-8-sig" if path.suffix.casefold() == ".ps1" else "utf-8"
+        path.write_text(content, encoding=encoding, newline="\r\n")
         payload_files.append(path)
 
     example_path = input_dir / "beam_example.json"
@@ -258,10 +529,17 @@ def build_standalone_windows_package(
     checklist_path = docs_dir / "USER_ACCEPTANCE_CHECKLIST.md"
     readme_path.write_text(_render_package_readme(distribution_mode), encoding="utf-8")
     scope_path.write_text(_render_scope(), encoding="utf-8")
-    install_path.write_text(_render_windows_install(), encoding="utf-8")
-    checklist_path.write_text(_render_acceptance_checklist(), encoding="utf-8")
+    install_path.write_text(
+        _render_windows_install(distribution_mode),
+        encoding="utf-8",
+    )
+    checklist_path.write_text(
+        _render_acceptance_checklist(distribution_mode),
+        encoding="utf-8",
+    )
     payload_files.extend((readme_path, scope_path, install_path, checklist_path))
 
+    _assert_complete_payload_set(output_path, payload_files)
     status = "fail" if errors else "pass"
     manifest_path = output_path / "standalone_manifest.json"
     manifest_sha256_path = output_path / "standalone_manifest.sha256"
@@ -316,14 +594,37 @@ def _require_empty_output_directory(output_path: Path) -> None:
         raise FileExistsError(f"output_dir must be empty: {output_path}")
 
 
+def _assert_complete_payload_set(output_path: Path, payload_files: list[Path]) -> None:
+    """Require every generated pre-manifest file to be integrity-recorded."""
+    expected = {path.relative_to(output_path).as_posix() for path in payload_files}
+    actual = {
+        path.relative_to(output_path).as_posix()
+        for path in output_path.rglob("*")
+        if path.is_file()
+    }
+    if actual != expected:
+        missing = sorted(actual - expected)
+        absent = sorted(expected - actual)
+        raise RuntimeError(
+            "standalone payload inventory mismatch: "
+            f"unrecorded={missing}; absent={absent}"
+        )
+
+
 def _script_specs(
     bundled_wheel: Path | None,
     wheel_sha256: str | None,
 ) -> dict[str, str]:
     wheel_name = bundled_wheel.name if bundled_wheel else "WHEEL_FILE_REQUIRED.whl"
     return {
+        "01_START_HERE.cmd": _start_here_script(
+            wheel_available=bundled_wheel is not None,
+        ),
+        "ONE_CLICK_GUARD.ps1": ONE_CLICK_GUARD_POWERSHELL,
+        "ONE_CLICK_WORKER.cmd": _one_click_worker_script(),
         "VERIFY_PACKAGE.ps1": VERIFY_PACKAGE_POWERSHELL,
         "VERIFY_PACKAGE.cmd": _verify_package_cmd_script(),
+        "VERIFY_ONE_CLICK_RESULT.ps1": VERIFY_ONE_CLICK_RESULT_POWERSHELL,
         "INSTALL_FROM_WHEEL.cmd": _install_from_wheel_script(
             wheel_name,
             wheel_sha256,
@@ -347,6 +648,124 @@ def _cmd_preamble() -> list[str]:
     ]
 
 
+def _start_here_script(*, wheel_available: bool) -> str:
+    if not wheel_available:
+        return "\n".join(
+            [
+                *_cmd_preamble(),
+                "echo ОШИБКА: это исходный пакет разработчика без готового wheel.",
+                "echo Однокнопочная установка доступна только в пользовательском ZIP.",
+                'if /I not "%~1"=="--ci" pause',
+                "exit /b 2",
+                "",
+            ]
+        )
+    return "\n".join(
+        [
+            *_cmd_preamble(),
+            'set "CI_MODE=0"',
+            'if /I "%~1"=="--ci" set "CI_MODE=1"',
+            "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass "
+            '-File "%ROOT%ONE_CLICK_GUARD.ps1" -CiMode "%CI_MODE%"',
+            'set "FINAL_RC=%ERRORLEVEL%"',
+            'if "%CI_MODE%"=="0" pause',
+            'exit /b %FINAL_RC%',
+            "",
+        ]
+    )
+
+
+def _one_click_worker_script() -> str:
+    return "\n".join(
+        [
+            *_cmd_preamble(),
+            'set "CI_MODE=0"',
+            'if /I "%~1"=="--ci" set "CI_MODE=1"',
+            'set "FINAL_RC=1"',
+            'set "INSTALL_LOG=%ROOT%INSTALLATION_LOG.txt"',
+            'set "RUN_LOG=%ROOT%EXAMPLE_RUN_LOG.txt"',
+            'set "RESULT_PATH=%ROOT%output\\beam_example\\standalone_index.html"',
+            "echo ============================================================",
+            "echo GBK: автоматическая установка и запуск контрольного примера",
+            "echo Не закрывайте окно. Первая установка может занять несколько минут.",
+            "echo ============================================================",
+            "echo.",
+            "echo Шаг 1 из 2: проверка и установка...",
+            '> "%INSTALL_LOG%" echo GBK installation log',
+            "if errorlevel 1 goto :install_log_failed",
+            '>> "%INSTALL_LOG%" echo Started: %DATE% %TIME%',
+            'call "%ROOT%INSTALL_FROM_WHEEL.cmd" >> "%INSTALL_LOG%" 2>&1',
+            'set "INSTALL_RC=%ERRORLEVEL%"',
+            'type "%INSTALL_LOG%"',
+            'if not "%INSTALL_RC%"=="0" goto :install_failed',
+            "echo.",
+            "echo Шаг 2 из 2: запуск контрольного примера...",
+            '> "%RUN_LOG%" echo GBK example run log',
+            "if errorlevel 1 goto :run_log_failed",
+            '>> "%RUN_LOG%" echo Started: %DATE% %TIME%',
+            'call "%ROOT%RUN_JSON.cmd" >> "%RUN_LOG%" 2>&1',
+            'set "RUN_RC=%ERRORLEVEL%"',
+            'if not "%RUN_RC%"=="0" goto :run_failed',
+            "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass "
+            '-File "%ROOT%VERIFY_ONE_CLICK_RESULT.ps1" >> "%RUN_LOG%" 2>&1',
+            'set "VERIFY_RC=%ERRORLEVEL%"',
+            'type "%RUN_LOG%"',
+            'if not "%VERIFY_RC%"=="0" goto :result_verification_failed',
+            'if "%CI_MODE%"=="0" start "" "%RESULT_PATH%"',
+            'if errorlevel 1 set "BROWSER_WARNING=1"',
+            "echo.",
+            "echo ============================================================",
+            "echo ГОТОВО: установка и контрольный запуск завершены.",
+            "echo Результат: %RESULT_PATH%",
+            "echo project_use=false; требуется инженерная проверка.",
+            "echo ============================================================",
+            'if defined BROWSER_WARNING echo Отчёт готов, но браузер не открылся.',
+            'if defined BROWSER_WARNING echo Откройте вручную: %RESULT_PATH%',
+            'set "FINAL_RC=0"',
+            "goto :finish",
+            "",
+            ":install_log_failed",
+            "echo ОШИБКА: не удаётся создать журнал установки в папке программы.",
+            'set "FINAL_RC=2"',
+            "goto :finish",
+            "",
+            ":install_failed",
+            "echo.",
+            "echo ОШИБКА: установка не завершена. Код: %INSTALL_RC%",
+            "echo Журнал: %INSTALL_LOG%",
+            "echo Пришлите скриншот последних строк этого окна.",
+            'set "FINAL_RC=%INSTALL_RC%"',
+            "goto :finish",
+            "",
+            ":run_log_failed",
+            "echo ОШИБКА: не удаётся создать журнал контрольного запуска.",
+            'set "FINAL_RC=2"',
+            "goto :finish",
+            "",
+            ":run_failed",
+            'type "%RUN_LOG%"',
+            "echo.",
+            "echo ОШИБКА: контрольный пример не завершён. Код: %RUN_RC%",
+            "echo Журнал: %RUN_LOG%",
+            "echo Пришлите скриншот последних строк этого окна.",
+            'set "FINAL_RC=%RUN_RC%"',
+            "goto :finish",
+            "",
+            ":result_verification_failed",
+            "echo.",
+            "echo ОШИБКА: итоговые защитные проверки не пройдены.",
+            "echo Журнал: %RUN_LOG%",
+            "echo Отчёт автоматически не открывается.",
+            'set "FINAL_RC=%VERIFY_RC%"',
+            "goto :finish",
+            "",
+            ":finish",
+            'exit /b %FINAL_RC%',
+            "",
+        ]
+    )
+
+
 def _verify_package_cmd_script() -> str:
     return "\n".join(
         [
@@ -365,10 +784,10 @@ def _install_from_wheel_script(wheel_name: str, wheel_sha256: str | None) -> str
     return "\n".join(
         [
             *_cmd_preamble(),
-            'del /q "%ROOT%.gbk_build_id" "%ROOT%.gbk_build_id.tmp" 2>nul',
             'call "%ROOT%VERIFY_PACKAGE.cmd" || exit /b 2',
             f'set "WHEEL_PATH=%ROOT%wheel\\{wheel_name}"',
             f'set "EXPECTED_WHEEL_SHA256={expected_hash}"',
+            f'set "EXPECTED_BUILD_ID=wheel-sha256:{expected_hash}"',
             'if not "%~1"=="" set "WHEEL_PATH=%~f1"',
             'if not exist "%WHEEL_PATH%" (',
             "  echo ОШИБКА: файл wheel не найден: %WHEEL_PATH%",
@@ -396,23 +815,72 @@ def _install_from_wheel_script(wheel_name: str, wheel_sha256: str | None) -> str
             "  echo Получено:  %ACTUAL_WHEEL_SHA256%",
             "  exit /b 2",
             ")",
+            'set "NEW_VENV=%ROOT%.venv.new"',
+            'set "PREVIOUS_VENV=%ROOT%.venv.previous"',
+            'if not exist "%ROOT%.venv" if exist "%PREVIOUS_VENV%" (',
+            '  move "%PREVIOUS_VENV%" "%ROOT%.venv" >nul',
+            "  if errorlevel 1 (",
+            "    echo ОШИБКА: не удалось восстановить предыдущую рабочую среду.",
+            "    exit /b 2",
+            "  )",
+            ")",
             "where py >nul 2>nul || (",
             "  echo ОШИБКА: Python Launcher не найден. Установите Python 3.11.",
             "  exit /b 2",
             ")",
-            'py -3.11 -m venv "%ROOT%.venv" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip install --no-deps '
+            'py -3.11 -c "import struct,sys; '
+            "sys.exit(0 if struct.calcsize('P') * 8 == 64 else 1)\" || (",
+            "  echo ОШИБКА: требуется 64-разрядный Python 3.11.",
+            "  exit /b 2",
+            ")",
+            'if exist "%NEW_VENV%" rmdir /s /q "%NEW_VENV%"',
+            'if exist "%NEW_VENV%" (',
+            "  echo ОШИБКА: не удалось очистить временное окружение.",
+            "  exit /b 2",
+            ")",
+            'if exist "%PREVIOUS_VENV%" rmdir /s /q "%PREVIOUS_VENV%"',
+            'if exist "%PREVIOUS_VENV%" (',
+            "  echo ОШИБКА: не удалось очистить резервное окружение.",
+            "  exit /b 2",
+            ")",
+            'py -3.11 -m venv "%NEW_VENV%" || exit /b 1',
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip install --no-deps '
             '-r "%ROOT%requirements\\runtime-py311.lock" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip install --no-deps '
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip install --no-deps '
             '"%WHEEL_PATH%" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip check || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -c "import sp63_core.standalone" '
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip check || exit /b 1',
+            '"%NEW_VENV%\\Scripts\\python.exe" -c "import sp63_core.standalone" '
             "|| exit /b 1",
-            f'> "%ROOT%{BUILD_ID_FILENAME}.tmp" echo wheel-sha256:{expected_hash}',
-            f'move /y "%ROOT%{BUILD_ID_FILENAME}.tmp" '
-            f'"%ROOT%{BUILD_ID_FILENAME}" >nul || exit /b 1',
+            f'> "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" echo %EXPECTED_BUILD_ID%',
+            f'move /y "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" '
+            f'"%NEW_VENV%\\{BUILD_ID_FILENAME}" >nul || exit /b 1',
+            'set "HAS_PREVIOUS_VENV=0"',
+            'if exist "%ROOT%.venv" (',
+            '  move "%ROOT%.venv" "%PREVIOUS_VENV%" >nul',
+            "  if errorlevel 1 (",
+            "    echo ОШИБКА: не удалось сохранить предыдущую рабочую среду.",
+            "    exit /b 1",
+            "  )",
+            '  set "HAS_PREVIOUS_VENV=1"',
+            ")",
+            'move "%NEW_VENV%" "%ROOT%.venv" >nul',
+            "if errorlevel 1 goto :activation_failed",
+            'if exist "%PREVIOUS_VENV%" rmdir /s /q "%PREVIOUS_VENV%"',
+            'if exist "%PREVIOUS_VENV%" echo ПРЕДУПРЕЖДЕНИЕ: резервная среда не удалена.',
             "echo Автономный пакет для балки установлен.",
             "exit /b 0",
+            "",
+            ":activation_failed",
+            'if "%HAS_PREVIOUS_VENV%"=="1" move '
+            '"%PREVIOUS_VENV%" "%ROOT%.venv" >nul',
+            'if "%HAS_PREVIOUS_VENV%"=="1" if errorlevel 1 goto :restore_failed',
+            "echo ОШИБКА: не удалось активировать новую среду; предыдущая сохранена.",
+            "exit /b 1",
+            "",
+            ":restore_failed",
+            "echo ОШИБКА: автоматическое восстановление не завершено.",
+            "echo Предыдущая среда сохранена в .venv.previous; передайте этот экран.",
+            "exit /b 1",
             "",
         ]
     )
@@ -422,7 +890,6 @@ def _install_from_source_script() -> str:
     return "\n".join(
         [
             *_cmd_preamble(),
-            'del /q "%ROOT%.gbk_build_id" "%ROOT%.gbk_build_id.tmp" 2>nul',
             'call "%ROOT%VERIFY_PACKAGE.cmd" || exit /b 2',
             'set "SOURCE_DIR=%~1"',
             'if "%SOURCE_DIR%"=="" (',
@@ -434,23 +901,72 @@ def _install_from_source_script() -> str:
             "  echo ОШИБКА: pyproject.toml не найден в %SOURCE_DIR%",
             "  exit /b 2",
             ")",
+            'set "NEW_VENV=%ROOT%.venv.new"',
+            'set "PREVIOUS_VENV=%ROOT%.venv.previous"',
+            'if not exist "%ROOT%.venv" if exist "%PREVIOUS_VENV%" (',
+            '  move "%PREVIOUS_VENV%" "%ROOT%.venv" >nul',
+            "  if errorlevel 1 (",
+            "    echo ОШИБКА: не удалось восстановить предыдущую рабочую среду.",
+            "    exit /b 2",
+            "  )",
+            ")",
             "where py >nul 2>nul || (",
             "  echo ОШИБКА: Python Launcher не найден. Установите Python 3.11.",
             "  exit /b 2",
             ")",
-            'py -3.11 -m venv "%ROOT%.venv" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip install --no-deps '
+            'py -3.11 -c "import struct,sys; '
+            "sys.exit(0 if struct.calcsize('P') * 8 == 64 else 1)\" || (",
+            "  echo ОШИБКА: требуется 64-разрядный Python 3.11.",
+            "  exit /b 2",
+            ")",
+            'if exist "%NEW_VENV%" rmdir /s /q "%NEW_VENV%"',
+            'if exist "%NEW_VENV%" (',
+            "  echo ОШИБКА: не удалось очистить временное окружение.",
+            "  exit /b 2",
+            ")",
+            'if exist "%PREVIOUS_VENV%" rmdir /s /q "%PREVIOUS_VENV%"',
+            'if exist "%PREVIOUS_VENV%" (',
+            "  echo ОШИБКА: не удалось очистить резервное окружение.",
+            "  exit /b 2",
+            ")",
+            'py -3.11 -m venv "%NEW_VENV%" || exit /b 1',
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip install --no-deps '
             '-r "%ROOT%requirements\\runtime-py311.lock" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip install --no-deps '
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip install --no-deps '
             '"%SOURCE_DIR%" || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -m pip check || exit /b 1',
-            '"%ROOT%.venv\\Scripts\\python.exe" -c "import sp63_core.standalone" '
+            '"%NEW_VENV%\\Scripts\\python.exe" -m pip check || exit /b 1',
+            '"%NEW_VENV%\\Scripts\\python.exe" -c "import sp63_core.standalone" '
             "|| exit /b 1",
-            f'> "%ROOT%{BUILD_ID_FILENAME}.tmp" echo source-unverified',
-            f'move /y "%ROOT%{BUILD_ID_FILENAME}.tmp" '
-            f'"%ROOT%{BUILD_ID_FILENAME}" >nul || exit /b 1',
+            f'> "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" echo source-unverified',
+            f'move /y "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" '
+            f'"%NEW_VENV%\\{BUILD_ID_FILENAME}" >nul || exit /b 1',
+            'set "HAS_PREVIOUS_VENV=0"',
+            'if exist "%ROOT%.venv" (',
+            '  move "%ROOT%.venv" "%PREVIOUS_VENV%" >nul',
+            "  if errorlevel 1 (",
+            "    echo ОШИБКА: не удалось сохранить предыдущую рабочую среду.",
+            "    exit /b 1",
+            "  )",
+            '  set "HAS_PREVIOUS_VENV=1"',
+            ")",
+            'move "%NEW_VENV%" "%ROOT%.venv" >nul',
+            "if errorlevel 1 goto :activation_failed",
+            'if exist "%PREVIOUS_VENV%" rmdir /s /q "%PREVIOUS_VENV%"',
+            'if exist "%PREVIOUS_VENV%" echo ПРЕДУПРЕЖДЕНИЕ: резервная среда не удалена.',
             "echo Автономный пакет для балки установлен из исходного проекта.",
             "exit /b 0",
+            "",
+            ":activation_failed",
+            'if "%HAS_PREVIOUS_VENV%"=="1" move '
+            '"%PREVIOUS_VENV%" "%ROOT%.venv" >nul',
+            'if "%HAS_PREVIOUS_VENV%"=="1" if errorlevel 1 goto :restore_failed',
+            "echo ОШИБКА: не удалось активировать новую среду; предыдущая сохранена.",
+            "exit /b 1",
+            "",
+            ":restore_failed",
+            "echo ОШИБКА: автоматическое восстановление не завершено.",
+            "echo Предыдущая среда сохранена в .venv.previous; передайте этот экран.",
+            "exit /b 1",
             "",
         ]
     )
@@ -460,7 +976,7 @@ def _run_interactive_script() -> str:
     return "\n".join(
         [
             *_cmd_preamble(),
-            f'set "BUILD_ID_PATH=%ROOT%{BUILD_ID_FILENAME}"',
+            f'set "BUILD_ID_PATH=%ROOT%.venv\\{BUILD_ID_FILENAME}"',
             'if not exist "%BUILD_ID_PATH%" (',
             "  echo ОШИБКА: идентификатор установленной сборки отсутствует.",
             '  set "RC=2"',
@@ -493,7 +1009,7 @@ def _run_json_script() -> str:
     return "\n".join(
         [
             *_cmd_preamble(),
-            f'set "BUILD_ID_PATH=%ROOT%{BUILD_ID_FILENAME}"',
+            f'set "BUILD_ID_PATH=%ROOT%.venv\\{BUILD_ID_FILENAME}"',
             'if not exist "%BUILD_ID_PATH%" (',
             "  echo ОШИБКА: идентификатор установленной сборки отсутствует.",
             "  exit /b 2",
@@ -643,6 +1159,18 @@ def _build_manifest(
 
 
 def _render_package_readme(distribution_mode: str) -> str:
+    if distribution_mode == "wheel":
+        start_lines = [
+            "1. Для простой автоматической установки дважды щёлкните",
+            "   `01_START_HERE.cmd`. Команды вводить не требуется: окно останется",
+            "   открытым, а при ошибке рядом будет сохранён текстовый журнал.",
+        ]
+    else:
+        start_lines = [
+            "1. Это исходный пакет для разработчика: готовый wheel не включён,",
+            "   поэтому `01_START_HERE.cmd` намеренно остановится без установки.",
+            "   Пользовательский однокнопочный маршрут доступен только в wheel-ZIP.",
+        ]
     return "\n".join(
         [
             "# Автономная исследовательская версия для Windows",
@@ -661,11 +1189,11 @@ def _render_package_readme(distribution_mode: str) -> str:
             "",
             "## Начало работы",
             "",
-            "1. Ознакомьтесь с `docs/WINDOWS_INSTALL.md`.",
-            "2. Если wheel включён, запустите `INSTALL_FROM_WHEEL.cmd`; для установки",
-            "   из исходного проекта передайте его каталог в `INSTALL_FROM_SOURCE.cmd`.",
-            "3. Запустите `RUN_INTERACTIVE.cmd` либо `RUN_JSON_USER.cmd` для примера.",
-            "   `RUN_JSON.cmd` не ставит паузу и предназначен для автоматизации/CI.",
+            *start_lines,
+            "2. Расширенная инструкция находится в `docs/WINDOWS_INSTALL.md`.",
+            "3. После установки `RUN_INTERACTIVE.cmd` открывает ручной ввод, а",
+            "   `RUN_JSON_USER.cmd` повторяет пример. `RUN_JSON.cmd` предназначен",
+            "   только для автоматизации/CI.",
             "4. После расчёта сначала откройте верхнеуровневый `standalone_index.html`",
             "   в каталоге результата. `OPEN_RESULTS.cmd` лишь открывает папку.",
             "5. Заполните `docs/USER_ACCEPTANCE_CHECKLIST.md`.",
@@ -709,7 +1237,25 @@ def _render_scope() -> str:
     ) + "\n"
 
 
-def _render_windows_install() -> str:
+def _render_windows_install(distribution_mode: str) -> str:
+    if distribution_mode == "wheel":
+        route_lines = [
+            "3. Дважды щёлкните `01_START_HERE.cmd`. Он сам выполнит установку,",
+            "   запустит контрольный пример, откроет итоговую страницу и оставит",
+            "   окно с результатом. Вводить команды не требуется.",
+            "4. При ошибке после начала установки рядом будет создан",
+            "   `INSTALLATION_LOG.txt` либо `EXAMPLE_RUN_LOG.txt`.",
+            "   Журнал может содержать локальные пути: не публикуйте его целиком,",
+            "   если достаточно снимка последних строк ошибки.",
+        ]
+    else:
+        route_lines = [
+            "3. Этот исходный пакет не является пользовательским дистрибутивом:",
+            "   wheel отсутствует, а `01_START_HERE.cmd` намеренно остановится.",
+            "4. Разработчик может выполнить",
+            "   `INSTALL_FROM_SOURCE.cmd C:\\path\\to\\GBK`; пользователю следует",
+            "   передавать только отдельно проверенный wheel-ZIP.",
+        ]
     return "\n".join(
         [
             "# Установка в Windows",
@@ -721,14 +1267,14 @@ def _render_windows_install() -> str:
             "",
             "1. Установите 64-разрядный Python 3.11 с Python Launcher (`py`).",
             "2. Распакуйте пакет в локальный каталог с правом записи.",
-            "3. Если переданный wheel находится в `wheel/`, запустите",
-            "   `INSTALL_FROM_WHEEL.cmd`.",
-            "4. Для исходного проекта выполните",
-            "   `INSTALL_FROM_SOURCE.cmd C:\\path\\to\\GBK`.",
-            "5. Скрипт сверит SHA-256 включённого wheel, установит зависимости из",
+            *route_lines,
+            "5. Для исходного проекта предназначен только разработческий маршрут.",
+            "6. Внутренний установщик сверит SHA-256 включённого wheel и установит",
+            "   зависимости из",
             "   `requirements/runtime-py311.lock`, затем wheel с `--no-deps`.",
-            "6. Установка создаст `.venv` рядом с командными скриптами.",
-            "7. Пользователь запускает `RUN_JSON_USER.cmd` или `RUN_INTERACTIVE.cmd`.",
+            "7. Установка создаст `.venv` рядом с командными скриптами.",
+            "8. После первого запуска пользователь может отдельно запускать",
+            "   `RUN_JSON_USER.cmd` или `RUN_INTERACTIVE.cmd`.",
             "   Неблокирующий `RUN_JSON.cmd` предназначен для автоматизации и CI.",
             "",
             "`VERIFY_PACKAGE.cmd` перед установкой проверяет SHA-256 манифеста, размеры",
@@ -783,11 +1329,25 @@ def _render_windows_install() -> str:
     ) + "\n"
 
 
-def _render_acceptance_checklist() -> str:
+def _render_acceptance_checklist(distribution_mode: str) -> str:
+    if distribution_mode == "wheel":
+        one_click_lines = [
+            "- [ ] `01_START_HERE.cmd` выполнил установку и контрольный пример без",
+            "      ручного ввода команд, сохранил окно и открыл итоговую страницу.",
+            "- [ ] При ошибке после начала установки создан `INSTALLATION_LOG.txt`",
+            "      либо `EXAMPLE_RUN_LOG.txt`; разработчику передаётся только снимок",
+            "      необходимых последних строк.",
+        ]
+    else:
+        one_click_lines = [
+            "- [ ] Зафиксировано, что исходный пакет не предназначен для",
+            "      пользовательской однокнопочной приёмки без готового wheel.",
+        ]
     return "\n".join(
         [
             "# Контрольный лист пользовательской приёмки",
             "",
+            *one_click_lines,
             "- [ ] Установка завершилась без ошибки.",
             "- [ ] Интерактивный режим явно указывает прямоугольную балку.",
             "- [ ] `RUN_JSON_USER.cmd` сохраняет окно после выполнения; `RUN_JSON.cmd`",
