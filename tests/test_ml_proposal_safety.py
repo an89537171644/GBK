@@ -8,7 +8,7 @@ from sp63_core.cli import main
 from sp63_core.ml import MLProposal, verify_ml_proposal_with_deterministic_core
 
 
-def test_pass_proposal_is_accepted():
+def test_diagnostic_pass_proposal_is_blocked_while_ed01_is_open():
     proposal = MLProposal(
         proposal_id="pass",
         proposal_type="rectangular_rebar_scheme",
@@ -26,11 +26,11 @@ def test_pass_proposal_is_accepted():
 
     result = verify_ml_proposal_with_deterministic_core(proposal)
 
-    assert result.accepted is True
-    assert result.verification_status == "accepted"
-    assert result.deterministic_strength_status == "pass"
+    assert result.accepted is False
+    assert result.verification_status == "rejected"
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "pass"
-    assert result.deterministic_overall_status == "pass"
+    assert result.deterministic_overall_status == "outside_applicability"
     assert result.layout_feasible is True
     assert result.longitudinal_constructive_status == "pass"
     assert result.transverse_constructive_status in ("pass", "warning")
@@ -41,6 +41,7 @@ def test_pass_proposal_is_accepted():
     assert result.requires_engineer_review is True
     assert "ML proposal is advisory-only" in result.warnings
     assert "deterministic SP63 verification is mandatory" in result.warnings
+    assert "bending check is outside applicability" in result.rejection_reasons
 
 
 def test_bending_fail_proposal_is_rejected():
@@ -62,8 +63,8 @@ def test_bending_fail_proposal_is_rejected():
     result = verify_ml_proposal_with_deterministic_core(proposal)
 
     assert result.accepted is False
-    assert result.deterministic_strength_status == "fail"
-    assert "bending check failed" in result.rejection_reasons
+    assert result.deterministic_strength_status == "outside_applicability"
+    assert "bending check is outside applicability" in result.rejection_reasons
     assert "ML proposal rejected by deterministic SP63 verification" in result.warnings
 
 
@@ -88,8 +89,9 @@ def test_shear_fail_proposal_is_rejected():
     result = verify_ml_proposal_with_deterministic_core(proposal)
 
     assert result.accepted is False
-    assert result.deterministic_strength_status == "fail"
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "not_checked"
+    assert "bending check is outside applicability" in result.rejection_reasons
     assert "shear check failed" in result.rejection_reasons
 
 
@@ -138,7 +140,7 @@ def test_serviceability_fail_proposal_is_rejected():
     result = verify_ml_proposal_with_deterministic_core(proposal)
 
     assert result.accepted is False
-    assert result.deterministic_strength_status == "pass"
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "fail"
     assert result.deterministic_overall_status == "fail"
     assert "crack_width check failed" in result.rejection_reasons
@@ -225,18 +227,17 @@ def test_cli_ml_proposal_verify_json_output(capsys):
     data = json.loads(captured.out)
     assert exit_code == 0
     assert data["command"] == "ml-proposal-verify"
-    assert data["status"] == "pass"
+    assert data["status"] == "review_required"
     assert data["verified_count"] == 2
-    assert data["accepted_count"] == 1
-    assert data["rejected_count"] == 1
+    assert data["accepted_count"] == 0
+    assert data["rejected_count"] == 2
     assert data["ml_is_advisory_only"] is True
     assert data["deterministic_checks_required"] is True
     assert data["completeness_status"] == "incomplete"
     assert data["evidence_status"] == "needs_engineer_review"
     assert data["project_use_status"] == "prohibited"
     assert data["project_use"] is False
-    assert any(result["accepted"] for result in data["results"])
-    assert any(not result["accepted"] for result in data["results"])
+    assert all(not result["accepted"] for result in data["results"])
 
 
 def _base_input() -> dict[str, object]:

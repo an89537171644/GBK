@@ -226,7 +226,7 @@ def _build_regression_metrics(
     test_features = [_safe_feature_vector(case) for case in test_cases]
 
     metrics: dict[str, Any] = {
-        "dataset": "safe_accepted_deterministic_sp63_core",
+        "dataset": "diagnostic_regression_pass_rows_sp63_core",
         "feature_columns": SAFE_REGRESSION_FEATURES,
         "targets": SAFE_REGRESSION_TARGETS,
         "train_rows": len(train_cases),

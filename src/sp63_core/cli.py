@@ -1777,7 +1777,10 @@ def build_parser() -> ArgumentParser:
     ml_readiness.add_argument(
         "--diagnostic",
         action="store_true",
-        help="check diagnostic pass/fail/review dataset instead of safe accepted dataset",
+        help=(
+            "check diagnostic pass/fail/review dataset instead of the diagnostic "
+            "regression pass-row dataset"
+        ),
     )
     ml_readiness.add_argument("--json", action="store_true", help="print JSON output")
     ml_readiness.set_defaults(handler=_handle_ml_readiness)
@@ -2257,13 +2260,18 @@ def _handle_bending(args: Namespace) -> int:
         orientation=_orientation_from_args(args),
         load_duration=args.load_duration,
     )
+    reported_status = bending.public_status
     intermediate_values = bending.intermediate_values
     result = {
         "x": bending.x,
         "xi": bending.xi,
         "xi_R": bending.xi_R,
         "capacity_applicable": bending.capacity_applicable,
+        "capacity_publication_allowed": bending.capacity_publication_allowed,
+        "diagnostic_status": bending.diagnostic_status,
+        "status_scope": bending.status_scope,
         "clause_8_1_3_status": bending.clause_8_1_3_status,
+        "clause_8_1_3_decision_status": bending.clause_8_1_3_decision_status,
         "completeness_status": bending.completeness_status,
         "evidence_status": bending.evidence_status,
         "project_use_status": bending.project_use_status,
@@ -2288,20 +2296,26 @@ def _handle_bending(args: Namespace) -> int:
     ):
         if field_name in intermediate_values:
             result[field_name] = intermediate_values[field_name]
-    if bending.Mult is not None:
+    if bending.capacity_publication_allowed and bending.Mult is not None:
         result["Mult"] = bending.Mult
-    if bending.utilization is not None:
+    if bending.capacity_publication_allowed and bending.utilization is not None:
         result["utilization"] = bending.utilization
     if args.json:
-        _print_json("bending", bending.status, result, bending.warnings)
+        _print_json("bending", reported_status, result, bending.warnings)
         return 0
 
     print("Bending check")
-    print(f"status: {bending.status}")
+    print(f"status: {reported_status}")
+    print(f"diagnostic_status: {bending.diagnostic_status}")
+    print(f"status_scope: {bending.status_scope}")
     print("x: not available" if bending.x is None else f"x: {bending.x:.2f} mm")
     print("xi: not available" if bending.xi is None else f"xi: {bending.xi:.3f}")
     print("xi_R: not available" if bending.xi_R is None else f"xi_R: {bending.xi_R:.3f}")
-    if bending.Mult is None or bending.utilization is None:
+    if (
+        not bending.capacity_publication_allowed
+        or bending.Mult is None
+        or bending.utilization is None
+    ):
         print("M_ult not available: outside applicability")
     else:
         print(f"Mult: {bending.Mult:.2f} N*mm")
@@ -2337,6 +2351,7 @@ def _handle_shear(args: Namespace) -> int:
         sw=args.sw,
     )
     result = {
+        "status_scope": "diagnostic_regression",
         "Q_strip": shear.Q_strip,
         "qsw": shear.qsw,
         "Qb": shear.Qb,
@@ -2355,6 +2370,7 @@ def _handle_shear(args: Namespace) -> int:
 
     print("Shear check")
     print(f"status: {shear.status}")
+    print("status_scope: diagnostic_regression")
     print(f"Q_strip: {shear.Q_strip:.2f} N")
     print(f"qsw: {shear.qsw:.2f} N/mm")
     print(f"Qb: {shear.Qb:.2f} N")
@@ -2385,6 +2401,13 @@ def _handle_crack_formation(args: Namespace) -> int:
         "utilization": crack.utilization,
         "W": crack.intermediate_values["W"],
         "Rbtser": crack.intermediate_values["Rbtser"],
+        "model_status": crack.model_status,
+        "clause_8_1_3_status": crack.clause_8_1_3_status,
+        "clause_8_1_3_decision_status": crack.clause_8_1_3_decision_status,
+        "usable_for_clause_8_1_3": crack.usable_for_clause_8_1_3,
+        "evidence_status": crack.evidence_status,
+        "project_use_status": crack.project_use_status,
+        "project_use": crack.project_use,
     }
     if args.json:
         _print_json("crack-formation", crack.status, result, crack.warnings)
@@ -2397,6 +2420,9 @@ def _handle_crack_formation(args: Namespace) -> int:
     print(f"utilization: {crack.utilization:.3f}")
     print(f"W: {crack.intermediate_values['W']:.2f} mm3")
     print(f"Rbtser: {crack.intermediate_values['Rbtser']:.3f} MPa")
+    print(f"model_status: {crack.model_status}")
+    print(f"clause_8_1_3_status: {crack.clause_8_1_3_status}")
+    print(f"usable_for_clause_8_1_3: {str(crack.usable_for_clause_8_1_3).lower()}")
     _print_warnings(crack.warnings)
     return 0
 
@@ -2490,6 +2516,14 @@ def _handle_select_longitudinal(args: Namespace) -> int:
             f"unsupported ULS longitudinal rebar class {rebar.class_name!r}; "
             "no options were evaluated",
         )
+    elif options and any(
+        not option.bending.capacity_publication_allowed for option in options
+    ):
+        status = "outside_applicability"
+        warnings = (
+            "longitudinal candidates are diagnostic only because clause 8.1.3 "
+            "is not checked; no option is approved for selection",
+        )
     else:
         status = "pass" if options else "fail"
         warnings = () if options else ("no passing longitudinal reinforcement options",)
@@ -2504,6 +2538,9 @@ def _handle_select_longitudinal(args: Namespace) -> int:
             options[0].bending.project_use_status if options else "prohibited"
         ),
         "project_use": False,
+        "status_scope": (
+            options[0].bending.status_scope if options else "public"
+        ),
         "requires_engineer_review": True,
     }
     if args.json:
@@ -2528,10 +2565,12 @@ def _handle_select_longitudinal(args: Namespace) -> int:
         print(
             f"{option.scheme}: As={option.As:.2f} mm2, "
             f"h0={option.section.effective_depth():.2f} mm, "
-            f"utilization={option.utilization:.3f}, "
+            f"diagnostic_utilization={option.diagnostic_utilization:.3f}, "
             f"constructive={option.constructive.status}, "
             f"reinforcement ratio={reinforcement_ratio:.3f}%, "
-            f"layout_feasible={option.layout.layout_feasible}, status={option.status}"
+            "layout_feasible="
+            f"{option.layout.layout_feasible}, status={option.bending.public_status}, "
+            f"diagnostic_status={option.diagnostic_status}"
         )
     _print_warnings(warnings)
     return 0
@@ -2641,7 +2680,10 @@ def _handle_design_rectangular(args: Namespace) -> int:
         print(f"selected longitudinal scheme: {longitudinal.scheme}")
         print(f"As: {longitudinal.As:.2f} mm2")
         print(f"h0: {longitudinal.section.effective_depth():.2f} mm")
-        print(f"bending utilization: {longitudinal.utilization:.3f}")
+        print(
+            "diagnostic bending utilization: "
+            f"{longitudinal.diagnostic_utilization:.3f}"
+        )
         print(f"longitudinal constructive status: {longitudinal.constructive.status}")
         print(
             "longitudinal reinforcement ratio: "
@@ -4802,7 +4844,10 @@ def _collect_batch_design_report_inputs(args: Namespace) -> tuple[Path, ...]:
 def _build_design_report_result(args: Namespace) -> tuple[Any, str]:
     if args.input_json:
         design_input = load_rectangular_design_input_from_json(args.input_json)
-        return design_rectangular_element(design_input), "input_json"
+        return (
+            design_rectangular_element(design_input),
+            "input_json",
+        )
     return _build_design_report_smoke_result(), "smoke_example"
 
 
@@ -4840,6 +4885,7 @@ def _design_report_json_payload(report: Any, *, source: str) -> dict[str, Any]:
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "status_scope": report.status_scope,
         "completeness_status": report.completeness_status,
         "evidence_status": report.evidence_status,
         "project_use_status": report.project_use_status,
@@ -5128,10 +5174,20 @@ def _handle_validate(args: Namespace) -> int:
     acceptance_passed = (
         acceptance_report is None or acceptance_report["status"] in ("pass", "warning")
     )
-    status = "pass" if golden_passed and dataset_passed and acceptance_passed else "fail"
+    validation_executed = (
+        bool(golden_results)
+        or dataset_result is not None
+        or acceptance_report is not None
+    )
+    status = (
+        "pass"
+        if validation_executed and golden_passed and dataset_passed and acceptance_passed
+        else "fail"
+    )
     payload: dict[str, Any] = {
         "command": "validate",
         "status": status,
+        "status_scope": "diagnostic_regression",
         "completeness_status": "incomplete",
         "evidence_status": "needs_engineer_review",
         "project_use_status": "prohibited",
@@ -5163,10 +5219,11 @@ def _handle_validate(args: Namespace) -> int:
 
     if args.json:
         print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
-        return 0
+        return 1 if status == "fail" else 0
 
     print("Validation")
     print(f"status: {status}")
+    print("status_scope: diagnostic_regression")
     print("completeness_status: incomplete")
     print("evidence_status: needs_engineer_review")
     print("project_use_status: prohibited")
@@ -5206,7 +5263,7 @@ def _handle_validate(args: Namespace) -> int:
         print(f"acceptance_report: {acceptance_report_path}")
     if args.output_report is not None:
         print(f"output_report: {payload['output_report']}")
-    return 0
+    return 1 if status == "fail" else 0
 
 
 def _handle_materials_audit(args: Namespace) -> int:
@@ -5218,7 +5275,8 @@ def _handle_materials_audit(args: Namespace) -> int:
             "verification_template_path": str(template_path),
             "columns": list(MATERIAL_VERIFICATION_REQUIRED_COLUMNS),
             "warnings": [
-                "engineer_verified requires engineer_name, review_date, and source_note"
+                "engineer_verified requires engineer_name, review_date, source_note, "
+                "and evidence_kind=independent_engineer_evidence"
             ],
         }
         if args.json:
@@ -5300,7 +5358,8 @@ def _handle_material_verification(args: Namespace) -> int:
             "template_path": str(template_path),
             "columns": list(MATERIAL_VERIFICATION_REQUIRED_COLUMNS),
             "warnings": [
-                "engineer_verified requires engineer_name, review_date, and source_note"
+                "engineer_verified requires engineer_name, review_date, source_note, "
+                "and evidence_kind=independent_engineer_evidence"
             ],
         }
         if args.json:
@@ -5364,6 +5423,7 @@ def _handle_material_verification(args: Namespace) -> int:
             f"{row.material_type} {row.class_name} {row.property_name}: "
             f"{row.catalog_value:g} {row.unit}; "
             f"verification_status={row.verification_status}; "
+            f"evidence_kind={row.evidence_kind}; "
             f"requires_engineer_review={row.requires_engineer_review}"
         )
     _print_warnings(report.warnings)
@@ -5536,7 +5596,7 @@ def _handle_ml_readiness(args: Namespace) -> int:
             load_duration="short",
         )
         rows = (case.as_row() for case in cases)
-        dataset_mode = "safe_accepted"
+        dataset_mode = "diagnostic_regression_pass_rows"
     report = build_ml_readiness_report(rows)
     payload = {
         "command": "ml-readiness",
@@ -6278,7 +6338,7 @@ def _handle_external_validation(args: Namespace) -> int:
     }
     if args.json:
         print(jsonlib.dumps(payload, ensure_ascii=False, indent=2))
-        return 0
+        return 1 if summary.status == "fail" else 0
 
     print("External validation")
     print(f"status: {summary.status}")
@@ -6291,7 +6351,7 @@ def _handle_external_validation(args: Namespace) -> int:
     print(f"failed_cases: {summary.failed_cases}")
     print(f"missing_external_values_count: {summary.missing_external_values_count}")
     _print_warnings(summary.warnings)
-    return 0
+    return 1 if summary.status == "fail" else 0
 
 
 def _ml_proposal_smoke_examples() -> tuple[MLProposal, ...]:
@@ -6515,7 +6575,7 @@ def _longitudinal_option_to_dict(option: Any) -> dict[str, Any]:
         "scheme": option.scheme,
         "As": option.As,
         "h0": option.section.effective_depth(),
-        "utilization": option.utilization,
+        "diagnostic_utilization": option.diagnostic_utilization,
         "layout_feasible": option.layout.layout_feasible,
         "constructive_status": option.constructive.status,
         "reinforcement_ratio_percent": option.constructive.intermediate_values[
@@ -6530,8 +6590,11 @@ def _longitudinal_option_to_dict(option: Any) -> dict[str, Any]:
         "evidence_status": option.bending.evidence_status,
         "project_use_status": option.bending.project_use_status,
         "project_use": option.bending.project_use,
+        "capacity_publication_allowed": option.bending.capacity_publication_allowed,
+        "status_scope": option.bending.status_scope,
         "requires_engineer_review": option.requires_engineer_review,
-        "status": option.status,
+        "diagnostic_status": option.diagnostic_status,
+        "status": option.bending.public_status,
     }
 
 
@@ -6567,6 +6630,7 @@ def _design_result_to_dict(design: Any) -> dict[str, Any]:
         "strength_status": design.strength_status,
         "serviceability_status": design.serviceability_status,
         "overall_status": design.overall_status,
+        "status_scope": design.status_scope,
         "completeness_status": design.completeness_status,
         "evidence_status": design.evidence_status,
         "project_use_status": design.project_use_status,
@@ -6614,6 +6678,13 @@ def _crack_formation_to_dict(crack: Any) -> dict[str, Any]:
         "status": crack.status,
         "W": crack.intermediate_values["W"],
         "Rbtser": crack.intermediate_values["Rbtser"],
+        "model_status": crack.model_status,
+        "clause_8_1_3_status": crack.clause_8_1_3_status,
+        "clause_8_1_3_decision_status": crack.clause_8_1_3_decision_status,
+        "usable_for_clause_8_1_3": crack.usable_for_clause_8_1_3,
+        "evidence_status": crack.evidence_status,
+        "project_use_status": crack.project_use_status,
+        "project_use": crack.project_use,
         "warnings": list(crack.warnings),
     }
 
@@ -6815,6 +6886,7 @@ def _load_dataset_csv(path: Path) -> tuple[DatasetCase, ...]:
                 warnings_count=int(row["warnings_count"]),
                 requires_engineer_review=_parse_bool(row["requires_engineer_review"]),
                 unsafe_row=_parse_bool(row["unsafe_row"]),
+                status_scope=row["status_scope"],
                 dataset_source=row["dataset_source"],
                 sp63_core_version=row["sp63_core_version"],
                 dataset_version=row["dataset_version"],

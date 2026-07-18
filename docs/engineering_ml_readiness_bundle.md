@@ -76,12 +76,14 @@ When `--output-dir` is supplied, the command writes:
   not fail.
 - `ml_ready_for_engineering_review` can be true only when external validation
   has accepted cases without failures and material verification coverage is
-  complete.
+  complete using `evidence_kind = independent_engineer_evidence`.
 - `ml_ready_for_project_use` is always false in K60.
 
 ## Limitations
 
 - Synthetic data is not external validation.
+- `tests/fixtures/material_verification_sample.csv` is synthetic fail-closed
+  evidence and cannot make the bundle ready for engineering review.
 - Benchmark metrics are not production evidence.
 - Material verification does not certify ML output.
 - Advisory ML proposal packages are not design calculations.

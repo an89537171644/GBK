@@ -37,14 +37,30 @@ def test_select_longitudinal_rebar_returns_top_five_passing_options():
 
     assert len(options) == 5
     assert [option.As for option in options] == sorted(option.As for option in options)
-    assert all(option.status == "pass" for option in options)
-    assert all(option.bending.status == "pass" for option in options)
+    assert all(option.status == "outside_applicability" for option in options)
+    assert all(option.utilization is None for option in options)
+    assert all(option.diagnostic_status == "pass" for option in options)
+    assert all(option.diagnostic_utilization <= 1.0 for option in options)
+    assert all(option.bending.status == "outside_applicability" for option in options)
+    assert all(option.bending.Mult is None for option in options)
+    assert all(option.bending.utilization is None for option in options)
+    assert all(option.bending.capacity_applicable is False for option in options)
+    assert all(option.bending.diagnostic_status == "pass" for option in options)
+    assert all(option.bending.diagnostic_Mult is not None for option in options)
+    assert all(
+        option.bending.diagnostic_utilization is not None for option in options
+    )
+    assert all(
+        option.bending.diagnostic_capacity_applicable is True for option in options
+    )
+    assert all(
+        option.bending.capacity_publication_allowed is False for option in options
+    )
     assert all(option.constructive.status == "pass" for option in options)
     assert all(
         option.constructive.intermediate_values["reinforcement_ratio_percent"] >= 0.1
         for option in options
     )
-    assert all(option.utilization <= 1.0 for option in options)
     assert all(option.layout.layout_feasible is True for option in options)
     assert all(option.requires_engineer_review is True for option in options)
 
@@ -63,7 +79,11 @@ def test_select_longitudinal_rebar_checks_every_candidate_through_bending():
     assert options[0].bending.intermediate_values["As"] == pytest.approx(options[0].As)
     assert options[0].section.main_bar_diameter == 32
     assert options[0].section.effective_depth() == pytest.approx(444)
-    assert options[0].bending.utilization < 1.0
+    assert options[0].utilization is None
+    assert options[0].bending.utilization is None
+    assert options[0].diagnostic_utilization < 1.0
+    assert options[0].bending.diagnostic_utilization is not None
+    assert options[0].bending.diagnostic_utilization < 1.0
 
 
 def test_select_longitudinal_rebar_recalculates_h0_for_each_diameter():

@@ -1,7 +1,11 @@
 import json
 
 from sp63_core.cli import main
-from sp63_core.report import validate_batch_report_archive, validate_report_bundle
+from sp63_core.report import (
+    compute_file_sha256,
+    validate_batch_report_archive,
+    validate_report_bundle,
+)
 
 EXAMPLE_INPUT = "docs/reports/examples/rectangular_design_input_example.json"
 BATCH_EXAMPLES_DIR = "docs/reports/examples/batch"
@@ -143,6 +147,44 @@ def test_report_archive_validation_rejects_stale_manifest_schema(tmp_path):
 
     assert result.status == "fail"
     assert any("manifest_version must be '2'" in error for error in result.errors)
+
+
+def test_report_archive_validation_rejects_self_consistent_public_bending_pass(tmp_path):
+    output_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(output_dir) == 0
+
+    report_path = output_dir / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for container in (report, report["report"], report["report"]["protocol"]):
+        container["status"] = "pass"
+        container["strength_status"] = "pass"
+        container["overall_status"] = "pass"
+        bending = container["checks"]["bending"]
+        bending.update(
+            {
+                "status": "pass",
+                "public_status": "pass",
+                "Mult": 123_456.0,
+                "utilization": 0.5,
+                "capacity_applicable": True,
+                "capacity_publication_allowed": True,
+            }
+        )
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    manifest_path = output_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for record in manifest["output_files"]:
+        if record["path"].endswith("report.json"):
+            record["sha256"] = compute_file_sha256(report_path)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_report_bundle(output_dir)
+
+    assert result.status == "fail"
+    assert result.checksum_mismatch_count == 0
+    assert any("ED-01 contract" in error for error in result.errors)
+    assert any("bending.Mult must be null" in error for error in result.errors)
 
 
 def test_report_archive_validation_fails_for_missing_manifest(tmp_path):

@@ -16,6 +16,7 @@ from typing import Any
 from sp63_core.dataset import load_report_dataset_rows
 from sp63_core.materials import (
     MATERIAL_VERIFICATION_REQUIRED_COLUMNS,
+    MaterialVerificationRow,
     build_material_verification_report,
 )
 from sp63_core.materials.audit import CONCRETE_PROPERTY_USAGE, REBAR_PROPERTY_USAGE
@@ -104,6 +105,7 @@ def evaluate_ml_material_verification_readiness(
     rejected_material_keys: tuple[str, ...] = ()
     review_required_material_keys: tuple[str, ...] = ()
     material_verification_present = False
+    material_report_passed = False
 
     if not rows and not errors:
         errors.append("dataset contains no rows")
@@ -115,12 +117,18 @@ def evaluate_ml_material_verification_readiness(
             csv_rows = _load_material_verification_csv(Path(material_verification_csv))
             material_verification_present = True
             material_report = build_material_verification_report(csv_rows)
+            material_report_passed = material_report.status == "pass"
             warnings.extend(material_report.warnings)
-            verification = _verification_status_by_material_key(csv_rows)
+            verification = _verification_status_by_material_key(material_report.rows)
             verified_material_keys = _covered_keys(required_material_keys, verification, "verified")
-            rejected_material_keys = _covered_keys(required_material_keys, verification, "rejected")
+            rejected_material_keys = _rejected_material_keys_from_raw(
+                required_material_keys,
+                csv_rows,
+            )
             missing_material_keys = tuple(
-                key for key in required_material_keys if key not in verification
+                key
+                for key in required_material_keys
+                if key not in verification and key not in rejected_material_keys
             )
             review_required_material_keys = tuple(
                 key
@@ -129,6 +137,14 @@ def evaluate_ml_material_verification_readiness(
                 and key not in rejected_material_keys
                 and key not in missing_material_keys
             )
+            if not material_report_passed:
+                verified_material_keys = ()
+                review_required_material_keys = tuple(
+                    key
+                    for key in required_material_keys
+                    if key not in missing_material_keys
+                    and key not in rejected_material_keys
+                )
             if material_report.invalid_rows_count:
                 warnings.append("material verification CSV contains invalid rows")
             if material_report.value_mismatch_count:
@@ -146,6 +162,7 @@ def evaluate_ml_material_verification_readiness(
         and not missing_material_keys
         and not rejected_material_keys
         and not review_required_material_keys
+        and material_report_passed
     )
     material_ready_for_engineering_review = (
         material_verification_present
@@ -298,19 +315,21 @@ def _required_material_keys(
 
 
 def _verification_status_by_material_key(
-    csv_rows: tuple[Mapping[str, Any], ...],
+    rows: tuple[MaterialVerificationRow, ...],
 ) -> dict[str, str]:
     by_class: dict[tuple[str, str], dict[str, str]] = {}
-    for row in csv_rows:
-        material_type = str(row.get("material_type") or "").strip()
-        class_name = str(row.get("class_name") or "").strip()
-        property_name = str(row.get("property_name") or "").strip()
+    for row in rows:
+        material_type = row.material_type
+        class_name = row.class_name
+        property_name = row.property_name
         if not material_type or not class_name or not property_name:
             continue
         if property_name not in _required_properties_for_material_type(material_type):
             continue
         by_class.setdefault((material_type, class_name), {})[property_name] = (
-            _property_status(row)
+            "verified"
+            if row.verification_status == VERIFIED_STATUS
+            else "review_required"
         )
 
     key_status: dict[str, str] = {}
@@ -324,16 +343,23 @@ def _verification_status_by_material_key(
     return key_status
 
 
-def _property_status(row: Mapping[str, Any]) -> str:
-    status = str(row.get("verification_status") or "").strip().lower()
-    if status in REJECTED_STATUSES:
-        return "rejected"
-    if status != VERIFIED_STATUS:
-        return "review_required"
-    required_fields = ("engineer_value", "engineer_name", "review_date", "source_note")
-    if any(_is_blank(row.get(field)) for field in required_fields):
-        return "review_required"
-    return "verified"
+def _rejected_material_keys_from_raw(
+    required_keys: tuple[str, ...],
+    csv_rows: tuple[Mapping[str, Any], ...],
+) -> tuple[str, ...]:
+    rejected: set[str] = set()
+    for row in csv_rows:
+        status = str(row.get("verification_status") or "").strip().lower()
+        if status not in REJECTED_STATUSES:
+            continue
+        material_type = str(row.get("material_type") or "").strip()
+        class_name = str(row.get("class_name") or "").strip()
+        if material_type == "concrete":
+            rejected.add(f"concrete:{class_name}")
+        elif material_type == "rebar":
+            rejected.add(f"longitudinal_rebar:{class_name}")
+            rejected.add(f"stirrup_rebar:{class_name}")
+    return tuple(key for key in required_keys if key in rejected)
 
 
 def _class_status(

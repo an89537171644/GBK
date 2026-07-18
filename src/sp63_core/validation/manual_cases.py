@@ -120,6 +120,7 @@ def _case_01() -> tuple[
         deflection_limit_ratio=250,
     )
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -195,8 +196,8 @@ def _case_01() -> tuple[
         "bending_x": bending.x,
         "bending_xi": bending.xi,
         "bending_xi_R": bending.xi_R,
-        "bending_Mult_kNm": bending.Mult / 1_000_000.0,
-        "bending_utilization": bending.utilization,
+        "bending_Mult_kNm": bending.diagnostic_Mult / 1_000_000.0,
+        "bending_utilization": bending.diagnostic_utilization,
         "shear_Qult_kN": shear.Qult / 1000.0,
         "shear_utilization": shear.utilization,
         "Mcrc_kNm": crack.Mcrc / 1_000_000.0,
@@ -204,7 +205,7 @@ def _case_01() -> tuple[
         "deflection": deflection.deflection,
     }
     actual_statuses = {
-        "bending_status": bending.status,
+        "bending_status": bending.diagnostic_status,
         "shear_status": shear.status,
         "crack_formation_status": crack.status,
         "crack_width_status": crack_width.status,
@@ -233,6 +234,7 @@ def _case_02() -> tuple[
         load_duration="short",
     )
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -267,11 +269,11 @@ def _case_02() -> tuple[
     actual_values: dict[str, ManualValue] = {
         "h0": section.effective_depth(),
         "bending_x": bending.x,
-        "bending_Mult_kNm": bending.Mult / 1_000_000.0,
-        "bending_utilization": bending.utilization,
+        "bending_Mult_kNm": bending.diagnostic_Mult / 1_000_000.0,
+        "bending_utilization": bending.diagnostic_utilization,
     }
     actual_statuses = {
-        "bending_status": bending.status,
+        "bending_status": bending.diagnostic_status,
         "strength_status": protocol.strength_status,
         "serviceability_status": protocol.serviceability_status,
         "overall_status": protocol.overall_status,
@@ -308,6 +310,7 @@ def _case_03() -> tuple[
     )
     crack = check_normal_crack_formation_rectangular(section, concrete, Mser=30_000_000)
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -365,6 +368,7 @@ def _case_04() -> tuple[
         main_bar_diameter=16,
     )
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -433,6 +437,7 @@ def _case_05() -> tuple[
         crack_formation=crack,
     )
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -495,6 +500,7 @@ def _case_06() -> tuple[
         sw=300,
     )
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},

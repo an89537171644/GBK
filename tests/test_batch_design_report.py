@@ -20,9 +20,9 @@ def test_batch_design_reports_from_example_directory(tmp_path):
     assert result.project_use is False
     assert result.input_count == 3
     assert result.report_count == 3
-    assert result.passed_count >= 1
-    assert result.failed_count >= 1
-    assert result.review_count >= 1
+    assert result.passed_count == 0
+    assert result.failed_count == 0
+    assert result.review_count == 3
     assert (output_dir / "index.md").exists()
     assert (output_dir / "index.json").exists()
     assert (output_dir / "manifest.json").exists()
@@ -35,6 +35,10 @@ def test_batch_design_reports_from_example_directory(tmp_path):
     )
     assert all(case["project_use_status"] == "prohibited" for case in index["cases"])
     assert all(case["project_use"] is False for case in index["cases"])
+    assert all(
+        case["strength_status"] == "outside_applicability"
+        for case in index["cases"]
+    )
     for case_id in ("case_001", "case_002", "case_003"):
         case_dir = output_dir / case_id
         assert (case_dir / "report.md").exists()

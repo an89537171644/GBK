@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from sp63_core.materials.verification import (
+    INDEPENDENT_ENGINEER_EVIDENCE_KIND,
+    MATERIAL_VERIFICATION_EVIDENCE_KINDS,
     MATERIAL_VERIFICATION_STATUSES,
     MaterialVerificationRow,
     build_material_verification_report,
@@ -17,6 +19,7 @@ BASE_REQUIRED_FIELDS: tuple[str, ...] = (
     "catalog_value",
     "unit",
     "verification_status",
+    "evidence_kind",
     "requires_engineer_review",
 )
 ENGINEER_VERIFIED_REQUIRED_FIELDS: tuple[str, ...] = (
@@ -167,6 +170,8 @@ def render_material_verification_markdown(
             "",
             "- This report does not change material catalog values automatically.",
             "- Full SP 63 text is not stored in this repository.",
+            "- Only evidence_kind=independent_engineer_evidence may accompany "
+            "engineer_verified.",
             "- Engineer verification remains mandatory before final design use.",
         ]
     )
@@ -220,11 +225,18 @@ def _review_reasons_for_raw_row(row: Mapping[str, Any]) -> tuple[str, ...]:
     status = str(row.get("verification_status") or "").strip().lower()
     if status not in MATERIAL_VERIFICATION_STATUSES:
         reasons.append("invalid verification_status")
+    evidence_kind = str(row.get("evidence_kind") or "").strip().lower()
+    if evidence_kind not in MATERIAL_VERIFICATION_EVIDENCE_KINDS:
+        reasons.append("invalid evidence_kind")
     if status == "draft":
         reasons.append("verification_status is draft")
     if status == "needs_review":
         reasons.append("verification_status is needs_review")
     if status == "engineer_verified":
+        if evidence_kind != INDEPENDENT_ENGINEER_EVIDENCE_KIND:
+            reasons.append(
+                "engineer_verified requires independent_engineer_evidence"
+            )
         for field in ENGINEER_VERIFIED_REQUIRED_FIELDS:
             if _is_blank(row.get(field)):
                 reasons.append(f"missing {field}")

@@ -304,6 +304,7 @@ def _design_report_json_payload(report: DesignCalculationReport) -> dict[str, An
         "strength_status": report.strength_status,
         "serviceability_status": report.serviceability_status,
         "overall_status": report.overall_status,
+        "status_scope": report.status_scope,
         "completeness_status": report.completeness_status,
         "evidence_status": report.evidence_status,
         "project_use_status": report.project_use_status,

@@ -54,6 +54,24 @@ def _write_material_rows(path, rows):
     return path
 
 
+def _independent_material_rows():
+    rows = _read_material_rows()
+    for row in rows:
+        row.update(
+            {
+                "verification_status": "engineer_verified",
+                "engineer_value": row["catalog_value"],
+                "engineer_name": "Test Engineer",
+                "review_date": "2026-07-18",
+                "source_note": "controlled SP 63 source reference",
+                "engineer_comment": "independent evidence contract test",
+                "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
+            }
+        )
+    return rows
+
+
 def test_material_readiness_without_csv_is_review_required(tmp_path):
     dataset_path = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
 
@@ -73,7 +91,7 @@ def test_material_readiness_without_csv_is_review_required(tmp_path):
     assert result.review_required_material_keys == ()
 
 
-def test_material_readiness_with_complete_fixture(tmp_path):
+def test_material_readiness_with_synthetic_fixture_requires_review(tmp_path):
     dataset_path = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
 
     result = evaluate_ml_material_verification_readiness(
@@ -83,13 +101,13 @@ def test_material_readiness_with_complete_fixture(tmp_path):
 
     assert result.status == "review_required"
     assert result.material_verification_present is True
-    assert result.material_verification_complete is True
-    assert result.material_coverage_ratio == 1.0
-    assert result.verified_material_keys == result.required_material_keys
+    assert result.material_verification_complete is False
+    assert result.material_coverage_ratio == 0.0
+    assert result.verified_material_keys == ()
     assert result.missing_material_keys == ()
     assert result.rejected_material_keys == ()
-    assert result.review_required_material_keys == ()
-    assert result.material_ready_for_engineering_review is True
+    assert result.review_required_material_keys == result.required_material_keys
+    assert result.material_ready_for_engineering_review is False
     assert result.material_ready_for_project_use is False
 
 
@@ -150,16 +168,57 @@ def test_material_readiness_empty_engineer_fields_need_review(tmp_path):
 
 def test_material_readiness_supports_csv_dataset(tmp_path):
     dataset_path = _write_csv_dataset(tmp_path / "dataset.csv")
+    material_path = _write_material_rows(
+        tmp_path / "independent_materials.csv",
+        _independent_material_rows(),
+    )
 
     result = evaluate_ml_material_verification_readiness(
         dataset_path=dataset_path,
         dataset_format="csv",
-        material_verification_csv=MATERIAL_FIXTURE,
+        material_verification_csv=material_path,
     )
 
     assert result.row_count == 1
     assert result.material_coverage_ratio == 1.0
     assert result.material_ready_for_engineering_review is True
+
+
+def test_material_readiness_rejects_duplicate_evidence(tmp_path):
+    dataset_path = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
+    rows = _independent_material_rows()
+    material_path = _write_material_rows(tmp_path / "duplicate.csv", [*rows, rows[0]])
+
+    result = evaluate_ml_material_verification_readiness(
+        dataset_path=dataset_path,
+        material_verification_csv=material_path,
+    )
+
+    assert result.material_verification_complete is False
+    assert result.material_ready_for_engineering_review is False
+    assert result.verified_material_keys == ()
+    assert any("duplicate" in warning for warning in result.warnings)
+
+
+def test_material_readiness_rejects_non_finite_evidence(tmp_path):
+    dataset_path = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
+    for field in ("catalog_value", "engineer_value"):
+        for non_finite in ("NaN", "Infinity", "-Infinity"):
+            rows = _independent_material_rows()
+            rows[0][field] = non_finite
+            material_path = _write_material_rows(
+                tmp_path / f"{field}_{non_finite}.csv",
+                rows,
+            )
+
+            result = evaluate_ml_material_verification_readiness(
+                dataset_path=dataset_path,
+                material_verification_csv=material_path,
+            )
+
+            assert result.material_verification_complete is False
+            assert result.material_ready_for_engineering_review is False
+            assert result.verified_material_keys == ()
 
 
 def test_material_readiness_rejects_missing_dataset_material_field(tmp_path):
@@ -208,7 +267,8 @@ def test_cli_ml_material_readiness_json(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "ml-material-readiness"
     assert payload["material_verification_present"] is True
-    assert payload["material_coverage_ratio"] == 1.0
+    assert payload["material_coverage_ratio"] == 0.0
+    assert payload["material_ready_for_engineering_review"] is False
     assert payload["material_ready_for_project_use"] is False
 
 
@@ -238,11 +298,15 @@ def test_cli_ml_material_readiness_markdown_output(tmp_path, capsys):
 
 def test_external_readiness_includes_material_readiness_fields(tmp_path):
     dataset_path = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
+    material_path = _write_material_rows(
+        tmp_path / "independent_materials.csv",
+        _independent_material_rows(),
+    )
 
     result = evaluate_ml_external_validation_readiness(
         dataset_path=dataset_path,
         external_validation_csv=EXTERNAL_FIXTURE,
-        material_verification_csv=MATERIAL_FIXTURE,
+        material_verification_csv=material_path,
     )
 
     assert result.material_verification_present is True
@@ -254,5 +318,5 @@ def test_external_readiness_includes_material_readiness_fields(tmp_path):
         "stirrup_rebar:A240",
     )
     assert result.material_ready_for_engineering_review is True
-    assert result.ml_ready_for_engineering_review is True
+    assert result.ml_ready_for_engineering_review is False
     assert result.ml_ready_for_project_use is False

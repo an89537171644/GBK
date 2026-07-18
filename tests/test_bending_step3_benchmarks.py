@@ -66,13 +66,26 @@ def test_step3_benchmark_suite_is_fail_closed_and_reproducible():
         assert result.intermediate_values["x_limit"] == pytest.approx(
             expected["x_limit"]
         )
-        _assert_optional_float(result.Mult, expected["Mult"])
-        _assert_optional_float(result.utilization, expected["utilization"])
-        assert result.status == expected["status"]
-        assert result.capacity_applicable is expected["capacity_applicable"]
-        if not result.capacity_applicable:
-            assert "Mult" not in result.intermediate_values
-            assert "utilization" not in result.intermediate_values
+        assert result.Mult is None
+        assert result.utilization is None
+        assert result.status == "outside_applicability"
+        assert result.capacity_applicable is False
+        assert result.public_status == "outside_applicability"
+        assert result.status_scope == "public"
+        assert result.capacity_publication_allowed is False
+        _assert_optional_float(result.diagnostic_Mult, expected["Mult"])
+        _assert_optional_float(
+            result.diagnostic_utilization,
+            expected["utilization"],
+        )
+        assert result.diagnostic_status == expected["status"]
+        assert (
+            result.diagnostic_capacity_applicable
+            is expected["capacity_applicable"]
+        )
+        assert "Mult" not in result.intermediate_values
+        assert "utilization" not in result.intermediate_values
+        if not result.diagnostic_capacity_applicable:
             assert result.intermediate_values["applicability_reason"] == expected[
                 "applicability_reason"
             ]

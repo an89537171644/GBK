@@ -46,11 +46,12 @@ def _write_material_verification_csv(path):
                 "unit": row.unit,
                 "verification_status": "engineer_verified",
                 "engineer_value": row.catalog_value,
-                "engineer_name": "Synthetic Engineer",
+                "engineer_name": "Test Engineer",
                 "review_date": "2026-06-01",
-                "source_note": "synthetic test verification note",
-                "engineer_comment": "test fixture only",
+                "source_note": "controlled source used by the positive contract test",
+                "engineer_comment": "independent evidence contract fixture",
                 "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
             }
         )
     with path.open("w", newline="", encoding="utf-8") as csv_file:
@@ -94,7 +95,7 @@ def test_external_validation_sample_counts_cases(tmp_path):
     assert result.ml_ready_for_engineering_review is False
 
 
-def test_material_verification_csv_enables_engineering_review_flag(tmp_path):
+def test_unapproved_external_summary_blocks_engineering_review_flag(tmp_path):
     dataset_path = _write_dataset(tmp_path / "dataset.jsonl")
     material_path = _write_material_verification_csv(tmp_path / "materials.csv")
 
@@ -107,8 +108,9 @@ def test_material_verification_csv_enables_engineering_review_flag(tmp_path):
     assert result.status == "review_required"
     assert result.external_validation_present is True
     assert result.material_verification_present is True
-    assert result.ml_ready_for_engineering_review is True
+    assert result.ml_ready_for_engineering_review is False
     assert result.ml_ready_for_project_use is False
+    assert any("summary requires engineer review" in warning for warning in result.warnings)
 
 
 def test_bad_external_csv_path_fails(tmp_path):

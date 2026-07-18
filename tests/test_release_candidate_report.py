@@ -12,7 +12,7 @@ def test_release_candidate_report_creates_files(tmp_path):
     assert result.release_candidate_status == "review_required"
     assert result.validation_status == "pass"
     assert result.manual_cases_status == "pass"
-    assert result.external_validation_status == "pass"
+    assert result.external_validation_status == "review_required"
     assert result.protected_files_guard_status in {"pass", "review_required"}
     assert result.user_manual_status == "pass"
     assert result.ml_ready_for_project_use is False

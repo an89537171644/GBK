@@ -21,6 +21,7 @@ Applicability limits:
 """
 
 from dataclasses import dataclass
+from math import isfinite
 
 from sp63_core.materials import Concrete
 from sp63_core.sections import RectangularSection
@@ -36,6 +37,13 @@ class CrackFormationResult:
     status: str
     warnings: tuple[str, ...]
     intermediate_values: dict[str, float | str | bool]
+    model_status: str = "ASSUMPTION"
+    clause_8_1_3_status: str = "not_checked"
+    clause_8_1_3_decision_status: str = "OPEN_QUESTION"
+    usable_for_clause_8_1_3: bool = False
+    evidence_status: str = "needs_engineer_review"
+    project_use_status: str = "prohibited"
+    project_use: bool = False
     requires_engineer_review: bool = True
 
 
@@ -46,10 +54,10 @@ def check_normal_crack_formation_rectangular(
 ) -> CrackFormationResult:
     """Check normal crack formation using ``Mcrc = Rbtser * W``."""
     section.validate_geometry()
-    if Mser < 0:
-        raise ValueError("Mser must be non-negative")
-    if concrete.Rbtser <= 0:
-        raise ValueError("concrete.Rbtser must be positive")
+    if not isfinite(Mser) or Mser < 0:
+        raise ValueError("Mser must be a finite non-negative value")
+    if not isfinite(concrete.Rbtser) or concrete.Rbtser <= 0:
+        raise ValueError("concrete.Rbtser must be finite and positive")
     if section.b <= 0:
         raise ValueError("section width must be positive")
     if section.h <= 0:
@@ -66,7 +74,8 @@ def check_normal_crack_formation_rectangular(
     status = "no_crack" if Mser <= Mcrc else "crack"
 
     warnings = [
-        "draft gross-section crack formation check; transformed section is not implemented"
+        "draft gross-section crack formation check; transformed section is not implemented",
+        "this assumption-level result is not usable as the clause 8.1.3 gate",
     ]
     if status == "crack":
         warnings.append(
@@ -90,6 +99,13 @@ def check_normal_crack_formation_rectangular(
             "formula": "Mcrc = Rbtser * W",
             "serviceability_scope": "normal_crack_formation_only",
             "transformed_section_used": False,
+            "model_status": "ASSUMPTION",
+            "clause_8_1_3_status": "not_checked",
+            "clause_8_1_3_decision_status": "OPEN_QUESTION",
+            "usable_for_clause_8_1_3": False,
+            "evidence_status": "needs_engineer_review",
+            "project_use_status": "prohibited",
+            "project_use": False,
         },
         requires_engineer_review=True,
     )

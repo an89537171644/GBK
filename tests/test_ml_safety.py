@@ -6,7 +6,7 @@ from sp63_core.ml import (
 )
 
 
-def test_check_ml_proposal_safety_accepts_case_reinforcement():
+def test_check_ml_proposal_safety_blocks_diagnostic_dataset_case():
     case = generate_dataset_cases(limit=1, load_duration="short")[0]
     proposal = MLReinforcementProposal(
         main_bar_count=case.main_bar_count,
@@ -19,8 +19,10 @@ def test_check_ml_proposal_safety_accepts_case_reinforcement():
     safety = check_ml_proposal_safety(proposal, case)
 
     assert safety["ml_is_advisory"] is True
-    assert safety["accepted_by_deterministic_core"] is True
-    assert safety["bending_status"] == "pass"
+    assert safety["accepted_by_deterministic_core"] is False
+    assert safety["bending_status"] == "outside_applicability"
+    assert safety["diagnostic_bending_status"] == "pass"
+    assert safety["status_scope"] == "diagnostic"
     assert safety["shear_status"] == "pass"
     assert safety["stirrup_diameter_mode"] == "geometry_input_parameter"
     assert safety["local_axes_id"] == case.local_axes_id
@@ -61,7 +63,7 @@ def test_check_ml_prediction_safety_wraps_reconstructed_proposal():
 
     safety = check_ml_prediction_safety(prediction, case)
 
-    assert safety["accepted_by_deterministic_core"] is True
+    assert safety["accepted_by_deterministic_core"] is False
     assert safety["proposal"]["stirrup_diameter"] == case.geometry_stirrup_diameter
     assert safety["proposal"]["requires_deterministic_check"] is True
 

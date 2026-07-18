@@ -54,6 +54,7 @@ def build_material_verification_closure(
     missing_keys = required_keys
     rejected_keys: tuple[str, ...] = ()
     review_required_keys: tuple[str, ...] = ()
+    verification_report_passed = False
     csv_path = None if material_verification_csv is None else Path(material_verification_csv)
 
     if csv_path is None:
@@ -63,6 +64,7 @@ def build_material_verification_closure(
             rows = _load_material_verification_csv(csv_path)
             verification_report = build_material_verification_report(rows)
             warnings.extend(verification_report.warnings)
+            verification_report_passed = verification_report.status == "pass"
             verified_keys = tuple(
                 _material_key(row.material_type, row.class_name, row.property_name)
                 for row in verification_report.rows
@@ -85,6 +87,8 @@ def build_material_verification_closure(
                 warnings.append("material verification CSV has rows still requiring review")
             if rejected_keys:
                 errors.append("material verification CSV contains rejected material rows")
+            if not verification_report_passed:
+                warnings.append("material verification report gate is not passed")
         except (FileNotFoundError, ValueError, OSError) as exc:
             errors.append(f"material verification CSV cannot be read: {exc}")
             warnings.append("material verification CSV could not be used for closure")
@@ -96,6 +100,7 @@ def build_material_verification_closure(
         and not rejected_keys
         and not review_required_keys
         and len(verified_keys) == len(required_keys)
+        and verification_report_passed
     )
     material_ready_for_engineering_review = complete_verified_coverage and not errors
     status = _closure_status(

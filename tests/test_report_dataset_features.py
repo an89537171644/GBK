@@ -55,7 +55,7 @@ def test_report_dataset_feature_set_builds_from_jsonl(tmp_path):
 
     assert result.row_count == 3
     assert result.target == "overall_status"
-    assert result.target_distribution == {"fail": 1, "pass": 1, "review_or_fail": 1}
+    assert result.target_distribution == {"outside_applicability": 3}
     assert result.feature_count == len(result.feature_columns)
     assert result.train_count + result.validation_count + result.test_count == result.row_count
     assert result.requires_engineer_review is True
@@ -75,7 +75,7 @@ def test_report_dataset_feature_set_builds_from_csv(tmp_path):
     )
 
     assert result.row_count == 3
-    assert result.target_distribution == {"fail": 1, "pass": 1, "review_or_fail": 1}
+    assert result.target_distribution == {"outside_applicability": 3}
     assert "b" in result.feature_columns
 
 
@@ -118,10 +118,10 @@ def test_report_dataset_features_recognizes_overall_status_target(tmp_path):
 
     assert result.target_columns == ("overall_status",)
     assert result.status == "review_required"
-    assert result.target_distribution["pass"] == 1
+    assert result.target_distribution == {"outside_applicability": 3}
 
 
-def test_report_dataset_features_constant_target_requires_review(tmp_path):
+def test_report_dataset_features_rejects_public_pass_target_while_ed01_open(tmp_path):
     dataset_path = _write_batch_dataset(tmp_path)
     rows = _read_jsonl(dataset_path)
     for row in rows:
@@ -131,9 +131,9 @@ def test_report_dataset_features_constant_target_requires_review(tmp_path):
 
     result = build_report_dataset_feature_set(dataset_path=constant_path)
 
-    assert result.status == "review_required"
+    assert result.status == "fail"
     assert result.target_distribution == {"pass": 3}
-    assert any("constant" in warning for warning in result.warnings)
+    assert "ED-01 public report-dataset contract is invalid" in result.errors
 
 
 def test_report_dataset_features_missing_target_fails(tmp_path):

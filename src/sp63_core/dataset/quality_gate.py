@@ -11,6 +11,7 @@ from typing import Any
 
 from sp63_core.dataset.from_reports import REPORT_DATASET_SOURCE
 from sp63_core.dataset.generator import DATASET_VERSION
+from sp63_core.report.ed01_contract import public_report_dataset_row_errors
 from sp63_core.sections import RectangularBendingOrientation
 
 SUPPORTED_REPORT_QUALITY_FORMATS = ("jsonl", "json", "csv")
@@ -27,6 +28,7 @@ PROVENANCE_COLUMNS = (
     "report_json_sha256",
     "manifest_sha256",
     "archive_validation_status",
+    "status_scope",
     "local_axes_id",
     "moment_axis",
     "tension_face",
@@ -296,6 +298,8 @@ def report_dataset_safety_contract_errors(
         errors.append("load_duration must be short for every row")
     if any(not _hard_safety_statuses_are_valid(row) for row in rows):
         errors.append("hard safety statuses are invalid")
+    if any(public_report_dataset_row_errors(row) for row in rows):
+        errors.append("ED-01 public report-dataset contract is invalid")
     return tuple(errors)
 
 

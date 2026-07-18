@@ -183,6 +183,35 @@ def test_report_dataset_quality_gate_rejects_unsafe_provenance(
     assert any(error_text in error for error in result.errors)
 
 
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    (
+        ("status_scope", "diagnostic"),
+        ("bending_status", "pass"),
+        ("bending_utilization", 0.5),
+        ("Mult", 123_456.0),
+        ("strength_status", "pass"),
+        ("overall_status", "pass"),
+        ("diagnostic_status", "pass"),
+    ),
+)
+def test_report_dataset_quality_gate_rejects_ed01_publication_bypass(
+    tmp_path,
+    field_name,
+    invalid_value,
+):
+    dataset_path = _write_batch_dataset(tmp_path)
+    rows = _read_jsonl(dataset_path)
+    rows[0][field_name] = invalid_value
+    broken_path = tmp_path / f"ed01_{field_name}.jsonl"
+    _write_jsonl(broken_path, rows)
+
+    result = run_report_dataset_quality_gate(dataset_path=broken_path, min_rows=1)
+
+    assert result.status == "fail"
+    assert "ED-01 public report-dataset contract is invalid" in result.errors
+
+
 def test_cli_report_dataset_quality_json_output(tmp_path, capsys):
     dataset_path = _write_batch_dataset(tmp_path)
     capsys.readouterr()

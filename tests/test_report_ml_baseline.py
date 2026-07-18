@@ -52,12 +52,9 @@ def test_report_ml_baseline_builds_from_jsonl(tmp_path):
     assert result.row_count == 3
     assert result.feature_mode == "input_only"
     assert result.target == "overall_status"
-    assert result.target_distribution == {"fail": 1, "pass": 1, "review_or_fail": 1}
-    assert result.model_name in {
-        "DummyClassifier(strategy='most_frequent')",
-        "LogisticRegression",
-    }
-    assert "accuracy" in result.metrics
+    assert result.target_distribution == {"outside_applicability": 3}
+    assert result.model_name == "not_run"
+    assert result.metrics == {}
     assert result.neural_network_used is False
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
@@ -73,8 +70,8 @@ def test_report_ml_baseline_builds_from_csv(tmp_path):
     )
 
     assert result.row_count == 3
-    assert result.target_distribution == {"fail": 1, "pass": 1, "review_or_fail": 1}
-    assert "accuracy" in result.metrics
+    assert result.target_distribution == {"outside_applicability": 3}
+    assert result.metrics == {}
 
 
 def test_report_ml_baseline_input_only_excludes_leakage_columns(tmp_path):
@@ -132,7 +129,7 @@ def test_report_ml_baseline_missing_target_fails(tmp_path):
     assert result.metrics == {}
 
 
-def test_report_ml_baseline_constant_target_requires_review(tmp_path):
+def test_report_ml_baseline_rejects_public_pass_target_while_ed01_open(tmp_path):
     dataset_path = _write_batch_dataset(tmp_path)
     rows = _read_jsonl(dataset_path)
     for row in rows:
@@ -142,10 +139,10 @@ def test_report_ml_baseline_constant_target_requires_review(tmp_path):
 
     result = build_report_baseline_ml_result(dataset_path=constant_path)
 
-    assert result.status == "review_required"
+    assert result.status == "fail"
     assert result.target_distribution == {"pass": 3}
     assert result.metrics == {}
-    assert any("constant" in warning for warning in result.warnings)
+    assert "ED-01 public report-dataset contract is invalid" in result.errors
 
 
 def test_cli_report_ml_baseline_json_output(tmp_path, capsys):

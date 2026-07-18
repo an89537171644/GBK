@@ -56,17 +56,17 @@ def test_report_neural_predict_builds_from_jsonl(tmp_path):
 
     assert result.status == "review_required"
     assert result.target == "overall_status"
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert result.prediction_confidence is not None
-    assert result.class_probabilities
-    assert result.deterministic_strength_status == "pass"
+    assert result.predicted_status is None
+    assert result.prediction_confidence is None
+    assert result.class_probabilities == {}
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "pass"
-    assert result.deterministic_overall_status == "pass"
+    assert result.deterministic_overall_status == "outside_applicability"
     assert result.deterministic_report_required is True
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
     assert result.requires_engineer_review is True
-    assert result.neural_network_used is True
+    assert result.neural_network_used is False
 
 
 def test_report_neural_predict_builds_from_csv(tmp_path):
@@ -79,9 +79,9 @@ def test_report_neural_predict_builds_from_csv(tmp_path):
         max_iter=50,
     )
 
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert result.deterministic_overall_status == "pass"
-    assert result.neural_network_used is True
+    assert result.predicted_status is None
+    assert result.deterministic_overall_status == "outside_applicability"
+    assert result.neural_network_used is False
 
 
 def test_report_neural_predict_does_not_use_leakage_columns(tmp_path):
@@ -169,11 +169,11 @@ def test_report_neural_predict_mismatch_requires_review(tmp_path, monkeypatch):
         input_json_path=INPUT_JSON,
     )
 
-    assert result.deterministic_overall_status == "pass"
-    assert result.predicted_status == "fail"
-    assert result.prediction_matches_deterministic is False
+    assert result.deterministic_overall_status == "outside_applicability"
+    assert result.predicted_status is None
+    assert result.prediction_matches_deterministic is None
     assert result.status == "review_required"
-    assert any("differs from deterministic" in warning for warning in result.warnings)
+    assert any("constant" in warning for warning in result.warnings)
 
 
 def test_cli_report_neural_predict_json_output(tmp_path, capsys):
@@ -198,7 +198,7 @@ def test_cli_report_neural_predict_json_output(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "report-neural-predict"
     assert payload["target"] == "overall_status"
-    assert payload["deterministic_overall_status"] == "pass"
+    assert payload["deterministic_overall_status"] == "outside_applicability"
     assert payload["deterministic_report_required"] is True
     assert payload["ml_is_advisory_only"] is True
     assert payload["deterministic_checks_required"] is True

@@ -79,9 +79,9 @@ def run_bending_golden_cases() -> tuple[GoldenCaseResult, ...]:
                 "x": passing.x,
                 "xi": passing.xi,
                 "xi_R": passing.xi_R,
-                "Mult": passing.Mult,
-                "utilization": passing.utilization,
-                "calculation_status": passing.status,
+                "Mult": passing.diagnostic_Mult,
+                "utilization": passing.diagnostic_utilization,
+                "calculation_status": passing.diagnostic_status,
             },
             tolerances={
                 "x": 0.05,
@@ -102,9 +102,9 @@ def run_bending_golden_cases() -> tuple[GoldenCaseResult, ...]:
             },
             actual={
                 "x": failing.x,
-                "Mult": failing.Mult,
-                "utilization": failing.utilization,
-                "calculation_status": failing.status,
+                "Mult": failing.diagnostic_Mult,
+                "utilization": failing.diagnostic_utilization,
+                "calculation_status": failing.diagnostic_status,
             },
             tolerances={
                 "x": 0.05,
@@ -179,10 +179,10 @@ def run_step3_bending_benchmark_cases() -> tuple[GoldenCaseResult, ...]:
             "xi": bending.xi,
             "xi_R": bending.xi_R,
             "x_limit": bending.intermediate_values["x_limit"],
-            "Mult": bending.Mult,
-            "utilization": bending.utilization,
-            "calculation_status": bending.status,
-            "capacity_applicable": bending.capacity_applicable,
+            "Mult": bending.diagnostic_Mult,
+            "utilization": bending.diagnostic_utilization,
+            "calculation_status": bending.diagnostic_status,
+            "capacity_applicable": bending.diagnostic_capacity_applicable,
         }
         for key in ("Rb_base", "gamma_b1", "Rb_effective", "applicability_reason"):
             if key in expected_fixture:
@@ -303,7 +303,12 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
     bending_status = (
         ""
         if design.selected_longitudinal is None
-        else design.selected_longitudinal.bending.status
+        else design.selected_longitudinal.bending.diagnostic_status
+    )
+    bending_public_status = (
+        ""
+        if design.selected_longitudinal is None
+        else design.selected_longitudinal.bending.public_status
     )
     shear_status = (
         "" if design.selected_transverse is None else design.selected_transverse.shear.status
@@ -312,15 +317,16 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
         _build_result(
             case_id="design_rectangular_case_01",
             expected={
-                "design_status": "pass",
-                "strength_status": "pass",
+                "design_status": "outside_applicability",
+                "strength_status": "outside_applicability",
                 "serviceability_status": "not_checked",
-                "overall_status": "pass",
-                "protocol_status": "pass",
-                "protocol_strength_status": "pass",
+                "overall_status": "outside_applicability",
+                "protocol_status": "outside_applicability",
+                "protocol_strength_status": "outside_applicability",
                 "protocol_serviceability_status": "not_checked",
-                "protocol_overall_status": "pass",
+                "protocol_overall_status": "outside_applicability",
                 "bending_status": "pass",
+                "bending_public_status": "outside_applicability",
                 "shear_status": "pass",
             },
             actual={
@@ -333,6 +339,7 @@ def run_design_golden_cases() -> tuple[GoldenCaseResult, ...]:
                 "protocol_serviceability_status": protocol_serviceability_status,
                 "protocol_overall_status": protocol_overall_status,
                 "bending_status": bending_status,
+                "bending_public_status": bending_public_status,
                 "shear_status": shear_status,
             },
             tolerances={},

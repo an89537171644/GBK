@@ -64,23 +64,27 @@ def test_external_validation_strict_review_required_for_missing_values():
     assert summary.inconsistent_acceptance_status_count == 0
 
 
-def test_external_validation_summary_passes_for_accepted_rows():
+def test_external_validation_summary_requires_review_for_unapproved_policy():
     summary = build_external_validation_summary((_accepted_row(),))
 
-    assert summary.status == "pass"
+    assert summary.status == "review_required"
     assert summary.total_cases == 1
     assert summary.accepted_cases == 1
     assert summary.failed_cases == 0
     assert summary.max_bending_delta_percent == 0.5
     assert summary.max_shear_delta_percent == 0.75
-    assert summary.max_mcrc_delta_percent == 0.13
-    assert summary.max_crack_width_delta_mm == 0.001
-    assert summary.max_deflection_delta_mm == 0.01
+    assert summary.max_mcrc_delta_percent == pytest.approx(0.12903225806451613)
+    assert summary.max_crack_width_delta_mm == pytest.approx(0.001)
+    assert summary.max_deflection_delta_mm == pytest.approx(0.01)
     assert summary.requires_engineer_review is True
     assert summary.completeness_status == "incomplete"
     assert summary.evidence_status == "needs_engineer_review"
     assert summary.project_use_status == "prohibited"
     assert summary.project_use is False
+    assert summary.tolerance_policy_status == "ASSUMPTION"
+    assert summary.source_adapter_status == "OPEN_QUESTION"
+    assert summary.external_validation_status == "NOT_STARTED"
+    assert "unapproved diagnostic policy" in " ".join(summary.warnings)
 
 
 def test_external_validation_summary_fails_closed_for_missing_provenance():
@@ -103,13 +107,58 @@ def test_external_validation_summary_fails_closed_for_long_duration():
     assert summary.invalid_provenance_count == 1
 
 
+@pytest.mark.parametrize("invalid_value", ("nan", "inf", "-inf", "-1"))
+def test_external_validation_summary_rejects_invalid_numeric_input(invalid_value):
+    row = {**_accepted_row(), "external_bending_mult_nmm": invalid_value}
+
+    summary = build_external_validation_summary((row,), strict_mode=True)
+
+    assert summary.status != "pass"
+    assert summary.invalid_numeric_values_count == 1
+    assert "invalid numeric values" in " ".join(summary.warnings)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    (
+        ("bending_delta_percent", float("nan")),
+        ("shear_delta_percent", float("inf")),
+        ("mcrc_delta_percent", -1.0),
+        ("crack_width_delta_mm", float("nan")),
+        ("deflection_delta_mm", -1.0),
+    ),
+)
+def test_external_validation_tolerance_rejects_non_finite_or_negative_values(
+    field_name,
+    invalid_value,
+):
+    with pytest.raises(ValueError, match=rf"{field_name} must be finite and non-negative"):
+        ExternalValidationTolerance(**{field_name: invalid_value})
+
+
+def test_external_validation_tolerance_cannot_self_approve():
+    with pytest.raises(ValueError, match="cannot be self-approved"):
+        ExternalValidationTolerance(approved_for_acceptance=True)
+
+
+def test_external_validation_tolerance_status_cannot_be_spoofed():
+    with pytest.raises(ValueError, match="approval_status must remain 'ASSUMPTION'"):
+        ExternalValidationTolerance(approval_status="CONFIRMED")
+
+
 @pytest.mark.parametrize(
     ("field_name", "invalid_value", "message"),
     (
         ("local_axes_id", "", "missing provenance fields: local_axes_id"),
+        ("source_type", "", "missing provenance fields: source_type"),
         ("moment_axis", "global_y", "moment_axis must be 'local_z'"),
         ("load_duration", "long", "load_duration must be 'short'"),
         ("project_use", "true", "project_use must be false"),
+        (
+            "adapter_approval_status",
+            "approved",
+            "adapter_approval_status must remain 'not_approved'",
+        ),
     ),
 )
 def test_external_validation_loader_rejects_invalid_provenance(
@@ -138,16 +187,42 @@ def test_external_validation_summary_fails_for_failed_rows():
 
 
 def test_external_validation_summary_requires_review_when_delta_exceeds_tolerance():
-    row = {**_accepted_row(), "delta_mcrc_percent": "1.25"}
+    row = {**_accepted_row(), "external_mcrc_nmm": "20000000"}
     summary = build_external_validation_summary((row,))
 
     assert summary.status == "review_required"
-    assert summary.max_mcrc_delta_percent == 1.25
+    assert summary.max_mcrc_delta_percent == pytest.approx(3.225806451612903)
     assert "external validation delta exceeds draft tolerance" in summary.warnings
 
 
+def test_external_validation_explicit_delta_mismatch_fails_closed():
+    row = {
+        **_accepted_row(),
+        "external_bending_mult_nmm": "400000000",
+        "delta_bending_percent": "0",
+    }
+
+    summary = build_external_validation_summary((row,), strict_mode=True)
+
+    assert summary.status == "fail"
+    assert summary.explicit_delta_mismatch_count == 1
+    assert summary.max_bending_delta_percent == 100.0
+
+
+def test_external_validation_duplicate_case_id_fails_closed(tmp_path):
+    csv_path = tmp_path / "duplicate.csv"
+    _write_external_rows(csv_path, [_accepted_row(), _accepted_row()])
+
+    with pytest.raises(ValueError, match="duplicate case_id"):
+        load_external_validation_csv(csv_path)
+
+    summary = build_external_validation_summary((_accepted_row(), _accepted_row()))
+    assert summary.status == "fail"
+    assert summary.duplicate_case_id_count == 1
+
+
 def test_external_validation_strict_fails_when_delta_exceeds_tolerance():
-    row = {**_accepted_row(), "delta_mcrc_percent": "1.25"}
+    row = {**_accepted_row(), "external_mcrc_nmm": "20000000"}
     summary = build_external_validation_summary((row,), strict_mode=True)
 
     assert summary.status == "fail"
@@ -181,7 +256,7 @@ def test_cli_external_validation_json_output(capsys):
     data = json.loads(captured.out)
     assert exit_code == 0
     assert data["command"] == "external-validation"
-    assert data["status"] == "pass"
+    assert data["status"] == "review_required"
     assert data["summary"]["total_cases"] == 1
     assert data["summary"]["accepted_cases"] == 1
 
@@ -194,7 +269,7 @@ def test_cli_external_validation_strict_json_output(capsys):
     assert exit_code == 0
     assert data["command"] == "external-validation"
     assert data["strict"] is True
-    assert data["status"] == "pass"
+    assert data["status"] == "review_required"
     assert data["summary"]["strict_mode"] is True
     assert data["summary"]["tolerance_failed_count"] == 0
     assert data["summary"]["inconsistent_acceptance_status_count"] == 0
@@ -215,13 +290,16 @@ def test_cli_external_validation_strict_missing_values_review_required(tmp_path,
 
 def test_cli_external_validation_strict_tolerance_failure(tmp_path, capsys):
     csv_path = tmp_path / "tolerance_fail.csv"
-    _write_external_rows(csv_path, [{**_accepted_row(), "delta_mcrc_percent": "1.25"}])
+    _write_external_rows(
+        csv_path,
+        [{**_accepted_row(), "external_mcrc_nmm": "20000000"}],
+    )
 
     exit_code = main(["external-validation", "--csv", str(csv_path), "--strict", "--json"])
 
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert exit_code == 0
+    assert exit_code == 1
     assert data["status"] == "fail"
     assert data["summary"]["tolerance_failed_count"] == 1
 
@@ -254,7 +332,7 @@ def test_cli_external_validation_sample_json_output(capsys):
     assert exit_code == 0
     assert data["command"] == "external-validation"
     assert data["sample"] is True
-    assert data["status"] == "pass"
+    assert data["status"] == "review_required"
     assert summary["total_cases"] == 6
     assert summary["accepted_cases"] == 6
     assert summary["review_cases"] == 0
@@ -284,6 +362,19 @@ def _accepted_row() -> dict[str, str]:
     return {
         "case_id": "external_case_01",
         "source_type": "manual",
+        "source_program": "independent-manual",
+        "source_program_version": "1.0",
+        "source_model_id": "manual-model-01",
+        "source_element_id": "beam-01",
+        "source_station": "midspan",
+        "source_combination_id": "LC-01",
+        "source_signed_action_vector": "M=150000000;Q=80000",
+        "source_units": "N;Nmm;mm",
+        "source_basis": "independent-manual-record",
+        "transform_matrix_reference": "identity",
+        "adapter_id": "manual-canonical",
+        "adapter_version": "1.0",
+        "adapter_approval_status": "not_approved",
         "element_type": "rectangular_beam",
         "b_mm": "300",
         "h_mm": "500",
@@ -315,11 +406,11 @@ def _accepted_row() -> dict[str, str]:
         "external_serviceability_status": "pass",
         "program_overall_status": "pass",
         "external_overall_status": "pass",
-        "delta_bending_percent": "0.5",
-        "delta_shear_percent": "0.75",
-        "delta_mcrc_percent": "0.13",
-        "delta_crack_width_mm": "0.001",
-        "delta_deflection_mm": "0.01",
+        "delta_bending_percent": "",
+        "delta_shear_percent": "",
+        "delta_mcrc_percent": "",
+        "delta_crack_width_mm": "",
+        "delta_deflection_mm": "",
         "acceptance_status": "accepted",
         "engineer_comment": "synthetic public fixture",
         "completeness_status": "incomplete",

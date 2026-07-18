@@ -97,7 +97,8 @@ def check_ml_proposal_safety(
 
     blocking_shear_warnings = _has_blocking_shear_warning(shear.warnings)
     accepted_by_deterministic_core = (
-        layout.layout_feasible
+        original_case.status_scope == "public"
+        and layout.layout_feasible
         and longitudinal_constructive.status == "pass"
         and bending.status == "pass"
         and shear.status == "pass"
@@ -118,6 +119,8 @@ def check_ml_proposal_safety(
         "ml_is_advisory": True,
         "accepted_by_deterministic_core": accepted_by_deterministic_core,
         "bending_status": bending.status,
+        "diagnostic_bending_status": bending.diagnostic_status,
+        "status_scope": original_case.status_scope,
         "shear_status": shear.status,
         "layout_feasible": layout.layout_feasible,
         "longitudinal_constructive_status": longitudinal_constructive.status,

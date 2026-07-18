@@ -21,7 +21,7 @@ python -m sp63_core ml-material-readiness \
   --json
 ```
 
-With an engineer-filled material verification CSV:
+With the repository's synthetic fail-closed CSV fixture:
 
 ```bash
 python -m sp63_core ml-material-readiness \
@@ -67,6 +67,9 @@ It converts them into required material keys such as:
 The material verification CSV must verify all required concrete properties
 `Rb`, `Rbt`, `Rbser`, `Rbtser`, `Eb` and reinforcement properties `Rsn`,
 `Rs`, `Rsser`, `Rsc_short`, `Rsc_long`, `Rsw`, `Es` for each required class.
+Every `engineer_verified` row must also declare
+`evidence_kind = independent_engineer_evidence`. The repository fixture uses
+`synthetic_test_fixture`, so it intentionally remains review-required.
 
 ## Readiness Flags
 
@@ -97,7 +100,8 @@ verification coverage is complete. `ml_ready_for_project_use` remains false.
 
 - Material verification readiness does not certify ML output.
 - Material verification does not replace external validation.
-- The CSV fixture is synthetic and used for tests only.
+- The CSV fixture is synthetic and used for tests only; it cannot produce
+  verified coverage or engineering-review readiness.
 - No material catalog values are changed automatically.
 - ML remains advisory-only.
 - Deterministic SP63 checks remain mandatory.

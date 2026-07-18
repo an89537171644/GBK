@@ -42,7 +42,7 @@ def test_single_design_report_bundle_writes_manifest(tmp_path):
     assert manifest["evidence_status"] == "needs_engineer_review"
     assert manifest["project_use_status"] == "prohibited"
     assert manifest["project_use"] is False
-    assert manifest["strength_status"] == "pass"
+    assert manifest["strength_status"] == "outside_applicability"
     assert manifest["serviceability_status"] in {"pass", "fail", "review_or_fail"}
     input_files = {item["path"]: item["sha256"] for item in manifest["input_files"]}
     output_files = {item["path"]: item["sha256"] for item in manifest["output_files"]}

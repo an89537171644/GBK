@@ -27,6 +27,7 @@ def _balanced_rows():
                 "report_json_sha256": f"report-{index}",
                 "manifest_sha256": f"manifest-{index}",
                 "archive_validation_status": "pass",
+                "status_scope": "diagnostic",
                 "local_axes_id": f"case-{index:03d}-local-axes",
                 "moment_axis": "local_z",
                 "tension_face": "local_y_min",

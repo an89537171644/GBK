@@ -56,7 +56,8 @@ def test_cli_bending_command_text_output(capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Bending check" in captured.out
-    assert "status: pass" in captured.out
+    assert "status: outside_applicability" in captured.out
+    assert "diagnostic_status: pass" in captured.out
     assert "completeness_status: incomplete" in captured.out
     assert "evidence_status: needs_engineer_review" in captured.out
     assert "project_use_status: prohibited" in captured.out
@@ -89,11 +90,13 @@ def test_cli_bmr_03_json_exposes_resolved_long_term_context(capsys):
 
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
-    assert payload["status"] == "fail"
+    assert payload["status"] == "outside_applicability"
     assert payload["result"]["Rb_base"] == 14.5
     assert payload["result"]["gamma_b1"] == 0.9
     assert payload["result"]["Rb_effective"] == 13.05
-    assert payload["result"]["Mult"] == pytest.approx(163_023_639.01)
+    assert "Mult" not in payload["result"]
+    assert payload["result"]["diagnostic_status"] == "fail"
+    assert payload["result"]["capacity_publication_allowed"] is False
     assert payload["result"]["project_use"] is False
     assert payload["result"]["requires_engineer_review"] is True
 
@@ -248,6 +251,7 @@ def test_cli_shear_command_text_output(capsys):
     assert exit_code == 0
     assert "Shear check" in captured.out
     assert "status: pass" in captured.out
+    assert "status_scope: diagnostic_regression" in captured.out
 
 
 def test_cli_crack_formation_text_output(capsys):
@@ -414,7 +418,8 @@ def test_cli_select_longitudinal_command_text_output(capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Longitudinal reinforcement options" in captured.out
-    assert "status: pass" in captured.out
+    assert "status: outside_applicability" in captured.out
+    assert "diagnostic_status=pass" in captured.out
     assert "constructive" in captured.out
     assert "reinforcement ratio" in captured.out
     assert "evidence_status: needs_engineer_review" in captured.out
@@ -445,7 +450,11 @@ def test_cli_select_longitudinal_json_exposes_top_level_and_option_safety(capsys
     assert payload["project_use_status"] == "prohibited"
     assert payload["project_use"] is False
     assert payload["requires_engineer_review"] is True
+    assert payload["status"] == "outside_applicability"
     assert payload["result"]
+    assert all(option["status"] == "outside_applicability" for option in payload["result"])
+    assert all(option["diagnostic_status"] == "pass" for option in payload["result"])
+    assert all("utilization" not in option for option in payload["result"])
     assert all(option["project_use_status"] == "prohibited" for option in payload["result"])
     assert all(option["project_use"] is False for option in payload["result"])
 
@@ -559,10 +568,10 @@ def test_cli_design_rectangular_command_text_output(capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Rectangular design" in captured.out
-    assert "status: pass" in captured.out
-    assert "strength_status: pass" in captured.out
+    assert "status: outside_applicability" in captured.out
+    assert "strength_status: outside_applicability" in captured.out
     assert "serviceability_status: not_checked" in captured.out
-    assert "overall_status: pass" in captured.out
+    assert "overall_status: outside_applicability" in captured.out
     assert "evidence_status: needs_engineer_review" in captured.out
     assert "project_use_status: prohibited" in captured.out
     assert "project_use: false" in captured.out
@@ -720,18 +729,18 @@ def test_cli_design_rectangular_json_output(capsys):
     data = json.loads(captured.out)
     assert exit_code == 0
     assert data["command"] == "design-rectangular"
-    assert data["status"] == "pass"
-    assert data["result"]["status"] == "pass"
-    assert data["result"]["strength_status"] == "pass"
+    assert data["status"] == "outside_applicability"
+    assert data["result"]["status"] == "outside_applicability"
+    assert data["result"]["strength_status"] == "outside_applicability"
     assert data["result"]["serviceability_status"] == "not_checked"
-    assert data["result"]["overall_status"] == "pass"
+    assert data["result"]["overall_status"] == "outside_applicability"
     assert data["result"]["evidence_status"] == "needs_engineer_review"
     assert data["result"]["project_use_status"] == "prohibited"
     assert data["result"]["project_use"] is False
     assert data["result"]["requires_engineer_review"] is True
-    assert data["result"]["protocol_strength_status"] == "pass"
+    assert data["result"]["protocol_strength_status"] == "outside_applicability"
     assert data["result"]["protocol_serviceability_status"] == "not_checked"
-    assert data["result"]["protocol_overall_status"] == "pass"
+    assert data["result"]["protocol_overall_status"] == "outside_applicability"
     assert "constructive_status" in data["result"]["selected_transverse"]
     assert "constructive_max_spacing" in data["result"]["selected_transverse"]
     assert "sw_max_by_shear_rule" in data["result"]["selected_transverse"]
@@ -984,6 +993,17 @@ def test_cli_validate_golden(capsys):
     ) in captured.out
 
 
+def test_cli_validate_empty_invocation_fails_closed(capsys):
+    exit_code = main(["validate", "--json"])
+
+    data = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert data["status"] == "fail"
+    assert data["golden"] == []
+    assert data["dataset"] is None
+    assert data["acceptance"] is None
+
+
 def test_cli_validate_generated_dataset_json(capsys):
     exit_code = main(["validate", "--generate-dataset-limit", "10", "--json"])
 
@@ -992,6 +1012,7 @@ def test_cli_validate_generated_dataset_json(capsys):
     assert exit_code == 0
     assert data["command"] == "validate"
     assert data["status"] == "pass"
+    assert data["status_scope"] == "diagnostic_regression"
     assert data["completeness_status"] == "incomplete"
     assert data["evidence_status"] == "needs_engineer_review"
     assert data["project_use_status"] == "prohibited"
@@ -1021,10 +1042,10 @@ def test_cli_validate_external_template_and_acceptance_report(tmp_path, capsys):
 
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert exit_code == 0
+    assert exit_code == 1
     assert external_template.exists()
     assert acceptance_report.exists()
-    assert data["acceptance"]["status"] == "warning"
+    assert data["acceptance"]["status"] == "review_required"
     assert data["acceptance"]["golden_case_count"] == 12
     assert data["acceptance"]["golden_passed_count"] == 12
     assert data["acceptance_report"] == str(acceptance_report)
@@ -1051,9 +1072,9 @@ def test_cli_validate_external_input_acceptance_pass(tmp_path, capsys):
 
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert exit_code == 0
+    assert exit_code == 1
     assert acceptance_report.exists()
-    assert data["acceptance"]["status"] == "pass"
+    assert data["acceptance"]["status"] == "review_required"
     assert data["acceptance"]["completed_external_rows"] == 1
 
 
@@ -1078,7 +1099,7 @@ def test_cli_validate_external_input_incomplete_fails(tmp_path, capsys):
 
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert exit_code == 0
+    assert exit_code == 1
     assert data["status"] == "fail"
     assert data["acceptance"]["status"] == "fail"
     assert data["acceptance"]["external_incomplete_count"] == 1
@@ -1145,6 +1166,7 @@ def test_cli_material_verification_text_output(capsys):
     assert "Material verification" in captured.out
     assert "status: review_required" in captured.out
     assert "verification_status=draft" in captured.out
+    assert "evidence_kind=not_provided" in captured.out
 
 
 def test_cli_material_verification_json_output(capsys):
@@ -1158,6 +1180,7 @@ def test_cli_material_verification_json_output(capsys):
     assert data["summary"]["draft_count"] == data["summary"]["required_rows_count"]
     assert any(row["class_name"] == "B25" for row in data["rows"])
     assert any(row["class_name"] == "A500" for row in data["rows"])
+    assert {row["evidence_kind"] for row in data["rows"]} == {"not_provided"}
 
 
 def test_cli_material_verification_template_output(capsys):
@@ -1182,6 +1205,9 @@ def test_cli_material_verification_engineer_csv_json(tmp_path, capsys):
     assert data["status"] == "pass"
     assert data["summary"]["engineer_verified_count"] == data["summary"]["required_rows_count"]
     assert data["summary"]["requires_engineer_review"] is False
+    assert {row["evidence_kind"] for row in data["rows"]} == {
+        "independent_engineer_evidence"
+    }
 
 
 def test_cli_material_verification_incomplete_engineer_metadata_json(tmp_path, capsys):
@@ -1346,10 +1372,10 @@ def test_cli_ml_proposal_verify_json_output(capsys):
     data = json.loads(captured.out)
     assert exit_code == 0
     assert data["command"] == "ml-proposal-verify"
-    assert data["status"] == "pass"
+    assert data["status"] == "review_required"
     assert data["verified_count"] == 2
-    assert data["accepted_count"] == 1
-    assert data["rejected_count"] == 1
+    assert data["accepted_count"] == 0
+    assert data["rejected_count"] == 2
     assert data["ml_is_advisory_only"] is True
     assert data["deterministic_checks_required"] is True
 
@@ -1427,6 +1453,7 @@ def _write_engineer_verified_material_csv(
                 "source_note": source_note,
                 "engineer_comment": "test",
                 "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
             }
         )
     with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
@@ -1461,4 +1488,16 @@ def _filled_external_row(scad_As: float | None = 101.0) -> ExternalComparisonRow
         scad_Mult=102.0,
         scad_Qult=103.0,
         accepted=True,
+        source_program="independent-manual",
+        source_program_version="1.0",
+        source_model_id="manual-model-01",
+        source_element_id="beam-01",
+        source_station="midspan",
+        source_combination_id="LC-01",
+        source_signed_action_vector="M=150000000;Q=80000",
+        source_units="N;Nmm;mm",
+        source_basis="independent-manual-record",
+        transform_matrix_reference="identity",
+        adapter_id="manual-canonical",
+        adapter_version="1.0",
     )

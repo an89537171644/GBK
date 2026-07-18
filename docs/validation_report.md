@@ -318,10 +318,11 @@ The report checks required K21 columns, deterministic status distributions,
 unsafe rows, group leakage count, constant target/status columns, and warnings.
 It does not train a model.
 
-For the current safe accepted dataset, `overall_status` can be constant `pass`.
-This is intentionally reported as `review_required`: classification ML is not
-ready until a separate diagnostic dataset includes fail and review cases. ML
-remains advisory-only.
+For the current diagnostic regression pass-row dataset, diagnostic
+`overall_status` can be constant `pass`. This is intentionally reported as
+`review_required`: classification ML is not ready until a separate diagnostic
+dataset includes fail and review cases. These rows are not public design
+acceptance results, and ML remains advisory-only.
 
 ## K23 Diagnostic Dataset Validation
 
@@ -580,7 +581,8 @@ python -m sp63_core material-verification --csv path/to/material_verification.cs
 The default report is `review_required` because current catalog values are
 still draft. An engineer-filled CSV can mark rows as `engineer_verified` only
 when the engineer value matches the current catalog value and `engineer_name`,
-`review_date`, and `source_note` are provided. Differing or incomplete values
+`review_date`, and `source_note` are provided, and `evidence_kind` is
+`independent_engineer_evidence`. Differing, synthetic, or incomplete values
 remain `needs_review`.
 
 K34 does not change formulas or material values. It adds an acceptance gate for
@@ -1067,8 +1069,8 @@ python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_sm
 python -m sp63_core ml-material-readiness --dataset reports/synthetic_dataset_smoke.jsonl --material-verification-csv tests/fixtures/material_verification_sample.csv --markdown
 ```
 
-The tests verify missing-CSV review status, complete synthetic material
-verification coverage, missing material keys, rejected material keys,
+The tests verify missing-CSV review status, fail-closed synthetic material
+evidence, complete typed independent evidence, missing material keys, rejected material keys,
 review-required material keys, JSONL and CSV dataset loading, CLI JSON output,
 Markdown output, and integration with `ml-external-readiness`.
 

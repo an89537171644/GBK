@@ -71,7 +71,8 @@ def test_generate_dataset_cases_matches_schema_and_uses_safe_results():
     assert all(case.warnings_count >= 0 for case in cases)
     assert all(case.requires_engineer_review is True for case in cases)
     assert all(case.unsafe_row is False for case in cases)
-    assert all(case.dataset_source == "deterministic_sp63_core" for case in cases)
+    assert all(case.dataset_source == "diagnostic_regression_sp63_core" for case in cases)
+    assert all(case.status_scope == "diagnostic" for case in cases)
     assert all(case.dataset_version == "0.3" == DATASET_VERSION for case in cases)
     assert all(case.local_axes_id == "synthetic-dataset-local-axes" for case in cases)
     assert all(case.moment_axis == "local_z" for case in cases)
@@ -209,7 +210,8 @@ def test_export_dataset_csv(tmp_path):
     assert rows[0]["case_id"] == "case_000001"
     assert rows[0]["cover"] == "32.0"
     assert rows[0]["status"] == "pass"
-    assert rows[0]["dataset_source"] == "deterministic_sp63_core"
+    assert rows[0]["dataset_source"] == "diagnostic_regression_sp63_core"
+    assert rows[0]["status_scope"] == "diagnostic"
     assert rows[0]["strength_status"] == "pass"
     assert rows[0]["serviceability_status"] == "pass"
     assert rows[0]["overall_status"] == "pass"

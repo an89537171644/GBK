@@ -30,12 +30,12 @@ def test_design_golden_case_passes():
 
     assert results
     assert all(result.passed for result in results)
-    assert results[0].expected["strength_status"] == "pass"
+    assert results[0].expected["strength_status"] == "outside_applicability"
     assert results[0].expected["serviceability_status"] == "not_checked"
-    assert results[0].expected["overall_status"] == "pass"
-    assert results[0].actual["strength_status"] == "pass"
+    assert results[0].expected["overall_status"] == "outside_applicability"
+    assert results[0].actual["strength_status"] == "outside_applicability"
     assert results[0].actual["serviceability_status"] == "not_checked"
-    assert results[0].actual["overall_status"] == "pass"
+    assert results[0].actual["overall_status"] == "outside_applicability"
 
 
 def test_crack_formation_golden_case_passes():

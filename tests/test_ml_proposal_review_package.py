@@ -82,8 +82,8 @@ def test_ml_proposal_review_package_builds_jsonl_with_zip(batch_datasets, tmp_pa
     assert result.file_count == len(REQUIRED_PACKAGE_FILES)
     assert result.zip_sha256 == compute_file_sha256(output_dir.with_suffix(".zip"))
     assert result.proposal_status in {"review_required", "rejected"}
-    assert result.deterministic_overall_status == "pass"
-    assert result.prediction_matches_deterministic in {True, False}
+    assert result.deterministic_overall_status == "outside_applicability"
+    assert result.prediction_matches_deterministic is None
     assert isinstance(result.advisory_signal_usable, bool)
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True

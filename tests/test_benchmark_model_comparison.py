@@ -68,16 +68,10 @@ def test_comparison_works_on_synthetic_benchmark_report(tmp_path):
     )
 
     assert result.accepted_count == 3
-    assert comparison.status == "review_required"
+    assert comparison.status == "fail"
     assert comparison.dataset_row_count == 3
     assert comparison.final_distribution == {"review_or_fail": 1, "pass": 1, "fail": 1}
-    assert set(comparison.metric_winners) == {
-        "accuracy",
-        "macro_f1",
-        "weighted_f1",
-        "precision_macro",
-        "recall_macro",
-    }
+    assert set(comparison.metric_winners.values()) == {"missing"}
     assert (tmp_path / "comparison" / "model_comparison.md").exists()
     assert (tmp_path / "comparison" / "model_comparison.json").exists()
     assert (tmp_path / "comparison" / "model_comparison.csv").exists()

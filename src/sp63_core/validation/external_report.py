@@ -1,8 +1,10 @@
 """External validation summary report for engineer-filled comparison cases."""
 
 import csv
+from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from math import isclose, isfinite
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,19 @@ from sp63_core.sections import RectangularBendingOrientation
 EXTERNAL_VALIDATION_COLUMNS: tuple[str, ...] = (
     "case_id",
     "source_type",
+    "source_program",
+    "source_program_version",
+    "source_model_id",
+    "source_element_id",
+    "source_station",
+    "source_combination_id",
+    "source_signed_action_vector",
+    "source_units",
+    "source_basis",
+    "transform_matrix_reference",
+    "adapter_id",
+    "adapter_version",
+    "adapter_approval_status",
     "element_type",
     "b_mm",
     "h_mm",
@@ -57,6 +72,21 @@ EXTERNAL_VALIDATION_COLUMNS: tuple[str, ...] = (
 )
 
 EXTERNAL_PROVENANCE_COLUMNS: tuple[str, ...] = (
+    "case_id",
+    "source_type",
+    "source_program",
+    "source_program_version",
+    "source_model_id",
+    "source_element_id",
+    "source_station",
+    "source_combination_id",
+    "source_signed_action_vector",
+    "source_units",
+    "source_basis",
+    "transform_matrix_reference",
+    "adapter_id",
+    "adapter_version",
+    "adapter_approval_status",
     "local_axes_id",
     "moment_axis",
     "tension_face",
@@ -105,17 +135,54 @@ EXTERNAL_NUMERIC_COLUMNS: tuple[str, ...] = (
 )
 
 EXTERNAL_VALUES_REQUIRED_WARNING = "external validation values must be filled by an engineer"
+EXTERNAL_TOLERANCE_POLICY_WARNING = (
+    "external validation tolerances are an unapproved diagnostic policy; "
+    "they cannot produce an accepted gate"
+)
+EXTERNAL_ADAPTER_WARNING = (
+    "source-specific external adapters are not approved; external validation "
+    "remains NOT_STARTED"
+)
+EXTERNAL_ADAPTER_APPROVAL_STATUS = "not_approved"
+EXTERNAL_TOLERANCE_APPROVAL_STATUS = "ASSUMPTION"
+# Serialization-consistency threshold only; not an engineering acceptance tolerance.
+DELTA_CONSISTENCY_ABS_TOLERANCE = 1e-5
 
 
 @dataclass(frozen=True)
 class ExternalValidationTolerance:
-    """Draft external validation acceptance tolerances."""
+    """Unapproved diagnostic thresholds retained for regression reporting."""
 
     bending_delta_percent: float = 1.0
     shear_delta_percent: float = 1.0
     mcrc_delta_percent: float = 1.0
     crack_width_delta_mm: float = 0.005
     deflection_delta_mm: float = 0.05
+    approval_status: str = EXTERNAL_TOLERANCE_APPROVAL_STATUS
+    approved_for_acceptance: bool = False
+
+    def __post_init__(self) -> None:
+        if self.approval_status != EXTERNAL_TOLERANCE_APPROVAL_STATUS:
+            raise ValueError(
+                "external tolerance approval_status must remain "
+                f"{EXTERNAL_TOLERANCE_APPROVAL_STATUS!r} until a verified policy "
+                "registry exists"
+            )
+        if self.approved_for_acceptance:
+            raise ValueError(
+                "external tolerance policy cannot be self-approved without a "
+                "verified policy registry"
+            )
+        values = {
+            "bending_delta_percent": self.bending_delta_percent,
+            "shear_delta_percent": self.shear_delta_percent,
+            "mcrc_delta_percent": self.mcrc_delta_percent,
+            "crack_width_delta_mm": self.crack_width_delta_mm,
+            "deflection_delta_mm": self.deflection_delta_mm,
+        }
+        for field_name, value in values.items():
+            if not isfinite(value) or value < 0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
 
 
 @dataclass(frozen=True)
@@ -133,6 +200,9 @@ class ExternalValidationSummary:
     tolerance_failed_count: int
     invalid_numeric_values_count: int
     invalid_provenance_count: int
+    duplicate_case_id_count: int
+    explicit_delta_mismatch_count: int
+    delta_computation_failed_count: int
     max_bending_delta_percent: float | None
     max_shear_delta_percent: float | None
     max_mcrc_delta_percent: float | None
@@ -144,6 +214,9 @@ class ExternalValidationSummary:
     evidence_status: str = "needs_engineer_review"
     project_use_status: str = "prohibited"
     project_use: bool = False
+    tolerance_policy_status: str = EXTERNAL_TOLERANCE_APPROVAL_STATUS
+    source_adapter_status: str = "OPEN_QUESTION"
+    external_validation_status: str = "NOT_STARTED"
     requires_engineer_review: bool = True
 
 
@@ -163,6 +236,9 @@ def build_external_validation_summary(
     missing_external_values_count = 0
     invalid_numeric_values_count = 0
     invalid_provenance_count = 0
+    duplicate_case_id_count = _duplicate_case_id_count(rows_tuple)
+    explicit_delta_mismatch_count = 0
+    delta_computation_failed_count = 0
     inconsistent_acceptance_status_count = 0
     tolerance_failed_count = 0
 
@@ -190,26 +266,58 @@ def build_external_validation_summary(
         else:
             review_cases += 1
 
-        bending_delta = _delta_or_computed(
+        bending_delta, bending_delta_mismatch = _percent_delta_from_values(
             row,
             delta_key="delta_bending_percent",
             program_key="program_bending_mult_nmm",
             external_key="external_bending_mult_nmm",
         )
-        shear_delta = _delta_or_computed(
+        shear_delta, shear_delta_mismatch = _percent_delta_from_values(
             row,
             delta_key="delta_shear_percent",
             program_key="program_shear_qult_n",
             external_key="external_shear_qult_n",
         )
-        mcrc_delta = _delta_or_computed(
+        mcrc_delta, mcrc_delta_mismatch = _percent_delta_from_values(
             row,
             delta_key="delta_mcrc_percent",
             program_key="program_mcrc_nmm",
             external_key="external_mcrc_nmm",
         )
-        crack_width_delta = _optional_float(row.get("delta_crack_width_mm"))
-        deflection_delta = _optional_float(row.get("delta_deflection_mm"))
+        crack_width_delta, crack_width_delta_mismatch = _absolute_delta_from_values(
+            row,
+            delta_key="delta_crack_width_mm",
+            program_key="program_crack_width_mm",
+            external_key="external_crack_width_mm",
+        )
+        deflection_delta, deflection_delta_mismatch = _absolute_delta_from_values(
+            row,
+            delta_key="delta_deflection_mm",
+            program_key="program_deflection_mm",
+            external_key="external_deflection_mm",
+        )
+        row_delta_mismatch_count = sum(
+            (
+                bending_delta_mismatch,
+                shear_delta_mismatch,
+                mcrc_delta_mismatch,
+                crack_width_delta_mismatch,
+                deflection_delta_mismatch,
+            )
+        )
+        explicit_delta_mismatch_count += row_delta_mismatch_count
+        row_delta_computation_failed = any(
+            value is None
+            for value in (
+                bending_delta,
+                shear_delta,
+                mcrc_delta,
+                crack_width_delta,
+                deflection_delta,
+            )
+        )
+        if row_delta_computation_failed:
+            delta_computation_failed_count += 1
 
         if bending_delta is not None:
             bending_deltas.append(abs(bending_delta))
@@ -237,7 +345,11 @@ def build_external_validation_summary(
             has_missing_values=row_missing_external_values,
             has_invalid_numeric_values=row_invalid_numeric_count > 0,
             has_invalid_provenance=bool(row_provenance_errors),
-            tolerance_failed=row_tolerance_failed,
+            tolerance_failed=(
+                row_tolerance_failed
+                or row_delta_mismatch_count > 0
+                or row_delta_computation_failed
+            ),
         ):
             inconsistent_acceptance_status_count += 1
 
@@ -259,8 +371,17 @@ def build_external_validation_summary(
             "external validation contains missing, invalid, or unsupported "
             "calculation provenance"
         )
+    if duplicate_case_id_count:
+        warnings.append("external validation contains duplicate case_id values")
+    if explicit_delta_mismatch_count:
+        warnings.append(
+            "external validation explicit deltas do not match deltas computed from values"
+        )
+    if delta_computation_failed_count:
+        warnings.append("external validation deltas cannot be computed from supplied values")
     if inconsistent_acceptance_status_count:
         warnings.append("external validation acceptance_status is inconsistent with strict checks")
+    warnings.extend((EXTERNAL_TOLERANCE_POLICY_WARNING, EXTERNAL_ADAPTER_WARNING))
 
     status = _summary_status(
         strict_mode=strict_mode,
@@ -270,9 +391,14 @@ def build_external_validation_summary(
         missing_external_values_count=missing_external_values_count,
         invalid_numeric_values_count=invalid_numeric_values_count,
         invalid_provenance_count=invalid_provenance_count,
+        duplicate_case_id_count=duplicate_case_id_count,
+        explicit_delta_mismatch_count=explicit_delta_mismatch_count,
+        delta_computation_failed_count=delta_computation_failed_count,
         inconsistent_acceptance_status_count=inconsistent_acceptance_status_count,
         tolerance_failed_count=tolerance_failed_count,
     )
+    if status == "pass":
+        status = "review_required"
 
     return ExternalValidationSummary(
         total_cases=total_cases,
@@ -286,6 +412,9 @@ def build_external_validation_summary(
         tolerance_failed_count=tolerance_failed_count,
         invalid_numeric_values_count=invalid_numeric_values_count,
         invalid_provenance_count=invalid_provenance_count,
+        duplicate_case_id_count=duplicate_case_id_count,
+        explicit_delta_mismatch_count=explicit_delta_mismatch_count,
+        delta_computation_failed_count=delta_computation_failed_count,
         max_bending_delta_percent=_max_or_none(bending_deltas),
         max_shear_delta_percent=_max_or_none(shear_deltas),
         max_mcrc_delta_percent=_max_or_none(mcrc_deltas),
@@ -293,6 +422,7 @@ def build_external_validation_summary(
         max_deflection_delta_mm=_max_or_none(deflection_deltas),
         status=status,
         warnings=tuple(warnings),
+        tolerance_policy_status=active_tolerances.approval_status,
     )
 
 
@@ -322,7 +452,11 @@ def load_external_validation_csv(path: str | Path) -> tuple[dict[str, str], ...]
 
 def validate_external_validation_rows(rows: Iterable[Mapping[str, Any]]) -> None:
     """Reject rows without the supported orientation, duration, and safety flags."""
-    for row_number, row in enumerate(rows, start=2):
+    rows_tuple = tuple(rows)
+    duplicate_case_id_count = _duplicate_case_id_count(rows_tuple)
+    if duplicate_case_id_count:
+        raise ValueError("external validation CSV contains duplicate case_id values")
+    for row_number, row in enumerate(rows_tuple, start=2):
         errors = _external_provenance_errors(row)
         if errors:
             raise ValueError(
@@ -365,6 +499,15 @@ def _external_provenance_errors(row: Mapping[str, Any]) -> tuple[str, ...]:
         value = row.get(field_name)
         if not _is_blank(value) and value != expected:
             errors.append(f"{field_name} must be {expected!r}")
+    adapter_approval_status = row.get("adapter_approval_status")
+    if (
+        not _is_blank(adapter_approval_status)
+        and adapter_approval_status != EXTERNAL_ADAPTER_APPROVAL_STATUS
+    ):
+        errors.append(
+            "adapter_approval_status must remain "
+            f"{EXTERNAL_ADAPTER_APPROVAL_STATUS!r} until a verified adapter registry exists"
+        )
     if not _is_blank(row.get("project_use")) and _strict_bool(row.get("project_use")) is not False:
         errors.append("project_use must be false")
     if (
@@ -396,31 +539,77 @@ def _normalized_status(value: Any) -> str:
     return "review"
 
 
-def _delta_or_computed(
+def _percent_delta_from_values(
     row: Mapping[str, Any],
     *,
     delta_key: str,
     program_key: str,
     external_key: str,
-) -> float | None:
+) -> tuple[float | None, bool]:
     explicit_delta = _optional_float(row.get(delta_key))
-    if explicit_delta is not None:
-        return explicit_delta
-
     program_value = _optional_float(row.get(program_key))
     external_value = _optional_float(row.get(external_key))
-    if program_value is None or external_value is None or program_value == 0:
-        return None
-    return abs(external_value - program_value) / abs(program_value) * 100.0
+    if program_value is None or external_value is None:
+        computed_delta = None
+    elif program_value == 0:
+        computed_delta = 0.0 if external_value == 0 else None
+    else:
+        computed_delta = abs(external_value - program_value) / abs(program_value) * 100.0
+    return computed_delta, _explicit_delta_mismatch(
+        raw_explicit_delta=row.get(delta_key),
+        explicit_delta=explicit_delta,
+        computed_delta=computed_delta,
+    )
+
+
+def _absolute_delta_from_values(
+    row: Mapping[str, Any],
+    *,
+    delta_key: str,
+    program_key: str,
+    external_key: str,
+) -> tuple[float | None, bool]:
+    explicit_delta = _optional_float(row.get(delta_key))
+    program_value = _optional_float(row.get(program_key))
+    external_value = _optional_float(row.get(external_key))
+    computed_delta = (
+        None
+        if program_value is None or external_value is None
+        else abs(external_value - program_value)
+    )
+    return computed_delta, _explicit_delta_mismatch(
+        raw_explicit_delta=row.get(delta_key),
+        explicit_delta=explicit_delta,
+        computed_delta=computed_delta,
+    )
+
+
+def _explicit_delta_mismatch(
+    *,
+    raw_explicit_delta: Any,
+    explicit_delta: float | None,
+    computed_delta: float | None,
+) -> bool:
+    if _is_blank(raw_explicit_delta):
+        return False
+    if explicit_delta is None or computed_delta is None:
+        return True
+    return not isclose(
+        explicit_delta,
+        computed_delta,
+        rel_tol=0.0,
+        abs_tol=DELTA_CONSISTENCY_ABS_TOLERANCE,
+    )
 
 
 def _optional_float(value: Any) -> float | None:
     if _is_blank(value):
         return None
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return None
+    return parsed if isfinite(parsed) and parsed >= 0 else None
 
 
 def _is_blank(value: Any) -> bool:
@@ -429,6 +618,15 @@ def _is_blank(value: Any) -> bool:
 
 def _max_or_none(values: list[float]) -> float | None:
     return max(values) if values else None
+
+
+def _duplicate_case_id_count(rows: Iterable[Mapping[str, Any]]) -> int:
+    counts = Counter(
+        str(row.get("case_id") or "").strip()
+        for row in rows
+        if not _is_blank(row.get("case_id"))
+    )
+    return sum(count - 1 for count in counts.values() if count > 1)
 
 
 def _invalid_numeric_values_count(row: Mapping[str, Any]) -> int:
@@ -468,10 +666,17 @@ def _summary_status(
     missing_external_values_count: int,
     invalid_numeric_values_count: int,
     invalid_provenance_count: int,
+    duplicate_case_id_count: int,
+    explicit_delta_mismatch_count: int,
+    delta_computation_failed_count: int,
     inconsistent_acceptance_status_count: int,
     tolerance_failed_count: int,
 ) -> str:
-    if invalid_provenance_count:
+    if (
+        invalid_provenance_count
+        or duplicate_case_id_count
+        or explicit_delta_mismatch_count
+    ):
         return "fail"
     if strict_mode:
         if tolerance_failed_count or failed_cases:
@@ -482,6 +687,7 @@ def _summary_status(
             or missing_external_values_count
             or invalid_numeric_values_count
             or inconsistent_acceptance_status_count
+            or delta_computation_failed_count
         ):
             return "review_required"
         return "pass"
@@ -494,6 +700,7 @@ def _summary_status(
         or total_cases == 0
         or invalid_numeric_values_count
         or tolerance_failed_count
+        or delta_computation_failed_count
     ):
         return "review_required"
     return "pass"

@@ -94,6 +94,7 @@ def evaluate_ml_external_validation_readiness(
     accepted_external_case_count = dataset_external_counts.get(ACCEPTED, 0)
     failed_external_case_count = dataset_external_counts.get("failed", 0)
     external_validation_present = external_case_count > 0
+    external_summary_passed = False
 
     if external_validation_csv is None:
         warnings.append("external validation is not provided")
@@ -106,6 +107,7 @@ def evaluate_ml_external_validation_readiness(
             accepted_external_case_count = external_summary.accepted_cases
             failed_external_case_count = external_summary.failed_cases
             external_validation_present = external_summary.total_cases > 0
+            external_summary_passed = external_summary.status == "pass"
             warnings.extend(external_summary.warnings)
             if external_summary.status == "fail":
                 errors.append("external validation summary status is fail")
@@ -178,6 +180,7 @@ def evaluate_ml_external_validation_readiness(
     ml_ready_for_engineering_review = (
         ml_ready_for_research
         and external_validation_present
+        and external_summary_passed
         and accepted_external_case_count > 0
         and failed_external_case_count == 0
         and material_ready_for_engineering_review

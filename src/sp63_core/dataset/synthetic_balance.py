@@ -124,7 +124,9 @@ def analyze_synthetic_dataset_balance(
         random_state=random_state,
     )
     class_counts_by_split = split_summary["class_counts_by_split"]
-    stratified_split_ready = bool(split_summary["stratified_split_ready"])
+    stratified_split_ready = required_classes_present and bool(
+        split_summary["stratified_split_ready"]
+    )
 
     leakage_columns = detect_leakage_columns(columns, target)
     input_feature_columns = tuple(

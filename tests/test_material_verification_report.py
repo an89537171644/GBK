@@ -70,8 +70,9 @@ def _engineer_verified_rows() -> tuple[dict[str, str], ...]:
                 "engineer_name": "Test Engineer",
                 "review_date": "2026-05-30",
                 "source_note": "engineer checked SP 63 table reference; no full text stored",
-                "engineer_comment": "synthetic test row",
+                "engineer_comment": "independent verification test row",
                 "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
             }
         )
     return tuple(rows)

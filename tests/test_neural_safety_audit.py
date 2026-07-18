@@ -48,16 +48,18 @@ def test_neural_safety_audit_builds_from_jsonl(tmp_path):
 
     assert result.status in {"review_required", "fail"}
     assert result.audit_status in {"review_required", "fail"}
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert result.deterministic_strength_status == "pass"
+    assert result.predicted_status is None
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "pass"
-    assert result.deterministic_overall_status == "pass"
-    assert result.prediction_matches_deterministic in {True, False}
+    assert result.deterministic_overall_status == "outside_applicability"
+    assert result.prediction_matches_deterministic is None
     assert isinstance(result.advisory_signal_usable, bool)
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
     assert result.requires_engineer_review is True
     assert result.json_data["report_type"] == "neural_advisory_safety_audit"
+    assert result.json_data["class_probabilities"] == {}
+    assert result.neural_network_used is False
 
 
 def test_neural_safety_audit_builds_from_csv(tmp_path):
@@ -71,8 +73,8 @@ def test_neural_safety_audit_builds_from_csv(tmp_path):
     )
 
     assert result.source_dataset == str(dataset_path)
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert result.json_data["class_probabilities"]
+    assert result.predicted_status is None
+    assert result.json_data["class_probabilities"] == {}
 
 
 def test_neural_safety_audit_deterministic_derived_warns(tmp_path):
@@ -164,7 +166,7 @@ def test_cli_neural_safety_audit_json_output(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "neural-safety-audit"
     assert payload["report_type"] == "neural_advisory_safety_audit"
-    assert payload["deterministic_overall_status"] == "pass"
+    assert payload["deterministic_overall_status"] == "outside_applicability"
     assert payload["ml_is_advisory_only"] is True
 
 

@@ -41,10 +41,18 @@ class BendingResult:
     utilization: float | None
     status: BendingStatus
     capacity_applicable: bool
+    diagnostic_Mult: float | None = None
+    diagnostic_utilization: float | None = None
+    diagnostic_status: BendingStatus = "outside_applicability"
+    diagnostic_capacity_applicable: bool = False
+    public_status: BendingStatus = "outside_applicability"
+    status_scope: str = "public"
+    capacity_publication_allowed: bool = False
     warnings: tuple[str, ...] = field(default_factory=tuple)
     intermediate_values: dict[str, object] = field(default_factory=dict)
     source_clause: str = SOURCE_CLAUSE
     clause_8_1_3_status: str = "not_checked"
+    clause_8_1_3_decision_status: str = "OPEN_QUESTION"
     completeness_status: str = "incomplete"
     evidence_status: str = "needs_engineer_review"
     project_use_status: str = "prohibited"
@@ -295,23 +303,38 @@ def check_bending_rectangular(
             warnings=(warning,),
             intermediate_values=intermediate_values,
         )
-    status: BendingStatus = "pass" if Mult >= M else "fail"
+    diagnostic_status: BendingStatus = "pass" if Mult >= M else "fail"
+    warning = (
+        "diagnostic arithmetic only: clause 8.1.3 is not checked; the public "
+        "ULS result is outside applicability and capacity publication is prohibited"
+    )
     intermediate_values.update(
         {
-            "Mult": Mult,
-            "utilization": utilization,
-            "capacity_applicable": True,
+            "diagnostic_Mult": Mult,
+            "diagnostic_utilization": utilization,
+            "diagnostic_capacity_applicable": True,
+            "capacity_applicable": False,
             "applicability_reason": "within_singly_reinforced_v1_scope",
+            "diagnostic_status": diagnostic_status,
+            "public_status": "outside_applicability",
+            "status_scope": "diagnostic_arithmetic_only",
+            "capacity_publication_allowed": False,
         }
     )
     return BendingResult(
         x=x,
         xi=xi,
         xi_R=xi_R,
-        Mult=Mult,
-        utilization=utilization,
-        status=status,
-        capacity_applicable=True,
+        Mult=None,
+        utilization=None,
+        status="outside_applicability",
+        capacity_applicable=False,
+        diagnostic_Mult=Mult,
+        diagnostic_utilization=utilization,
+        diagnostic_status=diagnostic_status,
+        diagnostic_capacity_applicable=True,
+        status_scope="public",
+        warnings=(warning,),
         intermediate_values=intermediate_values,
     )
 
@@ -363,6 +386,10 @@ def _base_intermediate_values(
         "x_limit": x_limit,
         "source_clause": SOURCE_CLAUSE,
         "clause_8_1_3_status": "not_checked",
+        "clause_8_1_3_decision_status": "OPEN_QUESTION",
+        "public_status": "outside_applicability",
+        "status_scope": "public",
+        "capacity_publication_allowed": False,
         "completeness_status": "incomplete",
         "evidence_status": "needs_engineer_review",
         "project_use_status": "prohibited",
@@ -411,6 +438,10 @@ def _unsupported_material_intermediate_values(
         "normative_profile_id": None,
         "source_clause": SOURCE_CLAUSE,
         "clause_8_1_3_status": "not_checked",
+        "clause_8_1_3_decision_status": "OPEN_QUESTION",
+        "public_status": "outside_applicability",
+        "status_scope": "public",
+        "capacity_publication_allowed": False,
         "completeness_status": "incomplete",
         "evidence_status": "needs_engineer_review",
         "project_use_status": "prohibited",

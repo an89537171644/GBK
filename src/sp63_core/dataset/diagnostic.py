@@ -1002,6 +1002,7 @@ def _build_case(
     failure_reason: str,
 ) -> DiagnosticDatasetCase:
     protocol = build_calculation_protocol(
+        status_scope="diagnostic",
         input_data={},
         materials={},
         geometry={},
@@ -1046,12 +1047,12 @@ def _build_case(
         stirrup_spacing_mm=stirrup_spacing,
         longitudinal_as_mm2=As,
         transverse_asw_mm2=Asw,
-        bending_mult_nmm=_value(checks, "bending", "Mult"),
+        bending_mult_nmm=_value(checks, "bending", "diagnostic_Mult"),
         shear_qult_n=_value(checks, "shear", "Qult"),
         mcrc_nmm=_value(checks, "crack_formation", "Mcrc"),
         crack_width_mm=_value(checks, "crack_width", "acrc"),
         deflection_mm=_value(checks, "deflection", "deflection"),
-        bending_status=_status(checks, "bending"),
+        bending_status=_diagnostic_bending_status(checks),
         shear_status=_status(checks, "shear"),
         crack_formation_status=_status(checks, "crack_formation"),
         crack_width_status=_status(checks, "crack_width"),
@@ -1125,6 +1126,11 @@ def _section(
 def _status(checks: Mapping[str, Any], check_name: str) -> str:
     check = checks.get(check_name)
     return "not_checked" if check is None else str(check.status)
+
+
+def _diagnostic_bending_status(checks: Mapping[str, Any]) -> str:
+    check = checks.get("bending")
+    return "not_checked" if check is None else str(check.diagnostic_status)
 
 
 def _value(checks: Mapping[str, Any], check_name: str, attr_name: str) -> float | None:

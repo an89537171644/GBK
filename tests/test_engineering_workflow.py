@@ -25,6 +25,7 @@ def _dataset_row() -> dict[str, object]:
             "report_json_sha256": "b" * 64,
             "manifest_sha256": "c" * 64,
             "archive_validation_status": "pass",
+            "status_scope": "public",
             "local_axes_id": "case-001-local-axes",
             "moment_axis": "local_z",
             "tension_face": "local_y_min",
@@ -41,9 +42,10 @@ def _dataset_row() -> dict[str, object]:
             "stirrup_rebar_class": "A240",
             "M": 150_000_000,
             "Q": 80_000,
-            "strength_status": "pass",
+            "bending_status": "outside_applicability",
+            "strength_status": "outside_applicability",
             "serviceability_status": "pass",
-            "overall_status": "pass",
+            "overall_status": "outside_applicability",
             "warnings_count": 0,
             "requires_engineer_review": True,
             "ml_is_advisory_only": True,
@@ -67,7 +69,7 @@ def test_engineering_workflow_without_ml_creates_report_zip_and_summary(tmp_path
 
     deterministic_dir = output_dir / "deterministic_report"
     assert result.workflow_status == "review_required"
-    assert result.deterministic_report_status == "pass"
+    assert result.deterministic_report_status == "outside_applicability"
     assert result.archive_validation_status == "pass"
     assert result.zip_status == "pass"
     assert result.ml_readiness_status is None
@@ -139,7 +141,7 @@ def test_engineering_workflow_with_ml_readiness(tmp_path):
     ml_dir = output_dir / "ml_readiness"
     assert result.ml_readiness_status == "review_required"
     assert result.ml_ready_for_research is True
-    assert result.ml_ready_for_engineering_review is True
+    assert result.ml_ready_for_engineering_review is False
     assert result.ml_ready_for_project_use is False
     assert (ml_dir / "engineering_ml_readiness.md").exists()
     assert (ml_dir / "engineering_ml_readiness.json").exists()
@@ -178,7 +180,7 @@ def test_cli_engineering_workflow_json(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["command"] == "engineering-workflow"
-    assert payload["deterministic_report_status"] == "pass"
+    assert payload["deterministic_report_status"] == "outside_applicability"
     assert payload["archive_validation_status"] == "pass"
     assert payload["zip_status"] == "pass"
     assert payload["project_use_status"] == "prohibited"

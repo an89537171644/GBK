@@ -321,7 +321,10 @@ def _add_serviceability_fields(
 
 def _classify_candidate(payload: dict[str, Any]) -> str:
     design_input = rectangular_design_input_from_mapping(payload)
-    result = design_rectangular_element(design_input)
+    result = design_rectangular_element(
+        design_input,
+        status_scope="diagnostic",
+    )
     return result.overall_status
 
 
