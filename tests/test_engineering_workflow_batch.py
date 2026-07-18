@@ -55,7 +55,8 @@ def test_engineering_workflow_batch_summary_contains_case_statuses(tmp_path):
     assert payload["case_count"] == len(payload["case_results"])
     assert any(case["preflight_status"] == "fail" for case in payload["case_results"])
     assert any(
-        case["deterministic_report_status"] == "pass" for case in payload["case_results"]
+        case["deterministic_report_status"] == "outside_applicability"
+        for case in payload["case_results"]
     )
     assert payload["failed_count"] >= 1
     assert payload["command_exit_status"] == "completed"

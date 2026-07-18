@@ -33,7 +33,7 @@ def test_engineering_workflow_with_preflight_creates_reports_and_summary(tmp_pat
     assert summary["preflight_report_json_path"] == str(
         output_dir / "input_preflight_report.json"
     )
-    assert result.deterministic_report_status == "pass"
+    assert result.deterministic_report_status == "outside_applicability"
     assert result.index_status == "pass"
 
 
@@ -87,7 +87,7 @@ def test_engineering_workflow_without_preflight_preserves_old_behavior(tmp_path)
     assert result.preflight_status is None
     assert result.preflight_report_json_path is None
     assert result.preflight_report_markdown_path is None
-    assert result.deterministic_report_status == "pass"
+    assert result.deterministic_report_status == "outside_applicability"
     assert not (output_dir / "input_preflight_report.json").exists()
     assert summary["preflight_status"] is None
 
@@ -112,7 +112,7 @@ def test_cli_engineering_workflow_with_preflight_and_index_json(tmp_path, capsys
     assert exit_code == 0
     assert payload["command"] == "engineering-workflow"
     assert payload["preflight_status"] == "pass"
-    assert payload["deterministic_report_status"] == "pass"
+    assert payload["deterministic_report_status"] == "outside_applicability"
     assert payload["index_status"] == "pass"
     assert (output_dir / "input_preflight_report.json").exists()
     assert (output_dir / "input_preflight_report.md").exists()

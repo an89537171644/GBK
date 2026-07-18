@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sp63_core.report.ed01_contract import public_report_contract_errors
 from sp63_core.report.manifest import MANIFEST_VERSION, compute_file_sha256
 
 SINGLE_BUNDLE_REQUIRED_FILES = (
@@ -98,6 +99,7 @@ def validate_report_bundle(path: Path) -> ReportArchiveValidationResult:
     _validate_required_files(archive_path, SINGLE_BUNDLE_REQUIRED_FILES, counters, errors)
     counters.add(_validate_manifest_records(manifest, archive_path, manifest_path, errors))
     _validate_manifest_review_flag(manifest, manifest_path, errors)
+    _validate_report_ed01_contract(archive_path / "report.json", errors)
 
     return _build_result(
         archive_path=archive_path,
@@ -187,6 +189,11 @@ def validate_batch_report_archive(path: Path) -> ReportArchiveValidationResult:
             )
             _validate_manifest_review_flag(case_manifest, case_manifest_path, errors)
         _validate_index_case_checksums(case, case_dir, counters, errors, case_id)
+        _validate_report_ed01_contract(
+            case_dir / "report.json",
+            errors,
+            label=f"{case_id} report",
+        )
 
     actual_case_dirs = {
         item.resolve()
@@ -242,6 +249,21 @@ def _load_json_file(path: Path, errors: list[str]) -> dict[str, Any] | None:
         errors.append(f"JSON file must contain an object: {path}")
         return None
     return payload
+
+
+def _validate_report_ed01_contract(
+    report_path: Path,
+    errors: list[str],
+    *,
+    label: str = "report",
+) -> None:
+    report = _load_json_file(report_path, errors)
+    if report is None:
+        return
+    errors.extend(
+        f"{label} ED-01 contract: {error}"
+        for error in public_report_contract_errors(report)
+    )
 
 
 def _validate_required_files(

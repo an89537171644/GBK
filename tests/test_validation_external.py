@@ -117,6 +117,44 @@ def test_external_comparison_row_rejects_unsafe_project_flag():
         ExternalComparisonRow(**raw_row)
 
 
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    (
+        ("b", float("nan")),
+        ("program_Mult", float("inf")),
+        ("scad_As", float("-inf")),
+    ),
+)
+def test_external_comparison_row_rejects_non_finite_numeric_input(
+    field_name,
+    invalid_value,
+):
+    raw_row = {**asdict(_accepted_external_row()), field_name: invalid_value}
+
+    with pytest.raises(ValueError, match=rf"{field_name} must be finite"):
+        ExternalComparisonRow(**raw_row)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "message"),
+    (
+        ("b", "b must be positive"),
+        ("h", "h must be positive"),
+        ("M", "M must be non-negative"),
+        ("Q", "Q must be non-negative"),
+        ("program_As", "program_As must be non-negative"),
+        ("program_Mult", "program_Mult must be non-negative"),
+        ("program_Qult", "program_Qult must be non-negative"),
+        ("scad_As", "scad_As must be non-negative"),
+    ),
+)
+def test_external_comparison_row_rejects_negative_numeric_input(field_name, message):
+    raw_row = {**asdict(_accepted_external_row()), field_name: -1.0}
+
+    with pytest.raises(ValueError, match=message):
+        ExternalComparisonRow(**raw_row)
+
+
 def test_external_row_has_completed_source():
     scad_row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
     lira_row = _accepted_external_row(lira_As=101.0, lira_Mult=102.0, lira_Qult=103.0)
@@ -142,13 +180,13 @@ def test_evaluate_acceptance_gates_warns_when_external_rows_empty():
         dataset_validation=_passing_dataset_validation(),
     )
 
-    assert report["status"] == "warning"
+    assert report["status"] == "review_required"
     assert report["external_completed"] is False
     assert report["total_external_rows"] == 0
     assert "external SCAD/LIRA comparison is not filled yet" in report["warnings"]
 
 
-def test_evaluate_acceptance_gates_passes_with_accepted_external_rows():
+def test_evaluate_acceptance_gates_requires_review_without_policy_and_adapter():
     report = evaluate_acceptance_gates(
         golden_results=_passing_golden_results(),
         dataset_validation=_passing_dataset_validation(),
@@ -158,9 +196,9 @@ def test_evaluate_acceptance_gates_passes_with_accepted_external_rows():
         max_delta_percent=5.0,
     )
 
-    assert report["status"] == "pass"
-    assert report["external_completed"] is True
-    assert report["external_accepted"] is True
+    assert report["status"] == "review_required"
+    assert report["external_completed"] is False
+    assert report["external_accepted"] is False
     assert report["completed_external_rows"] == 1
     assert report["external_incomplete_count"] == 0
     assert report["completeness_status"] == "incomplete"
@@ -168,7 +206,41 @@ def test_evaluate_acceptance_gates_passes_with_accepted_external_rows():
     assert report["project_use_status"] == "prohibited"
     assert report["project_use"] is False
     assert report["requires_engineer_review"] is True
-    assert report["warnings"] == ()
+    assert report["adapter_provenance_incomplete_count"] == 0
+    assert report["adapter_unapproved_count"] == 1
+    assert report["tolerance_policy_status"] == "OPEN_QUESTION"
+    assert report["source_adapter_status"] == "OPEN_QUESTION"
+    assert report["external_validation_status"] == "NOT_STARTED"
+    assert "diagnostic only" in " ".join(report["warnings"])
+
+
+def test_evaluate_acceptance_gates_fails_for_duplicate_case_ids():
+    row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
+
+    report = evaluate_acceptance_gates(
+        golden_results=_passing_golden_results(),
+        dataset_validation=_passing_dataset_validation(),
+        external_rows=(row, row),
+    )
+
+    assert report["status"] == "fail"
+    assert report["duplicate_case_id_count"] == 1
+    assert report["external_accepted"] is False
+
+
+def test_evaluate_acceptance_gates_fails_for_incomplete_adapter_provenance():
+    row = _accepted_external_row(scad_As=101.0, scad_Mult=102.0, scad_Qult=103.0)
+    row = ExternalComparisonRow(**{**asdict(row), "source_model_id": ""})
+
+    report = evaluate_acceptance_gates(
+        golden_results=_passing_golden_results(),
+        dataset_validation=_passing_dataset_validation(),
+        external_rows=(row,),
+    )
+
+    assert report["status"] == "fail"
+    assert report["adapter_provenance_incomplete_count"] == 1
+    assert report["external_completed"] is False
 
 
 def test_evaluate_acceptance_gates_fails_when_external_delta_exceeds_limit():
@@ -215,7 +287,7 @@ def test_evaluate_acceptance_gates_fails_when_accepted_is_missing():
     assert report["external_rejected_count"] == 1
 
 
-def test_evaluate_acceptance_gates_passes_when_scad_complete_and_accepted():
+def test_evaluate_acceptance_gates_scad_complete_still_requires_review():
     report = evaluate_acceptance_gates(
         golden_results=_passing_golden_results(),
         dataset_validation=_passing_dataset_validation(),
@@ -225,7 +297,43 @@ def test_evaluate_acceptance_gates_passes_when_scad_complete_and_accepted():
         required_external_source="scad",
     )
 
-    assert report["status"] == "pass"
+    assert report["status"] == "review_required"
+    assert report["external_accepted"] is False
+
+
+def test_evaluate_acceptance_gates_rejects_empty_golden_evidence():
+    report = evaluate_acceptance_gates(
+        golden_results=(),
+        dataset_validation=_passing_dataset_validation(),
+    )
+
+    assert report["status"] == "fail"
+    assert report["golden_passed"] is False
+
+
+@pytest.mark.parametrize("invalid_tolerance", (float("nan"), float("inf"), -1.0))
+def test_evaluate_acceptance_gates_rejects_invalid_diagnostic_tolerance(
+    invalid_tolerance,
+):
+    with pytest.raises(
+        ValueError,
+        match="max_delta_percent must be finite and non-negative",
+    ):
+        evaluate_acceptance_gates(
+            golden_results=_passing_golden_results(),
+            dataset_validation=_passing_dataset_validation(),
+            max_delta_percent=invalid_tolerance,
+        )
+
+
+def test_external_comparison_row_cannot_self_approve_adapter():
+    raw_row = {
+        **asdict(_accepted_external_row()),
+        "adapter_approval_status": "approved",
+    }
+
+    with pytest.raises(ValueError, match="verified adapter registry"):
+        ExternalComparisonRow(**raw_row)
 
 
 def test_export_external_comparison_with_deltas_csv(tmp_path):
@@ -310,6 +418,18 @@ def _accepted_external_row(
         lira_Mult=lira_Mult,
         lira_Qult=lira_Qult,
         accepted=True,
+        source_program="independent-manual",
+        source_program_version="1.0",
+        source_model_id="manual-model-01",
+        source_element_id="beam-01",
+        source_station="midspan",
+        source_combination_id="LC-01",
+        source_signed_action_vector="M=150000000;Q=80000",
+        source_units="N;Nmm;mm",
+        source_basis="independent-manual-record",
+        transform_matrix_reference="identity",
+        adapter_id="manual-canonical",
+        adapter_version="1.0",
     )
 
 

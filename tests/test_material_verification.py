@@ -15,6 +15,7 @@ def test_material_verification_rows_cover_current_catalog():
 
     assert len(verification_rows) == len(audit_rows)
     assert {row.verification_status for row in verification_rows} == {"draft"}
+    assert {row.evidence_kind for row in verification_rows} == {"not_provided"}
     assert all(row.requires_engineer_review is True for row in verification_rows)
     assert {row.unit for row in verification_rows} == {"MPa"}
 
@@ -52,6 +53,121 @@ def test_material_verification_value_mismatch_requires_review():
     assert report.value_mismatch_count == 1
     assert report.needs_review_count == 1
     assert any("do not match current catalog values" in warning for warning in report.warnings)
+
+
+def test_material_verification_rejects_non_finite_engineer_values():
+    for non_finite in ("NaN", "Infinity", "-Infinity"):
+        csv_rows = tuple(
+            {**row, "engineer_value": non_finite} for row in _engineer_verified_rows()
+        )
+
+        report = build_material_verification_report(csv_rows)
+
+        assert report.status == "review_required"
+        assert report.engineer_verified_count == 0
+        assert report.needs_review_count == report.required_rows_count
+        assert report.requires_engineer_review is True
+
+
+def test_material_verification_rejects_non_finite_catalog_values():
+    for non_finite in ("NaN", "Infinity", "-Infinity"):
+        csv_rows = list(_engineer_verified_rows())
+        csv_rows[0] = {**csv_rows[0], "catalog_value": non_finite}
+
+        report = build_material_verification_report(tuple(csv_rows))
+
+        assert report.status == "review_required"
+        assert report.rows[0].verification_status == "needs_review"
+        assert report.requires_engineer_review is True
+
+
+def test_material_verification_rejects_wrong_unit_and_invalid_date():
+    csv_rows = list(_engineer_verified_rows())
+    csv_rows[0] = {**csv_rows[0], "unit": "Pa", "review_date": "not-a-date"}
+
+    report = build_material_verification_report(tuple(csv_rows))
+
+    assert report.status == "review_required"
+    assert report.invalid_rows_count == 2
+    assert report.rows[0].verification_status == "needs_review"
+
+
+def test_material_verification_rejects_future_review_date():
+    csv_rows = tuple(
+        {**row, "review_date": "9999-12-31"} for row in _engineer_verified_rows()
+    )
+
+    report = build_material_verification_report(csv_rows)
+
+    assert report.status == "review_required"
+    assert report.engineer_verified_count == 0
+    assert report.requires_engineer_review is True
+
+
+def test_material_verification_honors_raw_requires_engineer_review_flag():
+    csv_rows = tuple(
+        {**row, "requires_engineer_review": "true"}
+        for row in _engineer_verified_rows()
+    )
+
+    report = build_material_verification_report(csv_rows)
+
+    assert report.status == "review_required"
+    assert report.engineer_verified_count == 0
+    assert all(row.requires_engineer_review for row in report.rows)
+
+
+def test_material_verification_rejects_duplicate_evidence_rows():
+    csv_rows = _engineer_verified_rows()
+
+    report = build_material_verification_report((*csv_rows, csv_rows[0]))
+
+    assert report.status == "review_required"
+    assert report.invalid_rows_count == 1
+    assert report.provided_rows_count == report.required_rows_count + 1
+    assert any("duplicate" in warning for warning in report.warnings)
+
+
+def test_material_verification_rejects_synthetic_evidence():
+    csv_rows = list(_engineer_verified_rows())
+    csv_rows[0] = {
+        **csv_rows[0],
+        "evidence_kind": "synthetic_test_fixture",
+    }
+
+    report = build_material_verification_report(tuple(csv_rows))
+
+    assert report.status == "review_required"
+    assert report.rows[0].verification_status == "needs_review"
+    assert any("test-only non-evidence" in warning for warning in report.warnings)
+
+
+def test_material_verification_requires_typed_independent_evidence():
+    for evidence_kind in ("", "not_provided", "unknown_kind"):
+        csv_rows = list(_engineer_verified_rows())
+        csv_rows[0] = {**csv_rows[0], "evidence_kind": evidence_kind}
+
+        report = build_material_verification_report(tuple(csv_rows))
+
+        assert report.status == "review_required"
+        assert report.rows[0].verification_status == "needs_review"
+        assert report.requires_engineer_review is True
+
+
+def test_independent_evidence_comment_may_describe_synthetic_comparison():
+    csv_rows = tuple(
+        {
+            **row,
+            "source_note": "controlled source; no synthetic data used as evidence",
+            "engineer_comment": "synthetic benchmark was considered separately",
+        }
+        for row in _engineer_verified_rows()
+    )
+
+    report = build_material_verification_report(csv_rows)
+
+    assert report.status == "pass"
+    assert report.engineer_verified_count == report.required_rows_count
 
 
 def test_material_verification_engineer_verified_requires_reviewer_metadata():
@@ -114,9 +230,10 @@ def test_shared_sample_is_synthetic_non_evidence_after_step3_recheck():
     )
 
     assert report.status == "review_required"
-    assert report.engineer_verified_count == report.required_rows_count - 6
-    assert report.needs_review_count == 6
+    assert report.engineer_verified_count == 0
+    assert report.needs_review_count == report.required_rows_count
     assert any("test-only non-evidence" in warning for warning in report.warnings)
+    assert all(row.verification_status == "needs_review" for row in report.rows)
     assert all(row.verification_status == "needs_review" for row in step3_rows)
     assert all(row.engineer_name == "" and row.review_date == "" for row in step3_rows)
     assert all(row.requires_engineer_review is True for row in step3_rows)
@@ -137,8 +254,9 @@ def _engineer_verified_rows() -> tuple[dict[str, str], ...]:
                 "engineer_name": "Test Engineer",
                 "review_date": "2026-05-30",
                 "source_note": "engineer checked SP 63 table reference; no full text stored",
-                "engineer_comment": "synthetic test row",
+                "engineer_comment": "independent verification row",
                 "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
             }
         )
     return tuple(rows)

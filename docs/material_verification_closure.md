@@ -3,8 +3,9 @@
 K83 adds a closure workflow for the material verification review gate:
 
 `tests/fixtures/material_verification_sample.csv` is a synthetic, test-only,
-non-evidence fixture. The six rows changed or rechecked in Step 3 are deliberately marked
-`needs_review` with blank engineer identity/date fields, so this sample must
+non-evidence fixture. Every row has
+`evidence_kind = synthetic_test_fixture`, so the parser must downgrade any
+infrastructure `engineer_verified` label to `needs_review` and the sample must
 produce `review_required`. It must never be substituted for an engineer-filled
 CSV or cited as material verification evidence.
 
@@ -49,7 +50,8 @@ Status logic:
 - no CSV: `review_required`;
 - incomplete CSV: `review_required`;
 - rejected rows: `fail`;
-- all required keys engineer-verified: `pass` and
+- all required keys engineer-verified with
+  `evidence_kind = independent_engineer_evidence`: `pass` and
   `material_ready_for_engineering_review = true`;
 - `material_ready_for_project_use` always remains `false`.
 

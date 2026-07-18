@@ -23,9 +23,11 @@ python -m sp63_core material-verification-closure \
 ```
 
 The closure report checks whether every required material property is covered
-by `engineer_verified` rows. It can mark the material verification evidence as
-ready for engineering review, but `material_ready_for_project_use` remains
-`false` and the material catalog is not changed automatically.
+by `engineer_verified` rows whose typed `evidence_kind` is
+`independent_engineer_evidence`. Synthetic, missing, or unknown evidence kinds
+remain fail-closed. The workflow can mark the evidence as ready for engineering
+review, but `material_ready_for_project_use` remains `false` and the material
+catalog is not changed automatically.
 
 Do not add full SP 63 text, personal data, grant documents, or closed SCAD/LIRA
 files.

@@ -216,8 +216,9 @@ K22 adds an ML readiness report for enriched deterministic datasets. The report
 checks required columns, unsafe row counts, status distributions, group leakage,
 and constant target/status columns before any later ML work.
 
-This is a gate, not training. A safe accepted dataset with only passing rows is
-useful, but it is not sufficient for classification over pass/fail/review
+This is a gate, not training. A diagnostic regression dataset with only passing
+diagnostic rows can support regression experiments, but it is not a public
+design dataset and is not sufficient for classification over pass/fail/review
 statuses. Fail and review diagnostic cases must be added deliberately in a
 future dataset step before classification ML. ML remains advisory-only and
 deterministic SP63 checks remain mandatory.
@@ -226,8 +227,8 @@ deterministic SP63 checks remain mandatory.
 
 K23 adds that separate diagnostic/candidate dataset. It intentionally contains
 passing, failing, and review-required rows generated through deterministic
-checks. The safe accepted dataset remains unchanged and should still be used for
-accepted-row regression experiments.
+checks. The diagnostic regression pass-row dataset remains separate and may be
+used only for diagnostic regression experiments.
 
 The diagnostic dataset is not a project-design dataset. It exists to make
 future classification ML development possible after engineer review. Rows with
@@ -237,8 +238,9 @@ solutions. ML remains advisory-only.
 ## K24 Baseline ML Without Neural Network
 
 K24 adds a non-neural baseline ML report for engineering review of dataset
-readiness. It uses simple sklearn baselines for regression on the safe accepted
-dataset and classification of `overall_status` on the diagnostic dataset.
+readiness. It uses simple sklearn baselines for regression on the diagnostic
+regression pass-row dataset and classification of `overall_status` on the
+diagnostic dataset.
 
 The report does not make ML a calculator and does not train a neural network.
 It explicitly records that ML is advisory-only and deterministic SP63 checks
@@ -248,9 +250,9 @@ quality.
 
 ## K25 Expanded Diagnostic Dataset
 
-K25 expands the diagnostic/candidate dataset while keeping the safe accepted
-dataset separate. The diagnostic set now includes generated deterministic rows
-for pass, bending failure, shear failure, crack-width failure, deflection
+K25 expands the diagnostic/candidate dataset while keeping the diagnostic
+regression pass-row dataset separate. The diagnostic set now includes generated
+rows for pass, bending failure, shear failure, crack-width failure, deflection
 failure, crack-review, and multiple-failure scenarios.
 
 This improves classification readiness diagnostics, but it does not create a
@@ -392,8 +394,8 @@ The gate covers concrete `Rb`, `Rbt`, `Rbser`, `Rbtser`, `Eb` and reinforcement
 
 Rows can be accepted as `engineer_verified` only when `engineer_value`,
 `engineer_name`, `review_date`, and `source_note` are filled and the engineer
-value matches the current catalog value. Otherwise the row remains
-`needs_review`.
+value matches the current catalog value, and `evidence_kind` is
+`independent_engineer_evidence`. Otherwise the row remains `needs_review`.
 
 The CSV and Markdown templates are review aids only. They must not contain full
 SP 63 text, private documents, or personal data. ML remains advisory-only and

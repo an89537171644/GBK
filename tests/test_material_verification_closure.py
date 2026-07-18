@@ -29,12 +29,67 @@ def test_material_verification_closure_synthetic_fixture_requires_review(tmp_pat
     assert result.status == "review_required"
     assert result.material_ready_for_engineering_review is False
     assert result.material_ready_for_project_use is False
-    assert result.coverage_ratio == (len(result.required_material_keys) - 6) / len(
-        result.required_material_keys
-    )
+    assert result.coverage_ratio == 0.0
     assert result.missing_material_keys == ()
     assert result.rejected_material_keys == ()
-    assert len(result.review_required_material_keys) == 6
+    assert len(result.review_required_material_keys) == len(result.required_material_keys)
+
+
+def test_material_verification_closure_accepts_typed_independent_evidence(tmp_path):
+    csv_path = _write_independent_fixture(tmp_path / "independent.csv")
+
+    result = build_material_verification_closure(material_verification_csv=csv_path)
+
+    assert result.status == "pass"
+    assert result.material_ready_for_engineering_review is True
+    assert result.material_ready_for_project_use is False
+    assert result.coverage_ratio == 1.0
+
+
+def test_material_verification_closure_blocks_rows_still_marked_for_review(tmp_path):
+    csv_path = _write_independent_fixture(tmp_path / "still_review.csv")
+    with csv_path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+        fieldnames = tuple(reader.fieldnames or ())
+    for row in rows:
+        row["requires_engineer_review"] = "true"
+    with csv_path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    result = build_material_verification_closure(material_verification_csv=csv_path)
+
+    assert result.status == "review_required"
+    assert result.material_ready_for_engineering_review is False
+
+
+def test_material_verification_closure_rejects_duplicate_evidence(tmp_path):
+    csv_path = _write_independent_fixture(tmp_path / "duplicate.csv", duplicate_first=True)
+
+    result = build_material_verification_closure(material_verification_csv=csv_path)
+
+    assert result.status == "review_required"
+    assert result.material_ready_for_engineering_review is False
+    assert any("duplicate" in warning for warning in result.warnings)
+
+
+def test_material_verification_closure_rejects_non_finite_evidence(tmp_path):
+    for field in ("catalog_value", "engineer_value"):
+        for non_finite in ("NaN", "Infinity", "-Infinity"):
+            csv_path = _write_independent_fixture(
+                tmp_path / f"{field}_{non_finite}.csv",
+                non_finite_field=field,
+                non_finite_value=non_finite,
+            )
+
+            result = build_material_verification_closure(
+                material_verification_csv=csv_path
+            )
+
+            assert result.status == "review_required"
+            assert result.material_ready_for_engineering_review is False
 
 
 def test_material_verification_closure_missing_row_requires_review(tmp_path):
@@ -127,6 +182,41 @@ def _write_modified_fixture(
         rows = rows[:-1]
     if reject_first:
         rows[0]["verification_status"] = "rejected"
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_independent_fixture(
+    path: Path,
+    *,
+    duplicate_first: bool = False,
+    non_finite_field: str | None = None,
+    non_finite_value: str = "NaN",
+) -> Path:
+    with FIXTURE.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+        fieldnames = tuple(reader.fieldnames or ())
+    for row in rows:
+        row.update(
+            {
+                "verification_status": "engineer_verified",
+                "engineer_value": row["catalog_value"],
+                "engineer_name": "Test Engineer",
+                "review_date": "2026-07-18",
+                "source_note": "controlled SP 63 source reference",
+                "engineer_comment": "independent evidence contract test",
+                "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
+            }
+        )
+    if non_finite_field is not None:
+        rows[0][non_finite_field] = non_finite_value
+    if duplicate_first:
+        rows.append(dict(rows[0]))
     with path.open("w", encoding="utf-8", newline="") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()

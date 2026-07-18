@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from math import isfinite
+from typing import Literal
 
 from sp63_core.checks import (
     CrackFormationResult,
@@ -101,6 +102,7 @@ class RectangularDesignResult:
     overall_status: str
     status: str
     warnings: tuple[str, ...]
+    status_scope: str = "public"
     completeness_status: str = "incomplete"
     evidence_status: str = "needs_engineer_review"
     project_use_status: str = "prohibited"
@@ -108,8 +110,19 @@ class RectangularDesignResult:
     requires_engineer_review: bool = True
 
 
-def design_rectangular_element(input_data: RectangularDesignInput) -> RectangularDesignResult:
-    """Design a rectangular element using existing draft selection and check modules."""
+def design_rectangular_element(
+    input_data: RectangularDesignInput,
+    *,
+    status_scope: Literal["public", "diagnostic"] = "public",
+) -> RectangularDesignResult:
+    """Design a rectangular element using existing draft selection and check modules.
+
+    The public scope applies all unresolved engineering gates. The diagnostic
+    scope is reserved for regression and review artifacts and never changes
+    the project-use prohibition.
+    """
+    if status_scope not in ("public", "diagnostic"):
+        raise ValueError("status_scope must be 'public' or 'diagnostic'")
     orientation = input_data.bending_orientation()
     for name, value in (("M", input_data.M), ("Q", input_data.Q)):
         if not isfinite(value) or value < 0:
@@ -139,6 +152,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             concrete=concrete,
             longitudinal_rebar=longitudinal_rebar,
             stirrup_rebar=stirrup_rebar,
+            status_scope=status_scope,
             warning=f"{exc}; rectangular ULS design was not performed",
         )
 
@@ -149,6 +163,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             concrete=concrete,
             longitudinal_rebar=longitudinal_rebar,
             stirrup_rebar=stirrup_rebar,
+            status_scope=status_scope,
             warning=(
                 "long load context is verified for the isolated bending check only; "
                 "concrete working-condition factors are not propagated to shear, so "
@@ -169,6 +184,9 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         min_clear_spacing=input_data.min_clear_spacing,
     )
     if not longitudinal_options:
+        no_option_status = (
+            "fail" if status_scope == "diagnostic" else "outside_applicability"
+        )
         return RectangularDesignResult(
             input_data=input_data,
             section=base_section,
@@ -183,11 +201,15 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
             crack_width=None,
             deflection=None,
             protocol=None,
-            strength_status="fail",
+            strength_status=no_option_status,
             serviceability_status="not_checked",
-            overall_status="fail",
-            status="fail",
-            warnings=("no passing longitudinal reinforcement options",),
+            overall_status=no_option_status,
+            status=no_option_status,
+            warnings=(
+                "no passing diagnostic longitudinal reinforcement options; "
+                "public ULS bending remains outside applicability",
+            ),
+            status_scope=status_scope,
         )
 
     selected_longitudinal = longitudinal_options[0]
@@ -220,6 +242,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
                 "no transverse candidate matches stirrup_diameter_for_geometry; "
                 "h0 cannot be kept consistent",
             ),
+            status_scope=status_scope,
         )
     transverse_options = select_transverse_rebar(
         section=selected_longitudinal.section,
@@ -254,6 +277,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
                 *selected_longitudinal.warnings,
                 "no passing transverse reinforcement options",
             ),
+            status_scope=status_scope,
         )
 
     selected_transverse = transverse_options[0]
@@ -312,6 +336,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         checks["deflection"] = deflection
 
     protocol = build_calculation_protocol(
+        status_scope=status_scope,
         input_data={
             "M": input_data.M,
             "Q": input_data.Q,
@@ -421,6 +446,7 @@ def design_rectangular_element(input_data: RectangularDesignInput) -> Rectangula
         overall_status=overall_status,
         status=status,
         warnings=tuple(warnings),
+        status_scope=status_scope,
     )
 
 
@@ -431,6 +457,7 @@ def _outside_applicability_result(
     concrete: Concrete,
     longitudinal_rebar: Rebar,
     stirrup_rebar: Rebar,
+    status_scope: Literal["public", "diagnostic"],
     warning: str,
 ) -> RectangularDesignResult:
     """Build a fail-closed design result before any candidate enumeration."""
@@ -453,4 +480,5 @@ def _outside_applicability_result(
         overall_status="outside_applicability",
         status="outside_applicability",
         warnings=(warning,),
+        status_scope=status_scope,
     )

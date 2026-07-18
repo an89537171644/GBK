@@ -11,6 +11,10 @@ from typing import Any
 
 from sp63_core.dataset.generator import DATASET_VERSION
 from sp63_core.report import validate_batch_report_archive, validate_report_bundle
+from sp63_core.report.ed01_contract import (
+    public_report_contract_errors,
+    public_report_dataset_row_errors,
+)
 from sp63_core.report.manifest import compute_file_sha256
 from sp63_core.sections import RectangularBendingOrientation
 
@@ -123,6 +127,9 @@ def extract_dataset_row_from_report_json(
     input_path = report_path.with_name("input.json")
 
     report = _read_json_object(report_path)
+    ed01_errors = public_report_contract_errors(report)
+    if ed01_errors:
+        raise ValueError("report violates ED-01 public contract: " + "; ".join(ed01_errors))
     input_data = _read_json_object(input_path) if input_path.exists() else {}
     report_input = _mapping(report.get("input_data"))
     geometry = _mapping(report.get("geometry"))
@@ -148,6 +155,7 @@ def extract_dataset_row_from_report_json(
         "report_json_sha256": compute_file_sha256(report_path),
         "manifest_sha256": compute_file_sha256(manifest) if manifest.exists() else None,
         "archive_validation_status": "not_checked",
+        "status_scope": report.get("status_scope"),
         "requires_engineer_review": report.get("requires_engineer_review"),
         "ml_is_advisory_only": True,
         "deterministic_checks_required": True,
@@ -387,6 +395,11 @@ def _validate_report_dataset_safety_contract(row: Mapping[str, Any]) -> None:
     if row.get("requires_engineer_review") is not True:
         raise ValueError(
             "report dataset requires_engineer_review must be true"
+        )
+    ed01_errors = public_report_dataset_row_errors(row)
+    if ed01_errors:
+        raise ValueError(
+            "report dataset violates ED-01 public contract: " + "; ".join(ed01_errors)
         )
 
 

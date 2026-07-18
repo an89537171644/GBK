@@ -71,7 +71,8 @@ def test_single_report_bundle_exports_dataset_jsonl(tmp_path):
     assert rows[0]["ml_is_advisory_only"] is True
     assert rows[0]["deterministic_checks_required"] is True
     assert rows[0]["archive_validation_status"] == "pass"
-    assert rows[0]["overall_status"] == "pass"
+    assert rows[0]["status_scope"] == "public"
+    assert rows[0]["overall_status"] == "outside_applicability"
     assert rows[0]["input_sha256"]
     assert rows[0]["report_json_sha256"]
     assert rows[0]["manifest_sha256"]
@@ -156,6 +157,27 @@ def test_report_dataset_extraction_rejects_unsafe_hard_status(tmp_path):
     report_path.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(ValueError, match="project_use"):
+        extract_dataset_row_from_report_json(report_path)
+
+
+def test_report_dataset_extraction_rejects_crafted_public_bending_pass(tmp_path):
+    source_dir = tmp_path / "single_bundle"
+    assert _write_single_bundle(source_dir) == 0
+    report_path = source_dir / "report.json"
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    payload["checks"]["bending"].update(
+        {
+            "status": "pass",
+            "public_status": "pass",
+            "Mult": 123_456.0,
+            "utilization": 0.5,
+            "capacity_applicable": True,
+            "capacity_publication_allowed": True,
+        }
+    )
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="ED-01 public contract"):
         extract_dataset_row_from_report_json(report_path)
 
 

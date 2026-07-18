@@ -51,10 +51,7 @@ def check_shear_rectangular(
     *,
     c_points: int = 101,
 ) -> ShearResult:
-    """Check rectangular shear capacity using the draft MVP formula card.
-
-    The formula and its applicability still require engineering review.
-    """
+    """Check rectangular shear capacity using the approved MVP formula card."""
     section.validate_geometry()
     b = section.b
     h0 = section.effective_depth()

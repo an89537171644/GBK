@@ -27,6 +27,7 @@ def _dataset_row():
             "report_json_sha256": "b" * 64,
             "manifest_sha256": "c" * 64,
             "archive_validation_status": "pass",
+            "status_scope": "public",
             "local_axes_id": "case-001-local-axes",
             "moment_axis": "local_z",
             "tension_face": "local_y_min",
@@ -43,9 +44,10 @@ def _dataset_row():
             "stirrup_rebar_class": "A240",
             "M": 150_000_000,
             "Q": 80_000,
-            "strength_status": "pass",
+            "bending_status": "outside_applicability",
+            "strength_status": "outside_applicability",
             "serviceability_status": "pass",
-            "overall_status": "pass",
+            "overall_status": "outside_applicability",
             "warnings_count": 0,
             "requires_engineer_review": True,
             "ml_is_advisory_only": True,
@@ -99,6 +101,31 @@ def _write_rejected_material_csv(path):
     return path
 
 
+def _write_independent_material_csv(path):
+    with open(MATERIAL_FIXTURE, newline="", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+        fieldnames = reader.fieldnames
+    for row in rows:
+        row.update(
+            {
+                "verification_status": "engineer_verified",
+                "engineer_value": row["catalog_value"],
+                "engineer_name": "Test Engineer",
+                "review_date": "2026-07-18",
+                "source_note": "controlled SP 63 source reference",
+                "engineer_comment": "independent evidence contract test",
+                "requires_engineer_review": "false",
+                "evidence_kind": "independent_engineer_evidence",
+            }
+        )
+    with path.open("w", newline="", encoding="utf-8") as output:
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
 def test_bundle_without_evidence_is_review_required(tmp_path):
     dataset = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
 
@@ -114,11 +141,12 @@ def test_bundle_without_evidence_is_review_required(tmp_path):
 
 def test_bundle_with_external_and_material_csv_is_ready_for_engineering_review(tmp_path):
     dataset = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
+    material_csv = _write_independent_material_csv(tmp_path / "materials.csv")
 
     result = build_engineering_ml_readiness_bundle(
         dataset_path=dataset,
         external_validation_csv=EXTERNAL_FIXTURE,
-        material_verification_csv=MATERIAL_FIXTURE,
+        material_verification_csv=material_csv,
     )
 
     assert result.external_validation_present is True
@@ -132,12 +160,13 @@ def test_bundle_with_external_and_material_csv_is_ready_for_engineering_review(t
 
 def test_bundle_supports_csv_dataset(tmp_path):
     dataset = _write_csv_dataset(tmp_path / "dataset.csv")
+    material_csv = _write_independent_material_csv(tmp_path / "materials.csv")
 
     result = build_engineering_ml_readiness_bundle(
         dataset_path=dataset,
         dataset_format="csv",
         external_validation_csv=EXTERNAL_FIXTURE,
-        material_verification_csv=MATERIAL_FIXTURE,
+        material_verification_csv=material_csv,
     )
 
     assert result.row_count == 1
@@ -208,6 +237,7 @@ def test_bundle_matrix_csv_contains_required_columns(tmp_path):
 
 def test_cli_engineering_ml_readiness_json(tmp_path, capsys):
     dataset = _write_jsonl_dataset(tmp_path / "dataset.jsonl")
+    material_csv = _write_independent_material_csv(tmp_path / "materials.csv")
 
     exit_code = main(
         [
@@ -217,7 +247,7 @@ def test_cli_engineering_ml_readiness_json(tmp_path, capsys):
             "--external-validation-csv",
             EXTERNAL_FIXTURE,
             "--material-verification-csv",
-            MATERIAL_FIXTURE,
+            str(material_csv),
             "--json",
         ]
     )

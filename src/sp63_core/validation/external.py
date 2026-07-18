@@ -2,8 +2,10 @@
 
 import csv
 import json
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, fields, replace
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,10 @@ from sp63_core.dataset import DatasetCase
 from sp63_core.sections import RectangularBendingOrientation
 from sp63_core.validation.dataset_checks import DatasetValidationResult
 from sp63_core.validation.golden import GoldenCaseResult
+
+EXTERNAL_TOLERANCE_POLICY_STATUS = "OPEN_QUESTION"
+EXTERNAL_ADAPTER_STATUS = "not_approved"
+EXTERNAL_ADAPTER_DECISION_STATUS = "OPEN_QUESTION"
 
 
 @dataclass(frozen=True)
@@ -37,6 +43,19 @@ class ExternalComparisonRow:
     project_use_status: str
     project_use: bool
     requires_engineer_review: bool
+    source_program: str = ""
+    source_program_version: str = ""
+    source_model_id: str = ""
+    source_element_id: str = ""
+    source_station: str = ""
+    source_combination_id: str = ""
+    source_signed_action_vector: str = ""
+    source_units: str = ""
+    source_basis: str = ""
+    transform_matrix_reference: str = ""
+    adapter_id: str = ""
+    adapter_version: str = ""
+    adapter_approval_status: str = EXTERNAL_ADAPTER_STATUS
     scad_As: float | None = None
     scad_Mult: float | None = None
     scad_Qult: float | None = None
@@ -82,6 +101,49 @@ class ExternalComparisonRow:
             raise ValueError(
                 "external comparison requires_engineer_review must be true"
             )
+        if self.adapter_approval_status != EXTERNAL_ADAPTER_STATUS:
+            raise ValueError(
+                "external comparison adapter_approval_status must be "
+                f"{EXTERNAL_ADAPTER_STATUS!r} until a verified adapter registry exists"
+            )
+        required_numeric_values = {
+            "b": self.b,
+            "h": self.h,
+            "M": self.M,
+            "Q": self.Q,
+            "program_As": self.program_As,
+            "program_Mult": self.program_Mult,
+            "program_Qult": self.program_Qult,
+        }
+        optional_numeric_values = {
+            "scad_As": self.scad_As,
+            "scad_Mult": self.scad_Mult,
+            "scad_Qult": self.scad_Qult,
+            "lira_As": self.lira_As,
+            "lira_Mult": self.lira_Mult,
+            "lira_Qult": self.lira_Qult,
+            "delta_As_percent_scad": self.delta_As_percent_scad,
+            "delta_Mult_percent_scad": self.delta_Mult_percent_scad,
+            "delta_Qult_percent_scad": self.delta_Qult_percent_scad,
+            "delta_As_percent_lira": self.delta_As_percent_lira,
+            "delta_Mult_percent_lira": self.delta_Mult_percent_lira,
+            "delta_Qult_percent_lira": self.delta_Qult_percent_lira,
+        }
+        for field_name, value in required_numeric_values.items():
+            if not isfinite(value):
+                raise ValueError(f"{field_name} must be finite")
+        for field_name, value in optional_numeric_values.items():
+            if value is not None and not isfinite(value):
+                raise ValueError(f"{field_name} must be finite when filled")
+        for field_name in ("b", "h"):
+            if required_numeric_values[field_name] <= 0:
+                raise ValueError(f"{field_name} must be positive")
+        for field_name in ("M", "Q", "program_As", "program_Mult", "program_Qult"):
+            if required_numeric_values[field_name] < 0:
+                raise ValueError(f"{field_name} must be non-negative")
+        for field_name, value in optional_numeric_values.items():
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} must be non-negative when filled")
 
 
 def build_external_comparison_rows(
@@ -148,7 +210,10 @@ def load_external_comparison_csv(path: str | Path) -> tuple[ExternalComparisonRo
             raise ValueError(
                 "external comparison CSV is missing columns: " + ", ".join(missing_columns)
             )
-        return tuple(_row_from_csv(row) for row in reader)
+        rows = tuple(_row_from_csv(row) for row in reader)
+    if _duplicate_case_id_count(rows):
+        raise ValueError("external comparison CSV contains duplicate case_id values")
+    return rows
 
 
 def external_row_has_completed_source(
@@ -179,13 +244,26 @@ def evaluate_acceptance_gates(
     golden_results: Sequence[GoldenCaseResult],
     dataset_validation: DatasetValidationResult,
     external_rows: Sequence[ExternalComparisonRow] = (),
-    max_delta_percent: float = 5.0,
+    max_delta_percent: float | None = None,
     required_external_source: str = "any",
     require_engineer_accepted: bool = True,
 ) -> dict[str, Any]:
-    """Evaluate draft acceptance gates before baseline ML."""
+    """Evaluate diagnostic gates without approving external evidence.
+
+    ED-04 adapters and the ED-05 tolerance policy remain open engineering
+    questions. Numerical deltas may be reported, but this function cannot
+    produce an accepted external-validation gate in the current revision.
+    """
+    if max_delta_percent is not None and (
+        not isfinite(max_delta_percent) or max_delta_percent < 0
+    ):
+        raise ValueError("max_delta_percent must be finite and non-negative")
+    if required_external_source not in {"any", "scad", "lira", "both"}:
+        raise ValueError("required_external_source must be one of: any, scad, lira, both")
     warnings: list[str] = []
-    golden_passed = all(result.passed for result in golden_results)
+    golden_passed = bool(golden_results) and all(
+        result.passed for result in golden_results
+    )
     dataset_passed = dataset_validation.status == "pass"
     total_external_rows = len(external_rows)
     rows_with_deltas = tuple(compute_external_deltas(row) for row in external_rows)
@@ -200,12 +278,31 @@ def evaluate_acceptance_gates(
         if require_engineer_accepted
         else 0
     )
-    external_delta_exceeded_count = sum(
+    external_delta_exceeded_count = (
+        0
+        if max_delta_percent is None
+        else sum(
+            1
+            for row in rows_with_deltas
+            if not _row_deltas_within_limit(row, max_delta_percent)
+        )
+    )
+    adapter_provenance_incomplete_count = sum(
+        1 for row in rows_with_deltas if not _adapter_provenance_complete(row)
+    )
+    adapter_unapproved_count = sum(
         1
         for row in rows_with_deltas
-        if not _row_deltas_within_limit(row, max_delta_percent)
+        if row.adapter_approval_status == EXTERNAL_ADAPTER_STATUS
     )
-    external_completed = total_external_rows > 0 and external_incomplete_count == 0
+    duplicate_case_id_count = _duplicate_case_id_count(rows_with_deltas)
+    external_completed = (
+        total_external_rows > 0
+        and external_incomplete_count == 0
+        and adapter_provenance_incomplete_count == 0
+        and adapter_unapproved_count == 0
+        and duplicate_case_id_count == 0
+    )
     external_accepted = False
 
     if not golden_passed:
@@ -213,9 +310,19 @@ def evaluate_acceptance_gates(
     if not dataset_passed:
         warnings.append("dataset validation failed")
 
+    warnings.append(
+        "external tolerance policy is not approved; numeric deltas are diagnostic only"
+    )
+    if adapter_provenance_incomplete_count:
+        warnings.append("external source adapter provenance is incomplete")
+    if adapter_unapproved_count:
+        warnings.append("external source adapter is not approved")
+    if duplicate_case_id_count:
+        warnings.append("external comparison contains duplicate case_id values")
+
     if not external_rows:
         warnings.append("external SCAD/LIRA comparison is not filled yet")
-        status = "fail" if not golden_passed or not dataset_passed else "warning"
+        status = "fail" if not golden_passed or not dataset_passed else "review_required"
     else:
         if external_incomplete_count:
             warnings.append("external comparison rows are incomplete")
@@ -223,16 +330,16 @@ def evaluate_acceptance_gates(
             warnings.append("not all external comparison rows are accepted by engineer")
         if external_delta_exceeded_count:
             warnings.append("external comparison delta exceeds acceptance limit")
-        external_accepted = (
-            external_incomplete_count == 0
-            and external_rejected_count == 0
-            and external_delta_exceeded_count == 0
+        blocking_failure = (
+            not golden_passed
+            or not dataset_passed
+            or external_incomplete_count > 0
+            or external_rejected_count > 0
+            or external_delta_exceeded_count > 0
+            or adapter_provenance_incomplete_count > 0
+            or duplicate_case_id_count > 0
         )
-        status = (
-            "pass"
-            if golden_passed and dataset_passed and external_accepted
-            else "fail"
-        )
+        status = "fail" if blocking_failure else "review_required"
 
     return {
         "status": status,
@@ -249,6 +356,12 @@ def evaluate_acceptance_gates(
         "external_incomplete_count": external_incomplete_count,
         "external_rejected_count": external_rejected_count,
         "external_delta_exceeded_count": external_delta_exceeded_count,
+        "adapter_provenance_incomplete_count": adapter_provenance_incomplete_count,
+        "adapter_unapproved_count": adapter_unapproved_count,
+        "duplicate_case_id_count": duplicate_case_id_count,
+        "tolerance_policy_status": EXTERNAL_TOLERANCE_POLICY_STATUS,
+        "source_adapter_status": EXTERNAL_ADAPTER_DECISION_STATUS,
+        "external_validation_status": "NOT_STARTED",
         "completeness_status": "incomplete",
         "evidence_status": "needs_engineer_review",
         "project_use_status": "prohibited",
@@ -341,6 +454,19 @@ def _row_from_csv(row: Mapping[str, str]) -> ExternalComparisonRow:
         requires_engineer_review=_parse_required_bool(
             row["requires_engineer_review"], "requires_engineer_review"
         ),
+        source_program=row["source_program"],
+        source_program_version=row["source_program_version"],
+        source_model_id=row["source_model_id"],
+        source_element_id=row["source_element_id"],
+        source_station=row["source_station"],
+        source_combination_id=row["source_combination_id"],
+        source_signed_action_vector=row["source_signed_action_vector"],
+        source_units=row["source_units"],
+        source_basis=row["source_basis"],
+        transform_matrix_reference=row["transform_matrix_reference"],
+        adapter_id=row["adapter_id"],
+        adapter_version=row["adapter_version"],
+        adapter_approval_status=row["adapter_approval_status"],
         scad_As=_parse_optional_float(row["scad_As"], "scad_As"),
         scad_Mult=_parse_optional_float(row["scad_Mult"], "scad_Mult"),
         scad_Qult=_parse_optional_float(row["scad_Qult"], "scad_Qult"),
@@ -381,9 +507,12 @@ def _parse_optional_float(value: str, field_name: str) -> float | None:
     if value == "":
         return None
     try:
-        return float(value)
+        parsed = float(value)
     except ValueError as exc:
         raise ValueError(f"{field_name} must be a number") from exc
+    if not isfinite(parsed):
+        raise ValueError(f"{field_name} must be finite")
+    return parsed
 
 
 def _parse_optional_bool(value: str) -> bool | None:
@@ -406,3 +535,27 @@ def _parse_required_bool(value: str, field_name: str) -> bool:
     if normalized == "":
         raise ValueError(f"{field_name} must be filled")
     raise ValueError(f"{field_name} must be 'true' or 'false'")
+
+
+def _adapter_provenance_complete(row: ExternalComparisonRow) -> bool:
+    required_values = (
+        row.case_id,
+        row.source_program,
+        row.source_program_version,
+        row.source_model_id,
+        row.source_element_id,
+        row.source_station,
+        row.source_combination_id,
+        row.source_signed_action_vector,
+        row.source_units,
+        row.source_basis,
+        row.transform_matrix_reference,
+        row.adapter_id,
+        row.adapter_version,
+    )
+    return all(value.strip() for value in required_values)
+
+
+def _duplicate_case_id_count(rows: Sequence[ExternalComparisonRow]) -> int:
+    counts = Counter(row.case_id.strip() for row in rows if row.case_id.strip())
+    return sum(count - 1 for count in counts.values() if count > 1)

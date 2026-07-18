@@ -127,9 +127,10 @@ CSV has a value that differs from the current catalog value, the row remains
 Templates:
 
 The repository sample `tests/fixtures/material_verification_sample.csv` is
-synthetic test data and is not evidence. Step 3 rechecked/provisional rows are kept as
-`needs_review` without a reviewer name or review date; only a separately
-engineer-filled CSV may close this gate.
+synthetic test data and is not evidence. Every fixture row is explicitly marked
+`evidence_kind = synthetic_test_fixture`; any infrastructure
+`engineer_verified` label is therefore downgraded to `needs_review`. Only a
+separately engineer-filled CSV may close this gate.
 
 - `docs/materials/templates/material_catalog_verification_template.csv`;
 - `docs/materials/material_catalog_engineer_verification.md`.
@@ -149,7 +150,12 @@ Rows marked `engineer_verified` must include:
 - `engineer_value` matching the current catalog value;
 - `engineer_name`;
 - `review_date`;
-- `source_note`.
+- `source_note`;
+- `evidence_kind = independent_engineer_evidence`.
+
+The typed `evidence_kind` field is fail-closed. `not_provided`,
+`synthetic_test_fixture`, a blank value, or an unknown value cannot accompany
+`engineer_verified`.
 
 ## K35 Report Integration
 

@@ -42,6 +42,7 @@ class DesignCalculationReport:
     strength_status: str
     serviceability_status: str
     overall_status: str
+    status_scope: str
     completeness_status: str
     evidence_status: str
     project_use_status: str
@@ -70,6 +71,7 @@ def build_rectangular_design_report(
         strength_status=result.strength_status,
         serviceability_status=result.serviceability_status,
         overall_status=result.overall_status,
+        status_scope=result.status_scope,
         completeness_status=result.completeness_status,
         evidence_status=result.evidence_status,
         project_use_status=result.project_use_status,
@@ -145,6 +147,7 @@ def render_rectangular_design_report_markdown(result: Any) -> str:
                     "strength_status": data["strength_status"],
                     "serviceability_status": data["serviceability_status"],
                     "overall_status": data["overall_status"],
+                    "status_scope": data["status_scope"],
                     "completeness_status": data["completeness_status"],
                     "evidence_status": data["evidence_status"],
                     "project_use_status": data["project_use_status"],
@@ -188,6 +191,7 @@ def _build_json_data(result: Any) -> dict[str, Any]:
         "strength_status": result.strength_status,
         "serviceability_status": result.serviceability_status,
         "overall_status": result.overall_status,
+        "status_scope": result.status_scope,
         "completeness_status": result.completeness_status,
         "evidence_status": result.evidence_status,
         "project_use_status": result.project_use_status,

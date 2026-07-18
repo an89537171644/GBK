@@ -23,7 +23,7 @@ from sp63_core.report import build_calculation_protocol
 from sp63_core.sections import RectangularBendingOrientation, RectangularSection
 
 DATASET_VERSION = "0.3"
-DATASET_SOURCE = "deterministic_sp63_core"
+DATASET_SOURCE = "diagnostic_regression_sp63_core"
 SYNTHETIC_BENDING_ORIENTATION = RectangularBendingOrientation(
     local_axes_id="synthetic-dataset-local-axes",
     moment_axis="local_z",
@@ -107,6 +107,7 @@ DATASET_COLUMNS: tuple[str, ...] = (
     "warnings_count",
     "requires_engineer_review",
     "unsafe_row",
+    "status_scope",
     "dataset_source",
     "sp63_core_version",
     "dataset_version",
@@ -193,6 +194,7 @@ class DatasetCase:
     warnings_count: int
     requires_engineer_review: bool
     unsafe_row: bool
+    status_scope: str
     dataset_source: str
     sp63_core_version: str
     dataset_version: str
@@ -226,6 +228,8 @@ class DatasetCase:
             raise ValueError("dataset v0.3 project_use must be false")
         if self.requires_engineer_review is not True:
             raise ValueError("dataset v0.3 requires_engineer_review must be true")
+        if self.status_scope != "diagnostic":
+            raise ValueError("dataset v0.3 status_scope must be 'diagnostic'")
         if self.dataset_source != DATASET_SOURCE:
             raise ValueError(
                 f"dataset v0.3 dataset_source must be {DATASET_SOURCE!r}"
@@ -259,8 +263,8 @@ def generate_dataset_cases(
 ) -> tuple[DatasetCase, ...]:
     """Generate checked dataset rows following docs/dataset_schema.md.
 
-    Rows are emitted only when both bending and shear checks pass, so no unsafe
-    accepted cases are included.
+    Rows are emitted only when the diagnostic bending arithmetic and shear check
+    pass. They remain diagnostic regression rows, not accepted project cases.
     """
     if limit <= 0:
         raise ValueError("limit must be positive")
@@ -459,6 +463,7 @@ def _build_full_grid_rows(
                                         crack_formation=crack_formation,
                                     )
                                     protocol = build_calculation_protocol(
+                                        status_scope="diagnostic",
                                         input_data={},
                                         materials={},
                                         geometry={},
@@ -473,7 +478,7 @@ def _build_full_grid_rows(
                                     )
                                     unsafe_row = (
                                         protocol.overall_status != "pass"
-                                        or option.bending.utilization > 1.0
+                                        or option.diagnostic_utilization > 1.0
                                         or transverse_option.shear.utilization > 1.0
                                         or option.constructive.status != "pass"
                                         or transverse_option.constructive.status
@@ -575,9 +580,11 @@ def _build_full_grid_rows(
                                                     "transverse_reinforcement_countable"
                                                 ]
                                             ),
-                                            Mult=option.bending.Mult,
+                                            Mult=option.bending.diagnostic_Mult,
                                             Qult=transverse_option.shear.Qult,
-                                            bending_utilization=option.bending.utilization,
+                                            bending_utilization=(
+                                                option.bending.diagnostic_utilization
+                                            ),
                                             shear_utilization=transverse_option.shear.utilization,
                                             status=protocol.status,
                                             section_b_mm=b,
@@ -597,12 +604,16 @@ def _build_full_grid_rows(
                                             span_mm=span,
                                             longitudinal_as_mm2=option.As,
                                             transverse_asw_mm2=transverse_option.Asw,
-                                            bending_mult_nmm=option.bending.Mult,
+                                            bending_mult_nmm=(
+                                                option.bending.diagnostic_Mult
+                                            ),
                                             shear_qult_n=transverse_option.shear.Qult,
                                             mcrc_nmm=crack_formation.Mcrc,
                                             crack_width_mm=crack_width.acrc,
                                             deflection_mm=deflection.deflection,
-                                            bending_status=option.bending.status,
+                                            bending_status=(
+                                                option.bending.diagnostic_status
+                                            ),
                                             shear_status=transverse_option.shear.status,
                                             crack_formation_status=crack_formation.status,
                                             crack_width_status=crack_width.status,
@@ -621,6 +632,7 @@ def _build_full_grid_rows(
                                             warnings_count=len(protocol.warnings),
                                             requires_engineer_review=True,
                                             unsafe_row=unsafe_row,
+                                            status_scope="diagnostic",
                                             dataset_source=DATASET_SOURCE,
                                             sp63_core_version=__version__,
                                             dataset_version=DATASET_VERSION,

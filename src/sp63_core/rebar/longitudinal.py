@@ -32,7 +32,7 @@ DEFAULT_BAR_COUNTS: tuple[int, ...] = (2, 3, 4, 5, 6, 7, 8)
 
 @dataclass(frozen=True)
 class LongitudinalRebarOption:
-    """A passing longitudinal reinforcement candidate."""
+    """A diagnostic longitudinal reinforcement candidate pending ED-01."""
 
     bar_count: int
     diameter: int
@@ -43,7 +43,9 @@ class LongitudinalRebarOption:
     layout: RebarLayout
     constructive: ConstructiveCheckResult
     status: str
-    utilization: float
+    utilization: float | None
+    diagnostic_status: str
+    diagnostic_utilization: float
     warnings: tuple[str, ...]
     requires_engineer_review: bool = True
 
@@ -129,10 +131,15 @@ def select_longitudinal_rebar(
                 orientation=orientation,
                 load_duration=load_duration,
             )
-            if bending.status != "pass":
+            if bending.diagnostic_status != "pass":
                 continue
-            if bending.Mult is None or bending.utilization is None:
-                raise RuntimeError("passing bending result must include capacity values")
+            if (
+                bending.diagnostic_Mult is None
+                or bending.diagnostic_utilization is None
+            ):
+                raise RuntimeError(
+                    "passing diagnostic bending result must include diagnostic values"
+                )
 
             options.append(
                 LongitudinalRebarOption(
@@ -144,8 +151,10 @@ def select_longitudinal_rebar(
                     section=candidate_section,
                     layout=layout,
                     constructive=constructive,
-                    status=bending.status,
-                    utilization=bending.utilization,
+                    status=bending.public_status,
+                    utilization=None,
+                    diagnostic_status=bending.diagnostic_status,
+                    diagnostic_utilization=bending.diagnostic_utilization,
                     warnings=layout.warnings + constructive.warnings + bending.warnings,
                 )
             )

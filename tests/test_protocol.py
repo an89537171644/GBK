@@ -33,13 +33,14 @@ def mvp_section() -> RectangularSection:
     )
 
 
-def base_protocol(**checks):
+def base_protocol(*, status_scope="public", **checks):
     return build_calculation_protocol(
         input_data={"M": 150_000_000, "Q": 80_000},
         materials={"concrete": "B25", "rebar": "A500", "stirrup_rebar": "A240"},
         geometry={"b": 300, "h": 500, "h0": 450},
         reinforcement={"main": "3D20", "stirrups": "2D8/200"},
         checks=checks,
+        status_scope=status_scope,
     )
 
 
@@ -66,19 +67,31 @@ def test_build_calculation_protocol_for_passing_scheme():
         checks={"bending": bending, "shear": shear},
     )
 
-    assert protocol.strength_status == "pass"
+    assert protocol.strength_status == "outside_applicability"
     assert protocol.serviceability_status == "not_checked"
-    assert protocol.overall_status == "pass"
-    assert protocol.status == "pass"
-    assert protocol.warnings == ()
-    assert protocol.checks["bending"]["status"] == "pass"
+    assert protocol.overall_status == "outside_applicability"
+    assert protocol.status == "outside_applicability"
+    assert any("clause 8.1.3 is not checked" in item for item in protocol.warnings)
+    public_bending = protocol.checks["bending"]
+    assert public_bending["status"] == "outside_applicability"
+    assert public_bending["public_status"] == "outside_applicability"
+    assert public_bending["Mult"] is None
+    assert public_bending["utilization"] is None
+    assert public_bending["capacity_applicable"] is False
+    assert public_bending["capacity_publication_allowed"] is False
+    assert not any(key.startswith("diagnostic_") for key in public_bending)
+    public_intermediate = public_bending["intermediate_values"]
+    assert "Mult" not in public_intermediate
+    assert "utilization" not in public_intermediate
+    assert not any(key.startswith("diagnostic_") for key in public_intermediate)
     assert protocol.checks["shear"]["status"] == "pass"
     protocol_dict = protocol.as_dict()
     assert protocol_dict["reinforcement"]["main"] == "3D20"
-    assert protocol_dict["strength_status"] == "pass"
+    assert protocol_dict["strength_status"] == "outside_applicability"
     assert protocol_dict["serviceability_status"] == "not_checked"
-    assert protocol_dict["overall_status"] == "pass"
-    assert protocol_dict["status"] == "pass"
+    assert protocol_dict["overall_status"] == "outside_applicability"
+    assert protocol_dict["status"] == "outside_applicability"
+    assert protocol_dict["status_scope"] == "public"
     assert protocol.requires_engineer_review is True
     assert protocol.completeness_status == "incomplete"
     assert protocol.evidence_status == "needs_engineer_review"
@@ -106,6 +119,7 @@ def test_build_calculation_protocol_collects_fail_warnings():
         geometry={"b": 300, "h": 500, "h0": 450},
         reinforcement={"main": "3D20", "stirrups": "2D8/200"},
         checks={"bending": bending, "shear": shear},
+        status_scope="diagnostic",
     )
 
     assert protocol.strength_status == "fail"
@@ -116,8 +130,22 @@ def test_build_calculation_protocol_collects_fail_warnings():
     assert "shear: shear force exceeds inclined section capacity" in protocol.warnings
 
 
-def test_protocol_strength_only_pass_has_serviceability_not_checked():
+def test_protocol_public_generic_bending_without_metadata_fails_closed():
     protocol = base_protocol(
+        bending={"status": "pass", "warnings": ()},
+        shear={"status": "pass", "warnings": ()},
+    )
+
+    assert protocol.checks["bending"]["status"] == "outside_applicability"
+    assert protocol.strength_status == "outside_applicability"
+    assert protocol.serviceability_status == "not_checked"
+    assert protocol.overall_status == "outside_applicability"
+    assert protocol.status == "outside_applicability"
+
+
+def test_protocol_diagnostic_strength_only_pass_has_serviceability_not_checked():
+    protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "pass", "warnings": ()},
     )
@@ -128,8 +156,76 @@ def test_protocol_strength_only_pass_has_serviceability_not_checked():
     assert protocol.status == "pass"
 
 
+def test_protocol_public_scope_blocks_diagnostic_bending_pass():
+    protocol = base_protocol(
+        bending={
+            "status": "pass",
+            "public_status": "outside_applicability",
+            "warnings": (),
+        },
+        shear={"status": "pass", "warnings": ()},
+    )
+
+    assert protocol.strength_status == "outside_applicability"
+    assert protocol.overall_status == "outside_applicability"
+
+
+def test_protocol_diagnostic_scope_preserves_arithmetic_regression_status():
+    protocol = build_calculation_protocol(
+        input_data={},
+        materials={},
+        geometry={},
+        reinforcement={},
+        checks={
+            "bending": {
+                "status": "outside_applicability",
+                "diagnostic_status": "pass",
+                "public_status": "outside_applicability",
+                "warnings": (),
+            },
+            "shear": {"status": "pass", "warnings": ()},
+        },
+        status_scope="diagnostic",
+    )
+
+    assert protocol.status == "pass"
+    assert protocol.status_scope == "diagnostic"
+
+
+def test_protocol_rejects_unknown_status_scope():
+    with pytest.raises(ValueError, match="status_scope"):
+        build_calculation_protocol(
+            input_data={},
+            materials={},
+            geometry={},
+            reinforcement={},
+            checks={"bending": {"status": "pass", "warnings": ()}},
+            status_scope="unsafe",  # type: ignore[arg-type]
+        )
+
+
+def test_protocol_rejects_unknown_check_name_instead_of_publishing_alias():
+    with pytest.raises(ValueError, match="unknown check names.*bending_alias"):
+        build_calculation_protocol(
+            input_data={},
+            materials={},
+            geometry={},
+            reinforcement={},
+            checks={
+                "bending_alias": {
+                    "status": "pass",
+                    "Mult": 123_456.0,
+                    "utilization": 0.5,
+                    "warnings": (),
+                },
+                "shear": {"status": "pass", "warnings": ()},
+            },
+        )
+
+
 def test_protocol_strength_fail_sets_overall_fail():
     protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "fail", "warnings": ("not enough stirrups",)},
     )
@@ -177,6 +273,7 @@ def test_protocol_contains_no_numeric_capacity_for_actual_overreinforced_result(
 
 def test_protocol_crack_formation_without_crack_width_needs_review():
     protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "pass", "warnings": ()},
         crack_formation={"status": "crack", "warnings": ()},
@@ -190,6 +287,7 @@ def test_protocol_crack_formation_without_crack_width_needs_review():
 
 def test_protocol_crack_width_fail_sets_serviceability_fail():
     protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "pass", "warnings": ()},
         crack_formation={"status": "crack", "warnings": ()},
@@ -204,6 +302,7 @@ def test_protocol_crack_width_fail_sets_serviceability_fail():
 
 def test_protocol_deflection_fail_sets_serviceability_fail():
     protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "pass", "warnings": ()},
         deflection={"status": "fail", "warnings": ("deflection exceeds limit",)},
@@ -217,6 +316,7 @@ def test_protocol_deflection_fail_sets_serviceability_fail():
 
 def test_protocol_all_check_groups_pass():
     protocol = base_protocol(
+        status_scope="diagnostic",
         bending={"status": "pass", "warnings": ()},
         shear={"status": "pass", "warnings": ()},
         crack_formation={"status": "crack", "warnings": ()},

@@ -24,6 +24,7 @@ def _dataset_row() -> dict[str, object]:
             "report_json_sha256": "b" * 64,
             "manifest_sha256": "c" * 64,
             "archive_validation_status": "pass",
+            "status_scope": "public",
             "local_axes_id": "case-001-local-axes",
             "moment_axis": "local_z",
             "tension_face": "local_y_min",
@@ -40,9 +41,10 @@ def _dataset_row() -> dict[str, object]:
             "stirrup_rebar_class": "A240",
             "M": 150_000_000,
             "Q": 80_000,
-            "strength_status": "pass",
+            "bending_status": "outside_applicability",
+            "strength_status": "outside_applicability",
             "serviceability_status": "pass",
-            "overall_status": "pass",
+            "overall_status": "outside_applicability",
             "warnings_count": 0,
             "requires_engineer_review": True,
             "ml_is_advisory_only": True,
@@ -95,7 +97,7 @@ def test_self_check_with_ml_readiness_keeps_project_use_false(tmp_path):
     assert result.self_check_status == "review_required"
     assert result.ml_workflow_status == "review_required"
     assert result.ml_ready_for_research is True
-    assert result.ml_ready_for_engineering_review is True
+    assert result.ml_ready_for_engineering_review is False
     assert result.ml_ready_for_project_use is False
     assert (output_dir / "ml_workflow" / "ml_readiness" / "README_REVIEW.md").exists()
 

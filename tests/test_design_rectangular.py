@@ -23,21 +23,46 @@ def mvp_input(**overrides) -> RectangularDesignInput:
     return RectangularDesignInput(**data)
 
 
-def test_design_rectangular_element_returns_passing_result():
+def test_design_rectangular_element_blocks_public_pass_while_ed01_is_open():
     result = design_rectangular_element(mvp_input())
 
-    assert result.status == "pass"
-    assert result.strength_status == "pass"
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "not_checked"
-    assert result.overall_status == "pass"
+    assert result.overall_status == "outside_applicability"
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is not None
     assert result.protocol is not None
-    assert result.protocol.status == "pass"
-    assert result.protocol.strength_status == "pass"
+    assert result.protocol.status == "outside_applicability"
+    assert result.protocol.strength_status == "outside_applicability"
     assert result.protocol.serviceability_status == "not_checked"
-    assert result.protocol.overall_status == "pass"
-    assert result.selected_longitudinal.bending.status == "pass"
+    assert result.protocol.overall_status == "outside_applicability"
+    assert result.status_scope == "public"
+    selected_longitudinal = result.selected_longitudinal
+    assert selected_longitudinal.status == "outside_applicability"
+    assert selected_longitudinal.utilization is None
+    assert selected_longitudinal.diagnostic_status == "pass"
+    assert selected_longitudinal.diagnostic_utilization <= 1.0
+    bending = selected_longitudinal.bending
+    assert bending.status == "outside_applicability"
+    assert bending.Mult is None
+    assert bending.utilization is None
+    assert bending.capacity_applicable is False
+    assert bending.public_status == "outside_applicability"
+    assert bending.diagnostic_status == "pass"
+    assert bending.diagnostic_Mult is not None
+    assert bending.diagnostic_utilization is not None
+    assert bending.diagnostic_capacity_applicable is True
+    assert bending.capacity_publication_allowed is False
+    public_bending = result.protocol.checks["bending"]
+    assert public_bending["status"] == "outside_applicability"
+    assert public_bending["Mult"] is None
+    assert public_bending["utilization"] is None
+    assert not any(key.startswith("diagnostic_") for key in public_bending)
+    assert not any(
+        key.startswith("diagnostic_")
+        for key in public_bending["intermediate_values"]
+    )
     assert result.selected_longitudinal.constructive.status == "pass"
     assert result.selected_transverse.shear.status == "pass"
     assert result.selected_transverse.constructive.status in ("pass", "warning")
@@ -52,17 +77,38 @@ def test_design_rectangular_element_returns_passing_result():
     assert result.project_use is False
 
 
-def test_design_rectangular_element_fails_when_no_longitudinal_option():
+def test_design_diagnostic_scope_is_explicit_and_never_enables_project_use():
+    result = design_rectangular_element(mvp_input(), status_scope="diagnostic")
+
+    assert result.status == "pass"
+    assert result.status_scope == "diagnostic"
+    assert result.protocol is not None
+    assert result.protocol.status_scope == "diagnostic"
+    assert result.project_use is False
+
+
+def test_design_rejects_unknown_status_scope():
+    with pytest.raises(ValueError, match="status_scope"):
+        design_rectangular_element(
+            mvp_input(),
+            status_scope="unsafe",  # type: ignore[arg-type]
+        )
+
+
+def test_design_rectangular_element_is_outside_when_no_longitudinal_option():
     result = design_rectangular_element(mvp_input(M=2_000_000_000))
 
-    assert result.status == "fail"
-    assert result.strength_status == "fail"
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "not_checked"
-    assert result.overall_status == "fail"
+    assert result.overall_status == "outside_applicability"
     assert result.selected_longitudinal is None
     assert result.selected_transverse is None
     assert result.protocol is None
-    assert "no passing longitudinal reinforcement options" in result.warnings
+    assert any(
+        "no passing diagnostic longitudinal reinforcement options" in warning
+        for warning in result.warnings
+    )
 
 
 def test_design_rectangular_element_fails_when_no_transverse_option():
@@ -150,7 +196,7 @@ def test_design_never_changes_stirrup_diameter_after_h0_is_derived():
         )
     )
 
-    assert result.status == "pass"
+    assert result.status == "outside_applicability"
     assert result.selected_longitudinal is not None
     assert result.selected_transverse is not None
     assert result.selected_transverse.diameter == 6
@@ -177,16 +223,16 @@ def test_design_fails_closed_when_geometry_stirrup_is_not_a_candidate():
 def test_design_rectangular_with_crack_check():
     result = design_rectangular_element(mvp_input(check_cracks=True, Mser=30_000_000))
 
-    assert result.status == "review_or_fail"
-    assert result.strength_status == "pass"
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "review_or_fail"
-    assert result.overall_status == "review_or_fail"
+    assert result.overall_status == "outside_applicability"
     assert result.crack_formation is not None
     assert result.crack_formation.status == "crack"
     assert result.crack_formation.requires_engineer_review is True
     assert result.protocol is not None
     assert result.protocol.serviceability_status == "review_or_fail"
-    assert result.protocol.overall_status == "review_or_fail"
+    assert result.protocol.overall_status == "outside_applicability"
     assert "crack_formation" in result.protocol.checks
     assert any("crack width check is required" in warning for warning in result.warnings)
 
@@ -196,10 +242,10 @@ def test_design_rectangular_with_crack_width_check():
         mvp_input(check_crack_width=True, Mser=30_000_000, acrc_limit=0.3)
     )
 
-    assert result.status == "pass"
-    assert result.strength_status == "pass"
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "pass"
-    assert result.overall_status == "pass"
+    assert result.overall_status == "outside_applicability"
     assert result.crack_formation is not None
     assert result.crack_width is not None
     assert result.crack_width.acrc >= 0
@@ -213,10 +259,10 @@ def test_design_rectangular_with_deflection_check():
         mvp_input(check_deflection=True, Mser=10_000_000, span=6000)
     )
 
-    assert result.status == "pass"
-    assert result.strength_status == "pass"
+    assert result.status == "outside_applicability"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "pass"
-    assert result.overall_status == "pass"
+    assert result.overall_status == "outside_applicability"
     assert result.crack_formation is not None
     assert result.deflection is not None
     assert result.deflection.requires_engineer_review is True
@@ -236,7 +282,7 @@ def test_design_rectangular_with_deflection_fail_warning():
     )
 
     assert result.status == "fail"
-    assert result.strength_status == "pass"
+    assert result.strength_status == "outside_applicability"
     assert result.serviceability_status == "fail"
     assert result.overall_status == "fail"
     assert result.deflection is not None

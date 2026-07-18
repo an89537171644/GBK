@@ -6,18 +6,20 @@ evidence, and project-use statuses. Legacy rows and rows missing these fields
 are rejected; the loader and ML readiness gate do not invent an orientation or
 upgrade provenance implicitly.
 
-Generated rows remain synthetic, require engineering review, and do not
-constitute independent validation. In version 0.3 `project_use` is always
-`false`, even when the narrow deterministic checks have `status = pass`.
+Generated rows remain synthetic diagnostic regression artifacts, require
+engineering review, and do not constitute independent validation. In version
+0.3 `status_scope` is always `diagnostic` and `project_use` is always `false`,
+even when the diagnostic checks have `status = pass`.
 
 requires_engineer_review = true
 
 ## Purpose
 
-The dataset is a deterministic draft-MVP output of `sp63_core`. It is prepared
-for future baseline ML experiments, but ML is not trained or used at this step.
-Every accepted row must pass the deterministic bending, shear, layout, and
-draft constructive checks.
+The dataset is a diagnostic draft-MVP output of `sp63_core`. It is prepared for
+regression and future baseline ML experiments, but it is not a public design
+result. Every emitted row passes the diagnostic bending arithmetic, shear,
+layout, and draft constructive filters. An ML safety gate must not treat such a
+row as a project acceptance result while ED-01 remains open.
 
 ## MVP Applicability
 
@@ -77,11 +79,11 @@ only `short` cases.
 | `stirrup_sw_max_by_shear_rule` | float | mm | Draft SP 63 8.1.33 spacing limit for counting Qsw |
 | `stirrup_qsw_rule_status` | str | - | `pass`, `warning`, or `not_applicable` |
 | `stirrup_transverse_reinforcement_countable` | bool | - | Whether Qsw may be counted by draft rule |
-| `Mult` | float | N*mm | Ultimate bending moment |
+| `Mult` | float | N*mm | Diagnostic bending arithmetic value; not a published capacity |
 | `Qult` | float | N | Ultimate shear force |
-| `bending_utilization` | float | - | `M / Mult` |
+| `bending_utilization` | float | - | Diagnostic arithmetic ratio; not a public ULS conclusion |
 | `shear_utilization` | float | - | `Q / Qult` |
-| `status` | str | - | `pass` for exported rows |
+| `status` | str | - | Diagnostic protocol status for exported regression rows |
 | `section_b_mm` | float | mm | Explicit K21 section width alias |
 | `section_h_mm` | float | mm | Explicit K21 section height alias |
 | `effective_depth_mm` | float | mm | Explicit K21 effective depth alias |
@@ -117,7 +119,8 @@ only `short` cases.
 | `warnings_count` | int | - | Count of deterministic protocol warnings |
 | `requires_engineer_review` | bool | - | Always true for draft deterministic rows |
 | `unsafe_row` | bool | - | True when the row fails deterministic safety rules |
-| `dataset_source` | str | - | `deterministic_sp63_core` |
+| `status_scope` | str | - | Always `diagnostic`; project acceptance is prohibited |
+| `dataset_source` | str | - | `diagnostic_regression_sp63_core` |
 | `sp63_core_version` | str | - | Calculation core version |
 | `dataset_version` | str | - | Exactly `0.3`; earlier versions fail closed |
 
@@ -142,8 +145,9 @@ The serviceability values are draft MVP outputs from the deterministic core:
 
 The generated row includes `strength_status`, `serviceability_status`, and
 `overall_status`. For exported MVP rows these are expected to be `pass`.
-`unsafe_row` is expected to be `false`, and `dataset_source` is always
-`deterministic_sp63_core`.
+`unsafe_row` is expected to be `false`, while `status_scope` is always
+`diagnostic` and `dataset_source` is always
+`diagnostic_regression_sp63_core`.
 
 The dataset remains a deterministic draft artifact. It does not replace
 engineering review, and ML remains advisory-only.
@@ -160,11 +164,12 @@ readiness report over enriched deterministic rows. The report checks:
 - group leakage count;
 - constant target/status columns.
 
-The current safe accepted dataset may contain only passing `overall_status`
-rows. That is good for safe regression-style experiments, but it is not enough
-for classification over `pass/fail/review_or_fail`. In that case the readiness
-status is `review_required`, and a separate diagnostic/candidate dataset is
-needed before classification ML.
+The current diagnostic regression pass-row dataset may contain only passing
+diagnostic `overall_status` rows. That can support regression experiments, but
+it is not a public design dataset and is not enough for classification over
+`pass/fail/review_or_fail`. In that case the readiness status is
+`review_required`, and a separate diagnostic/candidate dataset is needed before
+classification ML.
 
 K22 does not train ML and does not add a neural network. ML remains
 advisory-only.
@@ -173,7 +178,7 @@ advisory-only.
 
 `python -m sp63_core diagnostic-dataset --json` generates a separate
 diagnostic/candidate dataset. This dataset is intentionally different from the
-safe accepted dataset produced by `generate_dataset_cases()`.
+diagnostic regression pass-row dataset produced by `generate_dataset_cases()`.
 
 Diagnostic rows include:
 

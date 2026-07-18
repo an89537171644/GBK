@@ -17,11 +17,21 @@ been engineer-verified.
 - `needs_review` - value or source note requires additional engineering review.
 - `engineer_verified` - engineer checked the catalog value against SP 63 tables.
 
+## Evidence Kind Values
+
+- `not_provided` - no independent evidence is attached; cannot accompany
+  `engineer_verified`.
+- `synthetic_test_fixture` - test-only data; cannot accompany
+  `engineer_verified`.
+- `independent_engineer_evidence` - an independent engineer supplied the
+  verification record. This is the only value accepted with
+  `engineer_verified`.
+
 ## Concrete Properties
 
-| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review |
-|---|---|---|---:|---|---|---:|---|---|---|---|---|
-| concrete | B25 | Rb | 14.5 | MPa | draft |  |  |  |  |  | true |
+| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review | evidence_kind |
+|---|---|---|---:|---|---|---:|---|---|---|---|---|---|
+| concrete | B25 | Rb | 14.5 | MPa | draft |  |  |  |  |  | true | not_provided |
 
 Concrete properties to verify:
 
@@ -33,9 +43,9 @@ Concrete properties to verify:
 
 ## Reinforcement Properties
 
-| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review |
-|---|---|---|---:|---|---|---:|---|---|---|---|---|
-| rebar | A500 | Rs | 435 | MPa | draft |  |  |  |  |  | true |
+| material_type | class_name | property_name | catalog_value | unit | verification_status | engineer_value | engineer_name | review_date | source_note | engineer_comment | requires_engineer_review | evidence_kind |
+|---|---|---|---:|---|---|---:|---|---|---|---|---|---|
+| rebar | A500 | Rs | 435 | MPa | draft |  |  |  |  |  | true | not_provided |
 
 Reinforcement properties to verify:
 
@@ -55,7 +65,10 @@ Reinforcement properties to verify:
 - If the engineer value differs from the catalog value, keep
   `verification_status = needs_review` until the difference is resolved.
 - `engineer_verified` requires a filled `engineer_value` matching the current
-  catalog value plus `engineer_name`, `review_date`, and a short `source_note`.
+  catalog value plus `engineer_name`, `review_date`, a short `source_note`, and
+  `evidence_kind = independent_engineer_evidence`.
+- Free-text notes do not determine whether evidence is synthetic or
+  independent; only the typed `evidence_kind` field controls this gate.
 
 ## CLI
 

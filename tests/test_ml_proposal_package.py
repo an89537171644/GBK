@@ -87,13 +87,14 @@ def test_ml_proposal_package_builds_from_jsonl(tmp_path):
 
     assert result.status in {"review_required", "fail"}
     assert result.proposal_status in {"review_required", "rejected"}
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert result.deterministic_strength_status == "pass"
+    assert result.predicted_status is None
+    assert result.deterministic_strength_status == "outside_applicability"
     assert result.deterministic_serviceability_status == "pass"
-    assert result.deterministic_overall_status == "pass"
+    assert result.deterministic_overall_status == "outside_applicability"
     assert isinstance(result.advisory_signal_usable, bool)
     assert result.safety_audit_status in {"review_required", "fail"}
-    assert result.json_data["class_probabilities"]
+    assert result.json_data["class_probabilities"] == {}
+    assert result.neural_network_used is False
     assert result.ml_is_advisory_only is True
     assert result.deterministic_checks_required is True
     assert result.deterministic_report_required is True
@@ -111,8 +112,8 @@ def test_ml_proposal_package_builds_from_csv(tmp_path):
     )
 
     assert result.source_dataset == str(dataset_path)
-    assert result.predicted_status in {"fail", "pass", "review_or_fail"}
-    assert "class_probabilities" in result.json_data
+    assert result.predicted_status is None
+    assert result.json_data["class_probabilities"] == {}
 
 
 def test_ml_proposal_package_accepts_only_advisory_match(monkeypatch, tmp_path):
@@ -265,7 +266,7 @@ def test_cli_ml_proposal_package_json_output(tmp_path, capsys):
     assert exit_code == 0
     assert payload["command"] == "ml-proposal-package"
     assert payload["report_type"] == "ml_proposal_package"
-    assert payload["deterministic_overall_status"] == "pass"
+    assert payload["deterministic_overall_status"] == "outside_applicability"
     assert "class_probabilities" in payload
     assert payload["ml_is_advisory_only"] is True
     assert payload["deterministic_checks_required"] is True

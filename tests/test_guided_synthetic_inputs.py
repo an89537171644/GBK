@@ -69,7 +69,10 @@ def test_guided_cases_load_with_existing_reader_and_record_deterministic_status(
         input_path = output_dir / case["path"]
         design_input = load_rectangular_design_input_from_json(input_path)
         payload = json.loads(input_path.read_text(encoding="utf-8"))
-        result = design_rectangular_element(rectangular_design_input_from_mapping(payload))
+        result = design_rectangular_element(
+            rectangular_design_input_from_mapping(payload),
+            status_scope="diagnostic",
+        )
         assert design_input.b > 0
         assert design_input.h > 0
         assert design_input.load_duration == "short"
@@ -196,9 +199,9 @@ def test_guided_inputs_feed_batch_export_and_balance_gate(tmp_path, capsys):
 
     assert export_result.status == "pass"
     assert export_result.row_count == 9
-    assert balance.target_distribution == pipeline_goal
-    assert balance.required_classes_present is True
-    assert balance.stratified_split_ready is True
+    assert balance.target_distribution == {"outside_applicability": 9}
+    assert balance.required_classes_present is False
+    assert balance.stratified_split_ready is False
 
 
 def test_committed_guided_manifest_is_not_required():

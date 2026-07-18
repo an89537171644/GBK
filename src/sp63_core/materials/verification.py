@@ -6,12 +6,26 @@ engineer. It never changes material values automatically.
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from datetime import date
+from math import isfinite
+from typing import Any, Literal, cast
 
 from sp63_core.materials.audit import MaterialAuditRow, build_material_audit_rows
 
 MATERIAL_VERIFICATION_STATUSES = ("draft", "needs_review", "engineer_verified")
+MaterialVerificationEvidenceKind = Literal[
+    "not_provided",
+    "synthetic_test_fixture",
+    "independent_engineer_evidence",
+]
+MATERIAL_VERIFICATION_EVIDENCE_KINDS: tuple[MaterialVerificationEvidenceKind, ...] = (
+    "not_provided",
+    "synthetic_test_fixture",
+    "independent_engineer_evidence",
+)
+INDEPENDENT_ENGINEER_EVIDENCE_KIND = "independent_engineer_evidence"
 DEFAULT_MATERIAL_VERIFICATION_STATUS = "draft"
+DEFAULT_MATERIAL_VERIFICATION_EVIDENCE_KIND = "not_provided"
 MATERIAL_VERIFICATION_REQUIRED_COLUMNS: tuple[str, ...] = (
     "material_type",
     "class_name",
@@ -25,6 +39,7 @@ MATERIAL_VERIFICATION_REQUIRED_COLUMNS: tuple[str, ...] = (
     "source_note",
     "engineer_comment",
     "requires_engineer_review",
+    "evidence_kind",
 )
 MATERIAL_VERIFICATION_WARNING = (
     "material catalog values remain draft until an engineer verifies every "
@@ -57,6 +72,7 @@ class MaterialVerificationRow:
     review_date: str
     source_note: str
     engineer_comment: str
+    evidence_kind: MaterialVerificationEvidenceKind
     requires_engineer_review: bool
     note: str
 
@@ -131,6 +147,13 @@ def build_material_verification_report(
                     f"{material_type}/{class_name}/{property_name}"
                 )
                 continue
+            if key in seen_keys:
+                invalid_rows_count += 1
+                warnings.append(
+                    "material verification CSV contains duplicate row "
+                    f"{material_type}/{class_name}/{property_name}"
+                )
+                continue
             seen_keys.add(key)
 
             verification_status = _normalize_verification_status(
@@ -139,11 +162,13 @@ def build_material_verification_report(
             if verification_status is None:
                 invalid_rows_count += 1
                 verification_status = "needs_review"
+            requested_engineer_verified = verification_status == "engineer_verified"
 
             catalog_value = _parse_optional_float(raw_row["catalog_value"])
             if catalog_value is None:
                 invalid_rows_count += 1
                 catalog_value = float(audit_row.value)
+                verification_status = "needs_review"
             if abs(catalog_value - float(audit_row.value)) > CATALOG_VALUE_TOLERANCE:
                 value_mismatch_count += 1
                 verification_status = "needs_review"
@@ -153,7 +178,33 @@ def build_material_verification_report(
             review_date = str(raw_row["review_date"] or "").strip()
             source_note = str(raw_row["source_note"] or "").strip()
             engineer_comment = str(raw_row["engineer_comment"] or "").strip()
-            if verification_status == "engineer_verified":
+            evidence_kind = _normalize_evidence_kind(raw_row["evidence_kind"])
+            unit = str(raw_row["unit"] or "").strip()
+            raw_requires_engineer_review = _parse_required_bool(
+                raw_row["requires_engineer_review"]
+            )
+            if unit != audit_row.unit:
+                invalid_rows_count += 1
+                verification_status = "needs_review"
+            raw_review_flag_is_inconsistent = (
+                raw_requires_engineer_review is None
+                or (requested_engineer_verified and raw_requires_engineer_review)
+                or (
+                    not requested_engineer_verified
+                    and raw_requires_engineer_review is False
+                )
+            )
+            if raw_review_flag_is_inconsistent:
+                invalid_rows_count += 1
+                verification_status = "needs_review"
+            if evidence_kind is None:
+                invalid_rows_count += 1
+                verification_status = "needs_review"
+                evidence_kind = DEFAULT_MATERIAL_VERIFICATION_EVIDENCE_KIND
+            if requested_engineer_verified:
+                if evidence_kind != INDEPENDENT_ENGINEER_EVIDENCE_KIND:
+                    invalid_rows_count += 1
+                    verification_status = "needs_review"
                 if engineer_value is None:
                     invalid_rows_count += 1
                     verification_status = "needs_review"
@@ -166,7 +217,7 @@ def build_material_verification_report(
                 if not engineer_name:
                     invalid_rows_count += 1
                     verification_status = "needs_review"
-                if not review_date:
+                if not review_date or not _is_iso_date(review_date):
                     invalid_rows_count += 1
                     verification_status = "needs_review"
 
@@ -188,6 +239,7 @@ def build_material_verification_report(
                     review_date=review_date,
                     source_note=source_note,
                     engineer_comment=engineer_comment,
+                    evidence_kind=evidence_kind,
                     requires_engineer_review=verification_status != "engineer_verified",
                     note=MATERIAL_VERIFICATION_NOTE,
                 )
@@ -202,10 +254,14 @@ def build_material_verification_report(
             warnings.append(
                 "engineer-filled material values do not match current catalog values"
             )
+        if any("duplicate row" in warning for warning in warnings):
+            warnings.append("duplicate material verification evidence was rejected")
+        if any(
+            row.evidence_kind == "synthetic_test_fixture" for row in parsed_rows
+        ):
+            warnings.append(SYNTHETIC_NON_EVIDENCE_WARNING)
         if any(row.verification_status != "engineer_verified" for row in parsed_rows):
             warnings.append(MATERIAL_VERIFICATION_WARNING)
-        if any("synthetic" in row.source_note.lower() for row in parsed_rows):
-            warnings.append(SYNTHETIC_NON_EVIDENCE_WARNING)
         rows = tuple(parsed_rows)
 
     status_counts = _status_counts(rows)
@@ -261,6 +317,7 @@ def _row_from_audit_row(
         review_date="",
         source_note="",
         engineer_comment="",
+        evidence_kind=DEFAULT_MATERIAL_VERIFICATION_EVIDENCE_KIND,
         requires_engineer_review=True,
         note=MATERIAL_VERIFICATION_NOTE,
     )
@@ -280,14 +337,41 @@ def _normalize_verification_status(value: Any) -> str | None:
     return None
 
 
+def _normalize_evidence_kind(value: Any) -> MaterialVerificationEvidenceKind | None:
+    evidence_kind = str(value or "").strip().lower()
+    if evidence_kind in MATERIAL_VERIFICATION_EVIDENCE_KINDS:
+        return cast(MaterialVerificationEvidenceKind, evidence_kind)
+    return None
+
+
 def _parse_optional_float(value: Any) -> float | None:
     text = str(value or "").strip()
     if not text:
         return None
     try:
-        return float(text)
+        parsed = float(text)
     except ValueError:
         return None
+    return parsed if isfinite(parsed) else None
+
+
+def _is_iso_date(value: str) -> bool:
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return False
+    return parsed.isoformat() == value and parsed <= date.today()
+
+
+def _parse_required_bool(value: Any) -> bool | None:
+    if value is True or value is False:
+        return value
+    normalized = str(value or "").strip().lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    return None
 
 
 def _status_counts(rows: tuple[MaterialVerificationRow, ...]) -> dict[str, int]:

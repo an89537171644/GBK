@@ -15,16 +15,16 @@ def test_clean_demo_input_preflight_passes():
     assert result.ml_ready_for_project_use is False
 
 
-def test_clean_demo_workflow_runs_deterministic_pass(tmp_path):
+def test_clean_demo_workflow_stays_review_required_while_ed01_is_open(tmp_path):
     output_dir = tmp_path / "clean_demo"
 
     result = run_clean_demo_workflow(output_dir=output_dir)
 
-    assert result.status == "pass"
-    assert result.demo_status == "pass"
+    assert result.status == "review_required"
+    assert result.demo_status == "review_required"
     assert result.workflow_status == "review_required"
     assert result.preflight_status == "pass"
-    assert result.deterministic_report_status == "pass"
+    assert result.deterministic_report_status == "outside_applicability"
     assert result.archive_validation_status == "pass"
     assert result.zip_status == "pass"
     assert result.index_status == "pass"
@@ -56,10 +56,10 @@ def test_cli_clean_demo_workflow_json(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["command"] == "clean-demo-workflow"
-    assert payload["status"] == "pass"
-    assert payload["demo_status"] == "pass"
+    assert payload["status"] == "review_required"
+    assert payload["demo_status"] == "review_required"
     assert payload["preflight_status"] == "pass"
-    assert payload["deterministic_report_status"] == "pass"
+    assert payload["deterministic_report_status"] == "outside_applicability"
     assert payload["archive_validation_status"] == "pass"
     assert payload["zip_status"] == "pass"
     assert payload["index_status"] == "pass"
@@ -82,5 +82,5 @@ def test_cli_clean_demo_workflow_markdown(tmp_path, capsys):
     output = capsys.readouterr().out
     assert exit_code == 0
     assert "Clean Deterministic Demo Workflow" in output
-    assert "demo_status: `pass`" in output
+    assert "demo_status: `review_required`" in output
     assert "ml_ready_for_project_use = false" in output
