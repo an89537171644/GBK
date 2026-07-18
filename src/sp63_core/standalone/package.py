@@ -352,7 +352,7 @@ def _verify_package_cmd_script() -> str:
         [
             *_cmd_preamble(),
             "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass "
-            '-File "%ROOT%VERIFY_PACKAGE.ps1" -PackageRoot "%ROOT%"',
+            '-File "%ROOT%VERIFY_PACKAGE.ps1"',
             'set "RC=%ERRORLEVEL%"',
             'exit /b %RC%',
             "",

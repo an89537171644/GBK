@@ -176,6 +176,8 @@ def test_verifier_checks_sidecar_and_every_manifest_payload_before_install(tmp_p
     assert "size_bytes" in verifier
     assert "ReparsePoint" in verifier
     assert "unsafe component" in verifier
+    assert '-File "%ROOT%VERIFY_PACKAGE.ps1"' in verifier_cmd
+    assert '-PackageRoot "%ROOT%"' not in verifier_cmd
     assert "VERIFY_PACKAGE.ps1" in manifest_paths
     assert "VERIFY_PACKAGE.cmd" in manifest_paths
     assert ".gbk_build_id" not in manifest_paths
