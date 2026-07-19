@@ -8,6 +8,8 @@ does not authorize project use.
 from sp63_core.standalone.controller import (
     adapt_standalone_beam_input,
     run_standalone_beam_case,
+    validate_standalone_index,
+    validate_standalone_review_bundle,
 )
 from sp63_core.standalone.model import (
     STANDALONE_ELEMENT_TYPE,
@@ -23,4 +25,6 @@ __all__ = [
     "StandaloneRunResult",
     "adapt_standalone_beam_input",
     "run_standalone_beam_case",
+    "validate_standalone_index",
+    "validate_standalone_review_bundle",
 ]

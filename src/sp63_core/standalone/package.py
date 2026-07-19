@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-PACKAGE_FORMAT_VERSION = "1.1"
+PACKAGE_FORMAT_VERSION = "1.2"
 PACKAGE_WARNING = (
     "Исследовательский пакет для прямоугольной балки. Все схемы и числовые "
     "результаты имеют статус diagnostic_only; их выдача или трактовка как "
@@ -526,6 +526,7 @@ def build_standalone_windows_package(
     readme_path = output_path / "README_STANDALONE_WINDOWS.md"
     scope_path = docs_dir / "SCOPE.md"
     install_path = docs_dir / "WINDOWS_INSTALL.md"
+    gui_guide_path = docs_dir / "ENGINEER_GUI.md"
     checklist_path = docs_dir / "USER_ACCEPTANCE_CHECKLIST.md"
     readme_path.write_text(_render_package_readme(distribution_mode), encoding="utf-8")
     scope_path.write_text(_render_scope(), encoding="utf-8")
@@ -533,11 +534,14 @@ def build_standalone_windows_package(
         _render_windows_install(distribution_mode),
         encoding="utf-8",
     )
+    gui_guide_path.write_text(_render_engineer_gui_guide(), encoding="utf-8")
     checklist_path.write_text(
         _render_acceptance_checklist(distribution_mode),
         encoding="utf-8",
     )
-    payload_files.extend((readme_path, scope_path, install_path, checklist_path))
+    payload_files.extend(
+        (readme_path, scope_path, install_path, gui_guide_path, checklist_path)
+    )
 
     _assert_complete_payload_set(output_path, payload_files)
     status = "fail" if errors else "pass"
@@ -616,6 +620,9 @@ def _script_specs(
     wheel_sha256: str | None,
 ) -> dict[str, str]:
     wheel_name = bundled_wheel.name if bundled_wheel else "WHEEL_FILE_REQUIRED.whl"
+    expected_build_id = (
+        f"wheel-sha256:{wheel_sha256}" if wheel_sha256 else "source-unverified"
+    )
     return {
         "01_START_HERE.cmd": _start_here_script(
             wheel_available=bundled_wheel is not None,
@@ -630,6 +637,7 @@ def _script_specs(
             wheel_sha256,
         ),
         "INSTALL_FROM_SOURCE.cmd": _install_from_source_script(),
+        "02_OPEN_GBK.cmd": _run_engineer_gui_script(expected_build_id),
         "RUN_INTERACTIVE.cmd": _run_interactive_script(),
         "RUN_JSON.cmd": _run_json_script(),
         "RUN_JSON_USER.cmd": _run_json_user_script(),
@@ -668,7 +676,7 @@ def _start_here_script(*, wheel_available: bool) -> str:
             "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass "
             '-File "%ROOT%ONE_CLICK_GUARD.ps1" -CiMode "%CI_MODE%"',
             'set "FINAL_RC=%ERRORLEVEL%"',
-            'if "%CI_MODE%"=="0" pause',
+            'if "%CI_MODE%"=="0" if not "%FINAL_RC%"=="0" pause',
             'exit /b %FINAL_RC%',
             "",
         ]
@@ -690,7 +698,7 @@ def _one_click_worker_script() -> str:
             "echo Не закрывайте окно. Первая установка может занять несколько минут.",
             "echo ============================================================",
             "echo.",
-            "echo Шаг 1 из 2: проверка и установка...",
+            "echo Шаг 1 из 3: проверка и установка...",
             '> "%INSTALL_LOG%" echo GBK installation log',
             "if errorlevel 1 goto :install_log_failed",
             '>> "%INSTALL_LOG%" echo Started: %DATE% %TIME%',
@@ -699,7 +707,7 @@ def _one_click_worker_script() -> str:
             'type "%INSTALL_LOG%"',
             'if not "%INSTALL_RC%"=="0" goto :install_failed',
             "echo.",
-            "echo Шаг 2 из 2: запуск контрольного примера...",
+            "echo Шаг 2 из 3: запуск контрольного примера...",
             '> "%RUN_LOG%" echo GBK example run log',
             "if errorlevel 1 goto :run_log_failed",
             '>> "%RUN_LOG%" echo Started: %DATE% %TIME%',
@@ -711,16 +719,19 @@ def _one_click_worker_script() -> str:
             'set "VERIFY_RC=%ERRORLEVEL%"',
             'type "%RUN_LOG%"',
             'if not "%VERIFY_RC%"=="0" goto :result_verification_failed',
-            'if "%CI_MODE%"=="0" start "" "%RESULT_PATH%"',
-            'if errorlevel 1 set "BROWSER_WARNING=1"',
+            "echo.",
+            "echo Шаг 3 из 3: проверка и запуск инженерного интерфейса...",
+            'if "%CI_MODE%"=="1" call "%ROOT%02_OPEN_GBK.cmd" --ci',
+            'if "%CI_MODE%"=="0" call "%ROOT%02_OPEN_GBK.cmd" --from-install',
+            'set "GUI_RC=%ERRORLEVEL%"',
+            'if not "%GUI_RC%"=="0" goto :gui_failed',
             "echo.",
             "echo ============================================================",
-            "echo ГОТОВО: установка и контрольный запуск завершены.",
+            "echo ГОТОВО: установка, контрольный запуск и проверка интерфейса завершены.",
             "echo Результат: %RESULT_PATH%",
+            "echo Для следующих запусков используйте 02_OPEN_GBK.cmd.",
             "echo project_use=false; требуется инженерная проверка.",
             "echo ============================================================",
-            'if defined BROWSER_WARNING echo Отчёт готов, но браузер не открылся.',
-            'if defined BROWSER_WARNING echo Откройте вручную: %RESULT_PATH%',
             'set "FINAL_RC=0"',
             "goto :finish",
             "",
@@ -757,6 +768,13 @@ def _one_click_worker_script() -> str:
             "echo Журнал: %RUN_LOG%",
             "echo Отчёт автоматически не открывается.",
             'set "FINAL_RC=%VERIFY_RC%"',
+            "goto :finish",
+            "",
+            ":gui_failed",
+            "echo.",
+            "echo ОШИБКА: инженерный интерфейс не прошёл проверку запуска.",
+            "echo Журнал при наличии: %ROOT%GUI_LAUNCH_LOG.txt",
+            'set "FINAL_RC=%GUI_RC%"',
             "goto :finish",
             "",
             ":finish",
@@ -851,6 +869,9 @@ def _install_from_wheel_script(wheel_name: str, wheel_sha256: str | None) -> str
             '"%NEW_VENV%\\Scripts\\python.exe" -m pip check || exit /b 1',
             '"%NEW_VENV%\\Scripts\\python.exe" -c "import sp63_core.standalone" '
             "|| exit /b 1",
+            '"%NEW_VENV%\\Scripts\\python.exe" -m sp63_core.standalone.gui '
+            '--headless-smoke --output-root "%ROOT%output\\installer_gui_smoke" '
+            "|| exit /b 1",
             f'> "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" echo %EXPECTED_BUILD_ID%',
             f'move /y "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" '
             f'"%NEW_VENV%\\{BUILD_ID_FILENAME}" >nul || exit /b 1',
@@ -937,6 +958,9 @@ def _install_from_source_script() -> str:
             '"%NEW_VENV%\\Scripts\\python.exe" -m pip check || exit /b 1',
             '"%NEW_VENV%\\Scripts\\python.exe" -c "import sp63_core.standalone" '
             "|| exit /b 1",
+            '"%NEW_VENV%\\Scripts\\python.exe" -m sp63_core.standalone.gui '
+            '--headless-smoke --output-root "%ROOT%output\\installer_gui_smoke" '
+            "|| exit /b 1",
             f'> "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" echo source-unverified',
             f'move /y "%NEW_VENV%\\{BUILD_ID_FILENAME}.tmp" '
             f'"%NEW_VENV%\\{BUILD_ID_FILENAME}" >nul || exit /b 1',
@@ -967,6 +991,89 @@ def _install_from_source_script() -> str:
             "echo ОШИБКА: автоматическое восстановление не завершено.",
             "echo Предыдущая среда сохранена в .venv.previous; передайте этот экран.",
             "exit /b 1",
+            "",
+        ]
+    )
+
+
+def _run_engineer_gui_script(expected_build_id: str) -> str:
+    return "\n".join(
+        [
+            *_cmd_preamble(),
+            'set "CI_MODE=0"',
+            'if /I "%~1"=="--ci" set "CI_MODE=1"',
+            f'set "EXPECTED_BUILD_ID={expected_build_id}"',
+            'call "%ROOT%VERIFY_PACKAGE.cmd"',
+            'if errorlevel 1 goto :package_failed',
+            f'set "BUILD_ID_PATH=%ROOT%.venv\\{BUILD_ID_FILENAME}"',
+            'if not exist "%BUILD_ID_PATH%" (',
+            "  echo ОШИБКА: программа не установлена или идентификатор сборки отсутствует.",
+            "  echo Сначала запустите 01_START_HERE.cmd.",
+            '  set "RC=2"',
+            "  goto :finish",
+            ")",
+            'set "GBK_BUILD_ID="',
+            'set /p "GBK_BUILD_ID="<"%BUILD_ID_PATH%"',
+            'if not defined GBK_BUILD_ID (',
+            "  echo ОШИБКА: идентификатор установленной сборки пуст.",
+            '  set "RC=2"',
+            "  goto :finish",
+            ")",
+            "powershell -NoProfile -NonInteractive -Command "
+            '"$actual=(Get-Content -LiteralPath $env:BUILD_ID_PATH -Raw '
+            '-Encoding UTF8).Trim(); if ($actual -cne $env:EXPECTED_BUILD_ID) '
+            "{ [Console]::Error.WriteLine('Installed build identity does not match "
+            "this package.'); exit 2 }\"",
+            "if errorlevel 1 goto :build_identity_failed",
+            'set "APP_PYTHON=%ROOT%.venv\\Scripts\\python.exe"',
+            'set "APP_PYTHONW=%ROOT%.venv\\Scripts\\pythonw.exe"',
+            'set "OUTPUT_ROOT=%ROOT%output\\engineer_gui"',
+            'if not exist "%APP_PYTHON%" (',
+            "  echo ОШИБКА: рабочая среда программы отсутствует.",
+            "  echo Сначала запустите 01_START_HERE.cmd.",
+            '  set "RC=2"',
+            "  goto :finish",
+            ")",
+            'if "%CI_MODE%"=="1" goto :ci_smoke',
+            'if not exist "%APP_PYTHONW%" (',
+            "  echo ОШИБКА: безоконный запуск Python недоступен.",
+            '  set "RC=2"',
+            "  goto :finish",
+            ")",
+            'set "GUI_LOG=%ROOT%GUI_LAUNCH_LOG.txt"',
+            '"%APP_PYTHON%" -m sp63_core.standalone.gui --headless-smoke '
+            '--output-root "%OUTPUT_ROOT%" '
+            '> "%GUI_LOG%" 2>&1',
+            'if errorlevel 1 (',
+            '  type "%GUI_LOG%"',
+            "  echo ОШИБКА: скрытое окно интерфейса не прошло проверку запуска.",
+            '  set "RC=2"',
+            "  goto :finish",
+            ")",
+            'start "" "%APP_PYTHONW%" -m sp63_core.standalone.gui '
+            '--output-root "%OUTPUT_ROOT%"',
+            'if errorlevel 1 (set "RC=2") else (set "RC=0")',
+            "goto :finish",
+            "",
+            ":ci_smoke",
+            '"%APP_PYTHON%" -m sp63_core.standalone.gui --headless-smoke '
+            '--exercise-run --output-root "%OUTPUT_ROOT%"',
+            'if errorlevel 1 (set "RC=2") else (set "RC=0")',
+            "goto :finish",
+            "",
+            ":build_identity_failed",
+            "echo ОШИБКА: установленная версия не соответствует этому пакету.",
+            "echo Снова запустите 01_START_HERE.cmd из текущей папки.",
+            'set "RC=2"',
+            "goto :finish",
+            "",
+            ":package_failed",
+            "echo ОШИБКА: проверка целостности пакета не пройдена.",
+            'set "RC=2"',
+            "",
+            ":finish",
+            'if not "%RC%"=="0" if "%CI_MODE%"=="0" pause',
+            'exit /b %RC%',
             "",
         ]
     )
@@ -1162,8 +1269,9 @@ def _render_package_readme(distribution_mode: str) -> str:
     if distribution_mode == "wheel":
         start_lines = [
             "1. Для простой автоматической установки дважды щёлкните",
-            "   `01_START_HERE.cmd`. Команды вводить не требуется: окно останется",
-            "   открытым, а при ошибке рядом будет сохранён текстовый журнал.",
+            "   `01_START_HERE.cmd`. Команды вводить не требуется: консоль видна",
+            "   во время установки, а затем запускается русскоязычный интерфейс.",
+            "   При ошибке рядом будет сохранён текстовый журнал.",
         ]
     else:
         start_lines = [
@@ -1191,12 +1299,14 @@ def _render_package_readme(distribution_mode: str) -> str:
             "",
             *start_lines,
             "2. Расширенная инструкция находится в `docs/WINDOWS_INSTALL.md`.",
-            "3. После установки `RUN_INTERACTIVE.cmd` открывает ручной ввод, а",
-            "   `RUN_JSON_USER.cmd` повторяет пример. `RUN_JSON.cmd` предназначен",
-            "   только для автоматизации/CI.",
-            "4. После расчёта сначала откройте верхнеуровневый `standalone_index.html`",
-            "   в каталоге результата. `OPEN_RESULTS.cmd` лишь открывает папку.",
-            "5. Заполните `docs/USER_ACCEPTANCE_CHECKLIST.md`.",
+            "3. Для всех следующих запусков дважды щёлкните `02_OPEN_GBK.cmd`.",
+            "   Командная строка для обычной работы не нужна.",
+            "4. `RUN_INTERACTIVE.cmd` и `RUN_JSON_USER.cmd` сохранены только как",
+            "   диагностические маршруты; `RUN_JSON.cmd` предназначен для CI.",
+            "5. После защитной проверки интерфейс позволяет кнопкой открыть",
+            "   верхнеуровневый `standalone_index.html`. `OPEN_RESULTS.cmd` лишь",
+            "   открывает общую папку.",
+            "6. Заполните `docs/USER_ACCEPTANCE_CHECKLIST.md`.",
             "",
             "Пакет не содержит самостоятельного EXE-файла, веб-сервера, расчётных",
             "формул вне sp63_core или внешней расчётной системы.",
@@ -1216,6 +1326,8 @@ def _render_scope() -> str:
             "`cover_mm` — программное расстояние от грани бетона до наружной поверхности",
             "хомута; его нормативная интерпретация остаётся на инженерной проверке.",
             "`moment_kNm` — неотрицательный модуль; его знак не выбирает грань.",
+            "`shear_kN` — программный неотрицательный модуль |Q|.",
+            "Это описание не утверждает нормативную знаковую конвенцию.",
             "`tension_face` явно задаётся как `local_y_min` или `local_y_max`.",
             "Физическое сопоставление локальных осей и граней пока не утверждено и",
             "требует инженерной проверки. Поддерживается только кратковременный маршрут.",
@@ -1241,10 +1353,11 @@ def _render_windows_install(distribution_mode: str) -> str:
     if distribution_mode == "wheel":
         route_lines = [
             "3. Дважды щёлкните `01_START_HERE.cmd`. Он сам выполнит установку,",
-            "   запустит контрольный пример, откроет итоговую страницу и оставит",
-            "   окно с результатом. Вводить команды не требуется.",
+            "   запустит контрольный пример, проверит и откроет инженерный интерфейс.",
+            "   Вводить команды не требуется.",
             "4. При ошибке после начала установки рядом будет создан",
-            "   `INSTALLATION_LOG.txt` либо `EXAMPLE_RUN_LOG.txt`.",
+            "   `INSTALLATION_LOG.txt`, `EXAMPLE_RUN_LOG.txt` либо при ошибке",
+            "   интерфейса `GUI_LAUNCH_LOG.txt`.",
             "   Журнал может содержать локальные пути: не публикуйте его целиком,",
             "   если достаточно снимка последних строк ошибки.",
         ]
@@ -1273,9 +1386,16 @@ def _render_windows_install(distribution_mode: str) -> str:
             "   зависимости из",
             "   `requirements/runtime-py311.lock`, затем wheel с `--no-deps`.",
             "7. Установка создаст `.venv` рядом с командными скриптами.",
-            "8. После первого запуска пользователь может отдельно запускать",
-            "   `RUN_JSON_USER.cmd` или `RUN_INTERACTIVE.cmd`.",
+            "   До активации среды установщик создаёт и закрывает настоящее скрытое",
+            "   окно Tk; одной проверки импорта Tcl/Tk недостаточно.",
+            "8. После первого запуска пользователь открывает программу двойным щелчком",
+            "   по `02_OPEN_GBK.cmd`. Интерфейс использует отдельный каталог каждого",
+            "   расчёта в `output/engineer_gui`.",
+            "   Скрипт сверяет `.gbk_build_id` установленной среды с идентификатором",
+            "   текущего ZIP и при несовпадении требует повторить `01_START_HERE.cmd`.",
+            "9. `RUN_JSON_USER.cmd` и `RUN_INTERACTIVE.cmd` оставлены для диагностики.",
             "   Неблокирующий `RUN_JSON.cmd` предназначен для автоматизации и CI.",
+            "   При ошибке запуска интерфейса проверьте `GUI_LAUNCH_LOG.txt`.",
             "",
             "`VERIFY_PACKAGE.cmd` перед установкой проверяет SHA-256 манифеста, размеры",
             "и SHA-256 всех записанных файлов. Это контроль целостности от случайного",
@@ -1295,16 +1415,17 @@ def _render_windows_install(distribution_mode: str) -> str:
             "не коэффициенты, нормативные значения или рекомендации по проектированию.",
             "Физическое сопоставление `local_y_min`/`local_y_max` с реальным элементом",
             "не утверждено и требует инженерной проверки.",
+            "Перед нажатием кнопки расчёта инженер должен явно выбрать одну из этих",
+            "локальных граней; интерфейс намеренно не переименовывает их в верх/низ.",
             "",
             "## Каталоги результата",
             "",
-            "Для каждого отдельного расчёта задавайте отдельный каталог результата.",
-            "Каталог, принятый standalone-модулем, управляется программой: не помещайте",
-            "в него произвольные пользовательские файлы. Повторный запуск может удалить",
-            "из него известные служебные артефакты предыдущего запуска.",
-            "После расчёта главным пользовательским входом служит верхнеуровневый",
-            "`standalone_index.html`; не начинайте просмотр с raw `workflow/index.html`.",
-            "`OPEN_RESULTS.cmd` только открывает папку и не выбирает правильный отчёт.",
+            "GUI автоматически создаёт отдельный каталог `run-*` для каждого запуска",
+            "в `output/engineer_gui`; не помещайте туда произвольные файлы.",
+            "Любое редактирование, новый запуск или ошибка отключают действия старого",
+            "результата. Только после повторной защитной проверки GUI включает кнопки",
+            "верхнеуровневого `standalone_index.html`, текущей папки и публичного ZIP.",
+            "`RUN_*` и `OPEN_RESULTS.cmd` являются только диагностическими маршрутами.",
             "",
             "## Передача инженеру",
             "",
@@ -1329,13 +1450,56 @@ def _render_windows_install(distribution_mode: str) -> str:
     ) + "\n"
 
 
+def _render_engineer_gui_guide() -> str:
+    return "\n".join(
+        [
+            "# Инженерный интерфейс автономной версии",
+            "",
+            "После первой установки открывайте программу двойным щелчком по",
+            "`02_OPEN_GBK.cmd`. Команды вводить не требуется.",
+            "",
+            "1. Проверьте идентификатор расчёта и не включайте в него ФИО, email,",
+            "   подписи или локальные пути.",
+            "2. Заполните геометрию, материалы и усилия. Допустимы десятичная запятая",
+            "   или точка, но разделители тысяч намеренно не угадываются.",
+            "   `moment_kNm` и `shear_kN` вводятся как неотрицательные модули |M| и |Q|.",
+            "3. Явно выберите `local_y_min` либо `local_y_max`. Интерфейс не называет",
+            "   их верхней или нижней гранью: физическое сопоставление не утверждено.",
+            "4. Нажмите `Выполнить исследовательскую проверку` и дождитесь результата.",
+            "5. Смотрите общий, технический, расчётный и доказательный статусы отдельно.",
+            "6. Кнопки открытия отчёта, папки и сохранения пакета включаются только",
+            "   после повторной fail-closed проверки текущих данных, ссылок, ZIP и",
+            "   идентификатора сборки. Для передачи используйте только эту кнопку.",
+            "",
+            "Каждый запуск получает отдельный управляемый каталог. При новой попытке",
+            "или ошибке ссылки на прежний результат блокируются. Интерфейс вызывает",
+            "существующий standalone-контроллер и не содержит расчётных формул.",
+            "Любое редактирование поля, новый запуск или ошибка немедленно отключают",
+            "кнопки предыдущего результата.",
+            "",
+            "Красное предупреждение и статусы `project_use=false`,",
+            "`requires_engineer_review=true`, `diagnostic_only` обязательны. Локальный",
+            "`pass` не является утверждением несущей способности или проектным допуском.",
+            "",
+            "Область ограничена прямоугольной балкой и кратковременным маршрутом.",
+            "Результат `source-unverified` допустим только для разработки и не",
+            "передаётся как результат пакетного испытания wheel-сборки.",
+            "ЛИРА-САПР и SCAD для запуска этого автономного интерфейса не требуются.",
+        ]
+    ) + "\n"
+
+
 def _render_acceptance_checklist(distribution_mode: str) -> str:
     if distribution_mode == "wheel":
         one_click_lines = [
             "- [ ] `01_START_HERE.cmd` выполнил установку и контрольный пример без",
-            "      ручного ввода команд, сохранил окно и открыл итоговую страницу.",
-            "- [ ] При ошибке после начала установки создан `INSTALLATION_LOG.txt`",
-            "      либо `EXAMPLE_RUN_LOG.txt`; разработчику передаётся только снимок",
+            "      ручного ввода команд и открыл инженерный интерфейс.",
+            "- [ ] Повторный двойной щелчок по `02_OPEN_GBK.cmd` открывает окно без",
+            "      необходимости вводить команды.",
+            "- [ ] Установщик и проверка Windows CI создали и закрыли настоящее",
+            "      скрытое окно Tk, а не ограничились импортом Tcl/Tk.",
+            "- [ ] При ошибке создан `INSTALLATION_LOG.txt`, `EXAMPLE_RUN_LOG.txt`",
+            "      либо `GUI_LAUNCH_LOG.txt`; разработчику передаётся только снимок",
             "      необходимых последних строк.",
         ]
     else:
@@ -1349,17 +1513,26 @@ def _render_acceptance_checklist(distribution_mode: str) -> str:
             "",
             *one_click_lines,
             "- [ ] Установка завершилась без ошибки.",
-            "- [ ] Интерактивный режим явно указывает прямоугольную балку.",
-            "- [ ] `RUN_JSON_USER.cmd` сохраняет окно после выполнения; `RUN_JSON.cmd`",
-            "      остаётся неблокирующим маршрутом автоматизации.",
-            "- [ ] Включённый JSON формирует отдельный управляемый каталог отчёта.",
+            "- [ ] При ошибке GUI проверен `GUI_LAUNCH_LOG.txt`.",
+            "- [ ] В окне постоянно видны запрет проектного применения и требование",
+            "      инженерной проверки.",
+            "- [ ] Поля сгруппированы по геометрии, материалам и усилиям; единицы видны.",
+            "- [ ] Десятичная запятая принимается без изменения расчётного ядра.",
+            "- [ ] При любом редактировании, новом запуске или ошибке кнопки старого",
+            "      отчёта, папки и ZIP немедленно отключаются.",
+            "- [ ] При масштабе Windows 125–150% все поля доступны через прокрутку.",
+            "- [ ] GUI явно указывает прямоугольную балку и кратковременный маршрут.",
+            "- [ ] `RUN_INTERACTIVE.cmd`, `RUN_JSON_USER.cmd`, `RUN_JSON.cmd` и",
+            "      `OPEN_RESULTS.cmd` считаются только диагностическими/CI-маршрутами.",
+            "- [ ] GUI автоматически формирует отдельный каталог `run-*` для запуска.",
             "- [ ] В каталог результата не помещены произвольные пользовательские файлы.",
-            "- [ ] Первым открыт верхнеуровневый `standalone_index.html`, а не",
-            "      `workflow/index.html`; `OPEN_RESULTS.cmd` используется лишь для папки.",
+            "- [ ] Кнопки отчёта, текущей папки и ZIP включены только после повторной",
+            "      защитной проверки; raw `workflow/index.html` не является входом GUI.",
             "- [ ] В `case_id` нет ФИО, email, подписей или локальных путей.",
             "- [ ] `b_mm`, `h_mm`, `cover_mm` и `stirrup_diameter_mm` конечны и строго",
             "      больше нуля; `cover_mm < h_mm`; диаметр хомута равен 6, 8, 10 или 12 мм.",
-            "- [ ] `moment_kNm` и `shear_kN` конечны и неотрицательны; ноль допустим.",
+            "- [ ] `moment_kNm` и `shear_kN` — конечные неотрицательные модули |M|",
+            "      и |Q|; ноль допустим.",
             "- [ ] `cover_mm` понимается как программное расстояние от грани бетона до",
             "      наружной поверхности хомута, ожидающее инженерного подтверждения.",
             "- [ ] `moment_kNm` — неотрицательный модуль, знак которого не выбирает грань.",
@@ -1377,6 +1550,8 @@ def _render_acceptance_checklist(distribution_mode: str) -> str:
             "      `recorded_from_launcher_requires_manifest_match`.",
             "- [ ] SHA-256 в `.code_identity.build_id=wheel-sha256:<sha256>` совпадает",
             "      с `wheel_sha256` из `standalone_manifest.json`.",
+            "- [ ] Подмена `.venv/.gbk_build_id` блокирует `02_OPEN_GBK.cmd`; после",
+            "      восстановления идентификатора скрытая проверка запуска проходит.",
             "- [ ] Для `source-unverified` статус равен `unavailable_open_question`, и",
             "      результат не передаётся как пакетное испытание.",
             "- [ ] `pass` отдельной проверки не трактуется как общий или инженерный допуск.",

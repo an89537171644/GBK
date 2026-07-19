@@ -47,7 +47,10 @@ Windows ZIP является сетевым пакетом для рецензи
 маршруте может давать только диагностическое непроектное предложение. Статус
 `pass` отдельной проверки не означает общий результат или инженерный допуск.
 Для пользовательской проверки пакет содержит `01_START_HERE.cmd`, выполняющий
-установку и контрольный пример без ручного ввода команд.
+установку и контрольный пример без ручного ввода команд, а затем открывающий
+узкий русскоязычный интерфейс инженера. Для следующих запусков используется
+`02_OPEN_GBK.cmd`. Интерфейс относится только к исследовательской прямоугольной
+балке и кратковременному маршруту; он не является широким производственным GUI.
 
 ## Реализовано в ядре
 
@@ -96,7 +99,7 @@ Windows ZIP является сетевым пакетом для рецензи
 - Transverse reinforcement selection is implemented as a draft enumeration.
 - Candidates are accepted only when `check_shear_rectangular` returns `pass`.
 - Dataset rows now store the selected stirrup scheme and shear result.
-- ML and UI are still not started.
+- На историческом этапе K3 ML и UI ещё не были начаты.
 
 ## K4 end-to-end rectangular design status
 
@@ -105,7 +108,7 @@ Windows ZIP является сетевым пакетом для рецензи
 - The result contains `CalculationProtocol` for passing full designs.
 - The workflow is `short`-only and keeps `completeness_status=incomplete`,
   `evidence_status=needs_engineer_review`, and `project_use=false`.
-- Experimental ML remains advisory-only; a full UI is not implemented.
+- Experimental ML remains advisory-only; широкий производственный UI не реализован.
 
 ## K5 CLI status
 
@@ -980,7 +983,7 @@ Recommended human setup:
 4. Use codex-ready issues as the task queue.
 5. Review every PR before merge.
 
-## Future GUI/Desktop Wrapper
+## K63 historical future GUI/Desktop wrapper contract
 
 K63 adds a machine-readable interface contract and planning documents for a
 future engineering GUI/desktop wrapper:
@@ -989,31 +992,36 @@ future engineering GUI/desktop wrapper:
 python -m sp63_core engineering-interface-contract --output-dir reports/interface_contract --json
 ```
 
-This is requirements and contract work only. It does not implement Streamlit,
-Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI. A future UI must call
+K63 itself was requirements and contract work only and did not implement
+Streamlit, Qt, Flask, FastAPI, Electron, Tkinter, PyQt, or web UI. Issue #134
+later added a narrow Tkinter exception only for the standalone Windows
+rectangular-beam research trial. Any broader future UI must call
 the existing CLI/workflow layer, expose deterministic SP63 results, keep
 engineer-review warnings visible, keep ML advisory-only, and keep
 `ml_ready_for_project_use = false`.
 
-## K64 engineering GUI planning decision
+## K64 historical engineering GUI planning decision
 
-K64 adds the planning-only command:
+K64 added the planning-only command:
 
 ```bash
 python -m sp63_core engineering-gui-planning --output-dir reports/gui_planning --json
 ```
 
-The recommended direction is `cli_first_with_static_html_reports`. The project
+The historical recommended direction was `cli_first_with_static_html_reports`.
+Issue #134 supersedes only the Tkinter postponement for the narrow standalone
+Windows trial; the broader direction remains unchanged. The project
 already produces HTML, Markdown, JSON, manifest, ZIP, workflow, material
 verification, external validation, and advisory ML readiness artifacts, so the
 next interface step should organize those static outputs instead of adding a
 heavy GUI runtime.
 
-K64 also writes `engineering_gui_planning_decision.json` and
+K64 also wrote `engineering_gui_planning_decision.json` and
 `engineering_gui_planning_decision.md` and documents the considered options
-under `docs/ui/`. It does not implement UI, does not add Streamlit, Gradio,
-Flask, FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras,
-does not change formulas or material values, and keeps
+under `docs/ui/`. K64 itself did not implement UI or add Streamlit, Gradio,
+Flask, FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras
+at that historical milestone. Issue #134 is the narrow later exception; it
+does not change formulas or material values and keeps
 `ml_ready_for_project_use = false`.
 
 ## K65 static workflow report index

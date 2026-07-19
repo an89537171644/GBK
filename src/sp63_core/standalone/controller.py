@@ -27,7 +27,11 @@ from sp63_core.materials.uls_context import (
     SUPPORTED_ULS_CONCRETE_CLASSES,
     SUPPORTED_ULS_LONGITUDINAL_REBAR_CLASSES,
 )
-from sp63_core.report import validate_report_bundle
+from sp63_core.report import (
+    render_rectangular_design_report_html,
+    render_rectangular_design_report_markdown,
+    validate_report_bundle,
+)
 from sp63_core.report.ed01_contract import public_report_contract_errors
 from sp63_core.standalone.model import (
     STANDALONE_LOAD_DURATION,
@@ -86,6 +90,7 @@ KNOWN_OWNED_ARTIFACTS = (
     BUNDLE_INDEX_SOURCE_FILENAME,
     BUNDLE_README_SOURCE_FILENAME,
 )
+_EXPECTED_BUILD_ID_UNSET = object()
 
 
 def adapt_standalone_beam_input(input_data: StandaloneBeamInput) -> RectangularDesignInput:
@@ -278,6 +283,42 @@ def run_standalone_beam_case(
         errors=tuple(dict.fromkeys(errors)),
     )
     return _finalize_result(result, output_path=output_path, output_owned=True)
+
+
+def validate_standalone_review_bundle(
+    bundle_path: Path,
+    *,
+    expected_result: StandaloneRunResult | None = None,
+    expected_build_id: str | None | object = _EXPECTED_BUILD_ID_UNSET,
+) -> tuple[str, ...]:
+    """Revalidate public ZIP structure, safety semantics, and optional identity."""
+    path = Path(bundle_path)
+    structural_errors = _review_bundle_errors(path)
+    if structural_errors:
+        return structural_errors
+    return _review_bundle_semantic_errors(
+        path,
+        expected_result=expected_result,
+        expected_build_id=expected_build_id,
+    )
+
+
+def validate_standalone_index(
+    index_path: Path,
+    *,
+    expected_result: StandaloneRunResult,
+) -> tuple[str, ...]:
+    """Require the local landing page to equal the controller-rendered result."""
+    path = Path(index_path)
+    if path.is_symlink() or not path.is_file():
+        return ("standalone index is missing or is a symbolic link",)
+    try:
+        actual = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return (f"standalone index cannot be read: {exc}",)
+    if actual != _standalone_index_html(expected_result):
+        return ("standalone index does not match the current controller result",)
+    return ()
 
 
 def _validate_standalone_input(input_data: StandaloneBeamInput) -> None:
@@ -793,7 +834,11 @@ def _build_review_bundle(
             archive.write(manifest_path, REVIEW_MANIFEST_FILENAME)
             archive.write(manifest_sha256_path, REVIEW_MANIFEST_SHA256_FILENAME)
         temporary_bundle_path.replace(bundle_path)
-        validation_errors = _review_bundle_errors(bundle_path)
+        validation_errors = validate_standalone_review_bundle(
+            bundle_path,
+            expected_result=result,
+            expected_build_id=build_id,
+        )
         if validation_errors:
             raise ValueError("; ".join(validation_errors))
         _remove_owned_artifact(bundle_index_source_path)
@@ -842,12 +887,16 @@ def _review_bundle_errors(bundle_path: Path) -> tuple[str, ...]:
             if not isinstance(records, list):
                 errors.append("review bundle manifest files must be a list")
                 return tuple(errors)
+            if len(records) != len(expected_payload_names):
+                errors.append("review bundle manifest file record count is invalid")
             recorded_names: set[str] = set()
             for record in records:
                 if not isinstance(record, dict) or not isinstance(record.get("path"), str):
                     errors.append("review bundle manifest contains an invalid file record")
                     continue
                 name = record["path"]
+                if name in recorded_names:
+                    errors.append(f"review bundle manifest path is duplicated: {name}")
                 recorded_names.add(name)
                 try:
                     data = archive.read(name)
@@ -870,6 +919,405 @@ def _review_bundle_errors(bundle_path: Path) -> tuple[str, ...]:
     except (OSError, KeyError, UnicodeDecodeError, json.JSONDecodeError, zipfile.BadZipFile) as exc:
         errors.append(f"review bundle cannot be validated: {exc}")
     return tuple(errors)
+
+
+def _review_bundle_semantic_errors(
+    bundle_path: Path,
+    *,
+    expected_result: StandaloneRunResult | None,
+    expected_build_id: str | None | object,
+) -> tuple[str, ...]:
+    errors: list[str] = []
+    try:
+        with zipfile.ZipFile(bundle_path, "r") as archive:
+            manifest = _read_bundle_json(archive, REVIEW_MANIFEST_FILENAME, errors)
+            bundle_status = _read_bundle_json(archive, BUNDLE_STATUS_FILENAME, errors)
+            metadata = _read_bundle_json(archive, REVIEW_METADATA_FILENAME, errors)
+            summary = _read_bundle_json(archive, WORKFLOW_SUMMARY_FILENAME, errors)
+            deterministic_report = _read_bundle_json(
+                archive,
+                "deterministic_report/report.json",
+                errors,
+            )
+            bundle_index = _read_bundle_text(archive, "index.html", errors)
+            bundle_readme = _read_bundle_text(archive, BUNDLE_README_MEMBER, errors)
+            deterministic_markdown = _read_bundle_text(
+                archive,
+                "deterministic_report/report.md",
+                errors,
+            )
+            deterministic_html = _read_bundle_text(
+                archive,
+                "deterministic_report/report.html",
+                errors,
+            )
+    except (OSError, zipfile.BadZipFile) as exc:
+        return (f"review bundle semantic validation failed: {exc}",)
+    if errors:
+        return tuple(dict.fromkeys(errors))
+
+    _require_bundle_values(
+        manifest,
+        {
+            "report_type": "standalone_review_bundle_manifest",
+            "schema_version": 1,
+            "path_scope": "bundle_relative",
+            "bundle_filename": REVIEW_BUNDLE_FILENAME,
+            "project_use": False,
+            "requires_engineer_review": True,
+            "reinforcement_selection_status": "diagnostic_only",
+        },
+        "review manifest",
+        errors,
+    )
+    _require_bundle_values(
+        bundle_status,
+        {
+            "report_type": "standalone_bundle_status",
+            "schema_version": 1,
+            "path_scope": "bundle_relative",
+            "project_use": False,
+            "project_use_status": "prohibited",
+            "requires_engineer_review": True,
+            "reinforcement_selection_status": "diagnostic_only",
+        },
+        "bundle status",
+        errors,
+    )
+    _require_bundle_values(
+        metadata,
+        {
+            "report_type": "standalone_review_metadata",
+            "schema_version": 1,
+            "path_scope": "bundle_relative",
+        },
+        "review metadata",
+        errors,
+    )
+    _require_bundle_values(
+        summary,
+        {
+            "report_type": "standalone_workflow_summary",
+            "schema_version": 1,
+            "path_scope": "bundle_relative",
+            "project_use": False,
+            "requires_engineer_review": True,
+            "reinforcement_selection_status": "diagnostic_only",
+            "error_count": 0,
+        },
+        "workflow summary",
+        errors,
+    )
+
+    scope = metadata.get("scope")
+    if not isinstance(scope, dict):
+        errors.append("review metadata scope must be an object")
+    else:
+        _require_bundle_values(
+            scope,
+            {
+                "element_type": "rectangular_beam",
+                "load_duration": STANDALONE_LOAD_DURATION,
+                "status_scope": "public",
+                "project_use": False,
+                "requires_engineer_review": True,
+                "reinforcement_selection_status": "diagnostic_only",
+                "ml_included": False,
+            },
+            "review metadata scope",
+            errors,
+        )
+
+    units_layer = metadata.get("units_layer")
+    if not isinstance(units_layer, dict):
+        errors.append("review metadata units_layer must be an object")
+    else:
+        _require_bundle_values(
+            units_layer,
+            {
+                "classification": "programmatic_input_unit_conversion",
+                "normative_formula_asserted": False,
+            },
+            "review metadata units layer",
+            errors,
+        )
+
+    input_semantics = metadata.get("input_semantics")
+    if not isinstance(input_semantics, dict):
+        errors.append("review metadata input_semantics must be an object")
+    else:
+        _require_bundle_values(
+            input_semantics,
+            {
+                "cover_reference": "concrete_face_to_outer_stirrup_surface",
+                "moment_value_semantics": "non_negative_magnitude",
+                "shear_value_semantics": "non_negative_magnitude",
+                "tension_face_allowed": ["local_y_min", "local_y_max"],
+                "physical_axis_mapping_status": (
+                    "requires_engineer_review/open_question"
+                ),
+            },
+            "review metadata input semantics",
+            errors,
+        )
+
+    expected_paths = {
+        "standalone_input": STANDALONE_INPUT_FILENAME,
+        "canonical_input": CANONICAL_INPUT_FILENAME,
+        "landing_page": "index.html",
+        "result_readme": BUNDLE_README_MEMBER,
+        "review_metadata": REVIEW_METADATA_FILENAME,
+        "workflow_summary": WORKFLOW_SUMMARY_FILENAME,
+        "deterministic_report": "deterministic_report/report.json",
+    }
+    if bundle_status.get("paths") != expected_paths:
+        errors.append("bundle status paths do not match the public bundle contract")
+
+    errors.extend(
+        f"deterministic public report contract: {error}"
+        for error in public_report_contract_errors(deterministic_report)
+    )
+    _require_bundle_values(
+        deterministic_report,
+        {
+            "status_scope": "public",
+            "completeness_status": "incomplete",
+            "evidence_status": "needs_engineer_review",
+            "project_use_status": "prohibited",
+            "project_use": False,
+            "requires_engineer_review": True,
+        },
+        "deterministic public report",
+        errors,
+    )
+    nested_report = deterministic_report.get("report")
+    if not isinstance(nested_report, dict):
+        errors.append("deterministic public report nested report must be an object")
+    else:
+        _require_bundle_values(
+            nested_report,
+            {
+                "status_scope": "public",
+                "completeness_status": "incomplete",
+                "evidence_status": "needs_engineer_review",
+                "project_use_status": "prohibited",
+                "project_use": False,
+                "requires_engineer_review": True,
+            },
+            "deterministic nested report",
+            errors,
+        )
+        protocol = nested_report.get("protocol")
+        if not isinstance(protocol, dict):
+            errors.append("deterministic public report protocol must be an object")
+        else:
+            _require_bundle_values(
+                protocol,
+                {
+                    "status_scope": "public",
+                    "completeness_status": "incomplete",
+                    "evidence_status": "needs_engineer_review",
+                    "project_use_status": "prohibited",
+                    "project_use": False,
+                    "requires_engineer_review": True,
+                },
+                "deterministic report protocol",
+                errors,
+            )
+            if protocol.get("status") != deterministic_report.get("status"):
+                errors.append("deterministic report protocol status does not match report")
+            if protocol.get("overall_status") != deterministic_report.get("status"):
+                errors.append(
+                    "deterministic report protocol overall_status does not match report"
+                )
+        if nested_report.get("status") != deterministic_report.get("status"):
+            errors.append("deterministic nested report status does not match report")
+    if bundle_status.get("calculation_status") != deterministic_report.get("status"):
+        errors.append("bundle calculation_status does not match deterministic report")
+    if deterministic_report.get("overall_status") != deterministic_report.get("status"):
+        errors.append("deterministic report overall_status does not match status")
+    if isinstance(nested_report, dict) and nested_report.get(
+        "overall_status"
+    ) != deterministic_report.get("status"):
+        errors.append("deterministic nested report overall_status does not match report")
+
+    if bundle_status.get("status") not in (
+        "review_required",
+        "outside_applicability",
+    ):
+        errors.append("bundle status must remain review_required or outside_applicability")
+    if bundle_status.get("preflight_status") != "pass":
+        errors.append("bundle preflight_status must remain pass")
+    if bundle_status.get("calculation_status") not in (
+        "fail",
+        "review_or_fail",
+        "outside_applicability",
+    ):
+        errors.append("bundle calculation_status is outside the public status contract")
+    if bundle_status.get("evidence_status") != "needs_engineer_review":
+        errors.append("bundle evidence_status must remain needs_engineer_review")
+    if not isinstance(bundle_status.get("case_id"), str) or not bundle_status.get(
+        "case_id"
+    ).strip():
+        errors.append("bundle case_id must be a non-empty string")
+
+    display_fields = (
+        bundle_status.get("case_id"),
+        bundle_status.get("status"),
+        bundle_status.get("preflight_status"),
+        bundle_status.get("calculation_status"),
+        bundle_status.get("evidence_status"),
+    )
+    if not all(isinstance(value, str) for value in display_fields):
+        errors.append("bundle display status fields must be strings")
+    else:
+        display_result = StandaloneRunResult(
+            case_id=display_fields[0],
+            status=display_fields[1],  # type: ignore[arg-type]
+            preflight_status=display_fields[2],
+            calculation_status=display_fields[3],
+            evidence_status=display_fields[4],
+            project_use=False,
+            input_json_path=None,
+            standalone_input_path=None,
+            canonical_input_path=None,
+            latest_status_path=None,
+            report_dir=None,
+            report_index_path=None,
+            report_zip_path=None,
+            deterministic_report_zip_path=None,
+            warnings=(),
+            errors=(),
+        )
+        if bundle_index != _bundle_index_html(display_result):
+            errors.append("review bundle index does not match its validated statuses")
+        if bundle_readme != _bundle_readme(display_result):
+            errors.append("review bundle README does not match its validated statuses")
+
+    if isinstance(nested_report, dict):
+        expected_markdown = render_rectangular_design_report_markdown(nested_report)
+        expected_html = render_rectangular_design_report_html(nested_report)
+        if deterministic_markdown != expected_markdown:
+            errors.append("deterministic report Markdown does not match report JSON")
+        if deterministic_html != expected_html:
+            errors.append("deterministic report HTML does not match report JSON")
+    if summary.get("status") != bundle_status.get("status"):
+        errors.append("workflow summary status does not match bundle status")
+    for field in ("case_id", "preflight_status", "calculation_status", "evidence_status"):
+        if summary.get(field) != bundle_status.get(field):
+            errors.append(f"workflow summary {field} does not match bundle status")
+
+    if expected_result is not None:
+        expected_fields = {
+            "case_id": expected_result.case_id,
+            "status": expected_result.status,
+            "preflight_status": expected_result.preflight_status,
+            "calculation_status": expected_result.calculation_status,
+            "evidence_status": expected_result.evidence_status,
+        }
+        for field, expected in expected_fields.items():
+            if bundle_status.get(field) != expected:
+                errors.append(f"bundle status {field} does not match current result")
+            if summary.get(field) != expected:
+                errors.append(f"workflow summary {field} does not match current result")
+        if summary.get("warning_count") != len(expected_result.warnings):
+            errors.append("workflow summary warning_count does not match current result")
+
+    code_identity = metadata.get("code_identity")
+    if not isinstance(code_identity, dict):
+        errors.append("review metadata code_identity must be an object")
+    else:
+        _require_bundle_values(
+            code_identity,
+            {
+                "package_name": "sp63_core",
+                "requires_engineer_review": True,
+            },
+            "review metadata code identity",
+            errors,
+        )
+        _validate_bundle_build_identity(
+            code_identity,
+            expected_build_id=expected_build_id,
+            errors=errors,
+        )
+    return tuple(dict.fromkeys(errors))
+
+
+def _read_bundle_json(
+    archive: zipfile.ZipFile,
+    name: str,
+    errors: list[str],
+) -> dict[str, Any]:
+    try:
+        payload = json.loads(archive.read(name).decode("utf-8"))
+    except (KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        errors.append(f"review bundle JSON cannot be read: {name}: {exc}")
+        return {}
+    if not isinstance(payload, dict):
+        errors.append(f"review bundle JSON must contain an object: {name}")
+        return {}
+    return payload
+
+
+def _read_bundle_text(
+    archive: zipfile.ZipFile,
+    name: str,
+    errors: list[str],
+) -> str:
+    try:
+        return archive.read(name).decode("utf-8")
+    except (KeyError, UnicodeDecodeError) as exc:
+        errors.append(f"review bundle text cannot be read: {name}: {exc}")
+        return ""
+
+
+def _require_bundle_values(
+    payload: dict[str, Any],
+    expected_values: dict[str, Any],
+    label: str,
+    errors: list[str],
+) -> None:
+    for field, expected in expected_values.items():
+        actual = payload.get(field)
+        if type(actual) is not type(expected) or actual != expected:
+            errors.append(f"{label} {field} must equal {expected!r}")
+
+
+def _validate_bundle_build_identity(
+    code_identity: dict[str, Any],
+    *,
+    expected_build_id: str | None | object,
+    errors: list[str],
+) -> None:
+    actual_build_id = code_identity.get("build_id")
+    identity_status = code_identity.get("code_identity_status")
+    if expected_build_id is _EXPECTED_BUILD_ID_UNSET:
+        if identity_status == "recorded_from_launcher_requires_manifest_match":
+            if not isinstance(actual_build_id, str) or re.fullmatch(
+                r"wheel-sha256:[0-9a-f]{64}",
+                actual_build_id,
+            ) is None:
+                errors.append("recorded review bundle build_id is invalid")
+        elif identity_status in ("unavailable_open_question", "invalid_ignored"):
+            if actual_build_id is not None:
+                errors.append("review bundle unavailable build_id must be null")
+        else:
+            errors.append("review bundle code identity status is invalid")
+        return
+    if expected_build_id is None:
+        if actual_build_id is not None:
+            errors.append("review bundle unexpectedly records a build_id")
+        if identity_status not in ("unavailable_open_question", "invalid_ignored"):
+            errors.append("review bundle code identity must remain unavailable")
+        return
+    if re.fullmatch(r"wheel-sha256:[0-9a-f]{64}", str(expected_build_id)) is None:
+        errors.append("expected wheel build identity has an invalid format")
+        return
+    if identity_status != "recorded_from_launcher_requires_manifest_match":
+        errors.append("review bundle did not record the expected wheel identity")
+    if actual_build_id != str(expected_build_id).casefold():
+        errors.append("review bundle build_id does not match the expected wheel identity")
 
 
 def _bundle_privacy_errors(

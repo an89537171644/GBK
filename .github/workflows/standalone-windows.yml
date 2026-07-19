@@ -105,6 +105,38 @@ jobs:
         shell: cmd
         run: call "%STANDALONE_USER_PACKAGE%\01_START_HERE.cmd" --ci
 
+      - name: Reject stale installed build identity
+        shell: pwsh
+        run: |
+          $buildIdPath = Join-Path $env:STANDALONE_USER_PACKAGE `
+            ".venv\.gbk_build_id"
+          $originalBytes = [IO.File]::ReadAllBytes($buildIdPath)
+          $accepted = $false
+          try {
+            $invalidIdentity = "wheel-sha256:" + ("0" * 64) + `
+              [Environment]::NewLine
+            [IO.File]::WriteAllText(
+              $buildIdPath,
+              $invalidIdentity,
+              [Text.UTF8Encoding]::new($false)
+            )
+            $launcher = Join-Path $env:STANDALONE_USER_PACKAGE "02_OPEN_GBK.cmd"
+            $arguments = "/d /c call `"$launcher`" --ci"
+            $process = Start-Process -FilePath $env:ComSpec `
+              -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+            $accepted = $process.ExitCode -eq 0
+          }
+          finally {
+            [IO.File]::WriteAllBytes($buildIdPath, $originalBytes)
+          }
+          if ($accepted) {
+            throw "GUI launcher accepted a stale installed build identity"
+          }
+
+      - name: Build hidden engineer GUI on installed Python 3.11
+        shell: cmd
+        run: call "%STANDALONE_USER_PACKAGE%\02_OPEN_GBK.cmd" --ci
+
       - name: Prove failed staged reinstall preserves working environment
         shell: pwsh
         run: |
@@ -277,6 +309,6 @@ jobs:
       - name: Upload standalone review package
         uses: actions/upload-artifact@v4
         with:
-          name: standalone-windows-python311-oneclick
+          name: standalone-windows-python311-engineer-gui-draft
           path: standalone-windows-oneclick.zip
           if-no-files-found: error
