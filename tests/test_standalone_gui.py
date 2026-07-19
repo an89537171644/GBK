@@ -490,6 +490,34 @@ def test_public_bundle_validator_rejects_tampered_human_facing_files(
     assert any("report HTML" in error for error in errors)
 
 
+def test_public_bundle_validator_accepts_platform_crlf_renderings(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    result = run_standalone_beam_case(
+        parse_form_values(_form_values()),
+        tmp_path / "platform-newlines",
+    )
+    bundle = Path(result.report_zip_path or "")
+    with zipfile.ZipFile(bundle, "r") as archive:
+        replacements = {
+            name: archive.read(name)
+            .decode("utf-8")
+            .replace("\r\n", "\n")
+            .replace("\n", "\r\n")
+            for name in (
+                "index.html",
+                "README_REVIEW_BUNDLE.md",
+                "deterministic_report/report.md",
+                "deterministic_report/report.html",
+            )
+        }
+    _rewrite_review_bundle_text(bundle, replacements)
+
+    assert validate_standalone_review_bundle(bundle, expected_result=result) == ()
+
+
 def test_verify_gui_result_rejects_failed_result_even_if_old_report_exists(tmp_path):
     output_dir = tmp_path / "failed"
     output_dir.mkdir()

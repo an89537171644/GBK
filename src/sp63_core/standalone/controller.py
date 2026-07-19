@@ -1189,17 +1189,17 @@ def _review_bundle_semantic_errors(
             warnings=(),
             errors=(),
         )
-        if bundle_index != _bundle_index_html(display_result):
+        if not _matches_rendered_text(bundle_index, _bundle_index_html(display_result)):
             errors.append("review bundle index does not match its validated statuses")
-        if bundle_readme != _bundle_readme(display_result):
+        if not _matches_rendered_text(bundle_readme, _bundle_readme(display_result)):
             errors.append("review bundle README does not match its validated statuses")
 
     if isinstance(nested_report, dict):
         expected_markdown = render_rectangular_design_report_markdown(nested_report)
         expected_html = render_rectangular_design_report_html(nested_report)
-        if deterministic_markdown != expected_markdown:
+        if not _matches_rendered_text(deterministic_markdown, expected_markdown):
             errors.append("deterministic report Markdown does not match report JSON")
-        if deterministic_html != expected_html:
+        if not _matches_rendered_text(deterministic_html, expected_html):
             errors.append("deterministic report HTML does not match report JSON")
     if summary.get("status") != bundle_status.get("status"):
         errors.append("workflow summary status does not match bundle status")
@@ -1270,6 +1270,15 @@ def _read_bundle_text(
     except (KeyError, UnicodeDecodeError) as exc:
         errors.append(f"review bundle text cannot be read: {name}: {exc}")
         return ""
+
+
+def _matches_rendered_text(actual: str, expected: str) -> bool:
+    """Compare rendered text while allowing only the platform CRLF equivalent."""
+    if "\r" in actual.replace("\r\n", ""):
+        return False
+    if "\r" in expected.replace("\r\n", ""):
+        return False
+    return actual.replace("\r\n", "\n") == expected.replace("\r\n", "\n")
 
 
 def _require_bundle_values(
