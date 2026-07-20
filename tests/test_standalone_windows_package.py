@@ -41,7 +41,7 @@ def test_source_package_generates_beam_only_windows_skeleton(tmp_path):
     assert result.requires_engineer_review is True
     assert result.ml_included is False
     assert result.external_solver_required is False
-    assert result.script_count == 12
+    assert result.script_count == 13
     for relative_path in (
         "01_START_HERE.cmd",
         "ONE_CLICK_GUARD.ps1",
@@ -51,6 +51,7 @@ def test_source_package_generates_beam_only_windows_skeleton(tmp_path):
         "VERIFY_PACKAGE.cmd",
         "INSTALL_FROM_WHEEL.cmd",
         "INSTALL_FROM_SOURCE.cmd",
+        "02_OPEN_GBK.cmd",
         "RUN_INTERACTIVE.cmd",
         "RUN_JSON.cmd",
         "RUN_JSON_USER.cmd",
@@ -60,6 +61,7 @@ def test_source_package_generates_beam_only_windows_skeleton(tmp_path):
         "README_STANDALONE_WINDOWS.md",
         "docs/SCOPE.md",
         "docs/WINDOWS_INSTALL.md",
+        "docs/ENGINEER_GUI.md",
         "docs/USER_ACCEPTANCE_CHECKLIST.md",
         "standalone_manifest.json",
         "standalone_manifest.sha256",
@@ -104,7 +106,52 @@ def test_user_launchers_pause_but_automation_json_launcher_does_not(tmp_path):
     assert "pause" in start_here.casefold()
 
 
-def test_one_click_launcher_installs_runs_logs_and_opens_result(tmp_path):
+def test_engineer_gui_launcher_is_location_safe_verified_and_headless_testable(tmp_path):
+    wheel = _write_pure_wheel(tmp_path / "sp63_rc_ai-0.1.0-py3-none-any.whl")
+    output_dir = tmp_path / "package"
+    result = build_standalone_windows_package(output_dir, wheel)
+
+    launcher = (output_dir / "02_OPEN_GBK.cmd").read_text(encoding="utf-8")
+    manifest = json.loads((output_dir / "standalone_manifest.json").read_text("utf-8"))
+    manifest_paths = {record["relative_path"] for record in manifest["files"]}
+
+    assert "%~dp0" in launcher
+    assert "VERIFY_PACKAGE.cmd" in launcher
+    assert launcher.index("VERIFY_PACKAGE.cmd") < launcher.index("APP_PYTHON=")
+    assert ".gbk_build_id" in launcher
+    assert 'set /p "GBK_BUILD_ID="' in launcher
+    assert ".venv\\Scripts\\pythonw.exe" in launcher
+    assert "-m sp63_core.standalone.gui" in launcher
+    assert "--headless-smoke" in launcher
+    assert "--exercise-run" in launcher
+    assert launcher.index(":ci_smoke") < launcher.index("--exercise-run")
+    assert "--self-check" not in launcher
+    assert "GUI_LAUNCH_LOG.txt" in launcher
+    assert "--output-root" in launcher
+    assert f"EXPECTED_BUILD_ID=wheel-sha256:{result.wheel_sha256}" in launcher
+    assert "$actual -cne $env:EXPECTED_BUILD_ID" in launcher
+    assert ":build_identity_failed" in launcher
+    assert launcher.index("$actual -cne $env:EXPECTED_BUILD_ID") < launcher.index(
+        'start "" "%APP_PYTHONW%"'
+    )
+    assert 'if "%CI_MODE%"=="1" goto :ci_smoke' in launcher
+    assert 'if "%CI_MODE%"=="1" (' not in launcher
+    assert 'set "RC=%ERRORLEVEL%"' not in launcher
+    assert 'if errorlevel 1 (set "RC=2") else (set "RC=0")' in launcher
+    assert "02_OPEN_GBK.cmd" in manifest_paths
+
+    for installer_name in ("INSTALL_FROM_WHEEL.cmd", "INSTALL_FROM_SOURCE.cmd"):
+        installer = (output_dir / installer_name).read_text(encoding="utf-8")
+        assert "--headless-smoke" in installer
+        assert "-m sp63_core.standalone.gui" in installer
+        assert "tkinter.Tcl()" not in installer
+        assert "installer_gui_smoke" in installer
+        assert installer.index("--headless-smoke") < installer.index(
+            ".gbk_build_id.tmp"
+        )
+
+
+def test_one_click_launcher_installs_runs_logs_and_opens_engineer_gui(tmp_path):
     wheel = _write_pure_wheel(tmp_path / "sp63_rc_ai-0.1.0-py3-none-any.whl")
     output_dir = tmp_path / "package"
     build_standalone_windows_package(output_dir, wheel)
@@ -119,18 +166,17 @@ def test_one_click_launcher_installs_runs_logs_and_opens_result(tmp_path):
     assert "INSTALLATION_LOG.txt" in worker
     assert "EXAMPLE_RUN_LOG.txt" in worker
     assert "standalone_index.html" in worker
-    assert 'start "" "%RESULT_PATH%"' in worker
+    assert 'call "%ROOT%02_OPEN_GBK.cmd" --from-install' in worker
+    assert 'call "%ROOT%02_OPEN_GBK.cmd" --ci' in worker
+    assert worker.index("VERIFY_ONE_CLICK_RESULT.ps1") < worker.index("02_OPEN_GBK.cmd")
     assert 'if /I "%~1"=="--ci"' in launcher
-    assert 'if "%CI_MODE%"=="0" pause' in launcher
+    assert 'if "%CI_MODE%"=="0" if not "%FINAL_RC%"=="0" pause' in launcher
     assert "ONE_CLICK_GUARD.ps1" in launcher
     assert "Threading.Mutex" in guard
     assert "WaitOne(0" in guard
     assert "AbandonedMutexException" in guard
     assert ".gbk_start_lock" not in launcher + guard + worker
     assert "VERIFY_ONE_CLICK_RESULT.ps1" in worker
-    assert worker.index("VERIFY_ONE_CLICK_RESULT.ps1") < worker.index(
-        'start "" "%RESULT_PATH%"'
-    )
     assert "project_use=false" in worker
     assert '$status.status -ne "review_required"' in result_verifier
     assert '$status.calculation_status -ne "outside_applicability"' in result_verifier
@@ -157,7 +203,7 @@ def test_manifest_hashes_every_payload_file_and_has_own_sha256(tmp_path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert manifest["report_type"] == "standalone_windows_package_manifest"
-    assert manifest["package_format_version"] == "1.1"
+    assert manifest["package_format_version"] == "1.2"
     assert manifest["status"] == "pass"
     assert manifest["element_type"] == "rectangular_beam"
     assert manifest["project_use"] is False
@@ -210,9 +256,12 @@ def test_valid_pure_python_wheel_is_copied_and_recorded(tmp_path):
     checklist = (output_dir / "docs" / "USER_ACCEPTANCE_CHECKLIST.md").read_text(
         encoding="utf-8"
     )
+    gui_guide = (output_dir / "docs" / "ENGINEER_GUI.md").read_text(encoding="utf-8")
     assert "сам выполнит установку" in install_doc
     assert "`INSTALLATION_LOG.txt`" in install_doc
     assert "ручного ввода команд" in checklist
+    assert "`02_OPEN_GBK.cmd`" in gui_guide
+    assert "не содержит расчётных формул" in gui_guide
     for launcher_name in ("RUN_INTERACTIVE.cmd", "RUN_JSON.cmd"):
         launcher = (output_dir / launcher_name).read_text(encoding="utf-8")
         assert ".gbk_build_id" in launcher
@@ -224,9 +273,11 @@ def test_source_launchers_mark_build_identity_as_unverified(tmp_path):
 
     source_installer = (tmp_path / "INSTALL_FROM_SOURCE.cmd").read_text(encoding="utf-8")
     wheel_installer = (tmp_path / "INSTALL_FROM_WHEEL.cmd").read_text(encoding="utf-8")
+    gui_launcher = (tmp_path / "02_OPEN_GBK.cmd").read_text(encoding="utf-8")
     assert "echo source-unverified" in source_installer
     assert "EXPECTED_BUILD_ID=wheel-sha256:WHEEL_SHA256_NOT_AVAILABLE" in wheel_installer
     assert "echo %EXPECTED_BUILD_ID%" in wheel_installer
+    assert "EXPECTED_BUILD_ID=source-unverified" in gui_launcher
     for launcher_name in ("RUN_INTERACTIVE.cmd", "RUN_JSON.cmd"):
         launcher = (tmp_path / launcher_name).read_text(encoding="utf-8")
         assert ".gbk_build_id" in launcher
@@ -435,6 +486,8 @@ def test_generated_docs_define_cover_as_program_input_without_normative_approval
     assert "нормативная интерпретация остаётся на инженерной проверке" in scope
     assert "`moment_kNm` — неотрицательный модуль" in scope
     assert "его знак не выбирает грань" in scope
+    assert "`shear_kN` — программный неотрицательный модуль |Q|" in scope
+    assert "не утверждает нормативную знаковую конвенцию" in scope
     assert "`tension_face` явно задаётся как `local_y_min` или `local_y_max`" in scope
     assert "сопоставление локальных осей и граней пока не утверждено" in scope
 
@@ -443,11 +496,16 @@ def test_generated_install_docs_define_complete_json_contract_and_online_scope(t
     build_standalone_windows_package(tmp_path)
     readme = (tmp_path / "README_STANDALONE_WINDOWS.md").read_text(encoding="utf-8")
     install = (tmp_path / "docs" / "WINDOWS_INSTALL.md").read_text(encoding="utf-8")
+    gui_guide = (tmp_path / "docs" / "ENGINEER_GUI.md").read_text(encoding="utf-8")
 
     assert "не офлайн- или самодостаточный" in readme
     assert "обязательно подключение к интернету" in install
     assert "`01_START_HERE.cmd`" in readme
     assert "`01_START_HERE.cmd`" in install
+    assert "`02_OPEN_GBK.cmd`" in readme
+    assert "`02_OPEN_GBK.cmd`" in install
+    assert "local_y_min" in gui_guide
+    assert "local_y_max" in gui_guide
     assert "намеренно остановится" in readme
     assert "wheel отсутствует" in install
     checklist = (tmp_path / "docs" / "USER_ACCEPTANCE_CHECKLIST.md").read_text(
@@ -473,7 +531,7 @@ def test_generated_install_docs_define_complete_json_contract_and_online_scope(t
     assert "`6`, `8`, `10`, `12`" in install
     assert "только демонстрационные исходные данные" in install
     assert "не коэффициенты" in install
-    assert "отдельный каталог результата" in install
+    assert "автоматически создаёт отдельный каталог `run-*`" in install
     assert "не помещайте" in install
     assert "`pass` отдельной технической проверки" in install
     assert "standalone_review_metadata.json" in install
@@ -482,6 +540,11 @@ def test_generated_install_docs_define_complete_json_contract_and_online_scope(t
     assert "recorded_from_launcher_requires_manifest_match" in install
     assert "standalone_index.html" in install
     assert "standalone_review_bundle.zip" in install
+    assert "GUI_LAUNCH_LOG.txt" in install
+    assert "GUI_LAUNCH_LOG.txt" in checklist
+    assert "только диагностическими/CI-маршрутами" in checklist
+    assert "после повторной" in checklist
+    assert "защитной проверки" in checklist
 
 
 def test_repository_windows_workflow_is_pr_gated_and_checks_review_bundle():
@@ -500,7 +563,11 @@ def test_repository_windows_workflow_is_pr_gated_and_checks_review_bundle():
     assert '01_START_HERE.cmd" --ci' in workflow
     assert "INSTALLATION_LOG.txt" in workflow
     assert "EXAMPLE_RUN_LOG.txt" in workflow
-    assert "standalone-windows-python311-oneclick" in workflow
+    assert "standalone-windows-python311-engineer-gui-draft" in workflow
+    assert '02_OPEN_GBK.cmd" --ci' in workflow
+    assert "Reject stale installed build identity" in workflow
+    assert "GUI launcher accepted a stale installed build identity" in workflow
+    assert "WriteAllBytes($buildIdPath, $originalBytes)" in workflow
     assert "проверка ЖБК" in workflow
     assert "STANDALONE_USER_PACKAGE" in workflow
     assert 'src/sp63_core/**' in workflow
@@ -515,10 +582,12 @@ def test_generated_user_documents_are_russian(tmp_path):
     build_standalone_windows_package(tmp_path)
     readme = (tmp_path / "README_STANDALONE_WINDOWS.md").read_text(encoding="utf-8")
     install = (tmp_path / "docs" / "WINDOWS_INSTALL.md").read_text(encoding="utf-8")
+    gui_guide = (tmp_path / "docs" / "ENGINEER_GUI.md").read_text(encoding="utf-8")
     checklist = (tmp_path / "docs" / "USER_ACCEPTANCE_CHECKLIST.md").read_text(
         encoding="utf-8"
     )
 
     assert "Автономная исследовательская версия" in readme
     assert "Установка в Windows" in install
+    assert "Инженерный интерфейс автономной версии" in gui_guide
     assert "Контрольный лист пользовательской приёмки" in checklist

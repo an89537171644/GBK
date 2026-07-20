@@ -59,7 +59,8 @@ reports/release_candidate_v0_9/
 - external validation sample is limited;
 - ML advisory-only;
 - no project use approval;
-- no full GUI yet.
+- no broad production GUI; a narrow standalone Windows research interface is
+  available for the rectangular-beam short route only.
 
 ## Safety
 

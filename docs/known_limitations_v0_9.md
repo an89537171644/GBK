@@ -43,7 +43,9 @@
 - v0.9 release candidate package output is evidence packaging only and does not
   publish a release or approve project use;
 - static HTML reports and launcher scripts are review conveniences only;
-- no full GUI, web server, or desktop app is implemented;
+- no broad production GUI or web server is implemented; Issue #134 adds only a
+  narrow Tkinter desktop trial for the standalone rectangular-beam Windows
+  workflow, with `project_use=false` and mandatory engineering review;
 - v1.0 readiness remains blocked by material verification, real external
   validation, packaging/installer governance, and ML production governance;
 - no design certification is implied by any report or audit output.

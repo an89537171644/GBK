@@ -1,5 +1,6 @@
 """Engineering report export for rectangular design results."""
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from html import escape
 from typing import Any
@@ -85,8 +86,8 @@ def build_rectangular_design_report(
 
 
 def render_rectangular_design_report_markdown(result: Any) -> str:
-    """Render a rectangular design result as Markdown."""
-    data = _build_json_data(result)
+    """Render a rectangular design result or its canonical report mapping."""
+    data = dict(result) if isinstance(result, Mapping) else _build_json_data(result)
     lines: list[str] = [
         "# Rectangular Design Calculation Report",
         "",

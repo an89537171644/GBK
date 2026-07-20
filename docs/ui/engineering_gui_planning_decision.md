@@ -2,22 +2,50 @@
 
 requires_engineer_review = true
 
+project_use = false
+
+## 2026-07-19 Narrow Superseding Decision
+
+User UAT of the standalone Windows package on 2026-07-19 found the console
+workflow inconvenient for engineering use and requested an engineer-oriented
+interface. Issue #134 therefore selects:
+
+```text
+desktop_tkinter
+```
+
+This selection is effective only for the Windows research trial of the
+standalone rectangular-beam workflow. It supersedes K64 only where K64
+postponed `desktop_tkinter` for that narrow workflow. K64 remains the historical
+technology decision for the broader engineering workflow and for options not
+covered by Issue #134.
+
+Source: `UAT-2026-07-19-GUI-01`, user feedback in the project chat dated
+2026-07-19. Status: `CONFIRMED` as a software-usability requirement. Architecture
+impact: add a thin local window over the existing standalone controller; keep
+the CLI/JSON and static-report paths. Engineering review remains required for
+field meaning, applicability, status wording, and every calculation result.
+
+The effective decision is specified in
+`docs/standalone/ENGINEER_GUI_DECISION.md`. It does not authorize formula,
+material, coefficient, normative-reference, or applicability changes.
+
 ## Purpose
 
-K64 records the technology decision for a future minimal engineering GUI or
-desktop wrapper. It is a planning artifact only. It does not implement a UI,
-does not add UI dependencies, and does not change the deterministic SP63
+K64 recorded the historical technology decision for a future minimal
+engineering GUI or desktop wrapper. It was a planning artifact only. It did not
+implement a UI, add UI dependencies, or change the deterministic SP63
 calculation core.
 
 ## Decision
 
-Recommended option:
+Historical K64 recommended option:
 
 ```text
 cli_first_with_static_html_reports
 ```
 
-The current project already produces CLI-driven Markdown, HTML, JSON,
+At the time of K64, the project already produced CLI-driven Markdown, HTML, JSON,
 manifest, ZIP, workflow, material-verification, external-validation, and ML
 readiness outputs. A future wrapper should therefore start from the CLI and
 static report packages instead of adding a heavy UI runtime.
@@ -42,7 +70,7 @@ static report packages instead of adding a heavy UI runtime.
 - `fastapi_web_backend`
 - `electron_wrapper`
 
-Heavy UI options are postponed. K64 does not add Streamlit, Gradio, Flask,
+Heavy UI options were postponed. K64 did not add Streamlit, Gradio, Flask,
 FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras.
 
 ## Required Backend Commands
@@ -65,7 +93,7 @@ FastAPI, PyQt, PySide, Tkinter, Electron, PyTorch, TensorFlow, or Keras.
 - Material verification must not update the catalog automatically.
 - External validation must be shown separately from synthetic benchmark results.
 
-## Recommended Next Step
+## Historical Recommended Next Step
 
 ```text
 K65 - static workflow launcher and HTML report index
@@ -102,7 +130,9 @@ not implement UI or perform design calculations.
 
 ## Limitations
 
-K64 does not implement an interface, does not certify design decisions, does
-not approve ML for project use, and does not alter formulas, material values,
-reinforcement selection, validation gates, report generation logic, or ML
-safety rules.
+K64 did not implement an interface, certify design decisions, approve ML for
+project use, or alter formulas, material values, reinforcement selection,
+validation gates, report generation logic, or ML safety rules. Issue #134 adds
+only the narrow Tkinter standalone wrapper described above. It does not approve
+ML for project use or alter formulas, material values, reinforcement selection,
+validation gates, report generation logic, or ML safety rules.
