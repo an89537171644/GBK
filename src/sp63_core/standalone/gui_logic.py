@@ -139,6 +139,22 @@ _REPORT_FIELDS = {
 }
 _NESTED_REPORT_FIELDS = (_REPORT_FIELDS - {"command", "source", "report"}) | {"protocol"}
 _PROTOCOL_FIELDS = _NESTED_REPORT_FIELDS - {"limitations", "protocol", "report_type"}
+_NO_LONGITUDINAL_SELECTION_WARNING = (
+    "no passing diagnostic longitudinal reinforcement options; "
+    "public ULS bending remains outside applicability"
+)
+_NO_TRANSVERSE_SELECTION_WARNING = "no passing transverse reinforcement options"
+_ACTIONABLE_SELECTION_WARNINGS = frozenset(
+    (_NO_LONGITUDINAL_SELECTION_WARNING, _NO_TRANSVERSE_SELECTION_WARNING)
+)
+_DERIVED_FAILED_RESULT_GATE_MESSAGES = frozenset(
+    (
+        "Общий статус fail не разрешает открывать или передавать результат.",
+        "Расчётный маршрут вернул ошибки.",
+        "Отсутствует верхнеуровневый HTML-отчёт.",
+        "Отсутствует архив для инженерной рецензии.",
+    )
+)
 
 
 def parse_decimal(text: object, field_label: str) -> float:
@@ -724,6 +740,60 @@ def verify_gui_result(
     return tuple(dict.fromkeys(errors))
 
 
+def blocked_result_messages(
+    result: StandaloneRunResult,
+    gate_errors: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Prioritize an actionable calculation cause without relaxing the gate.
+
+    A failed controller result intentionally has no public HTML or ZIP.  Those
+    missing paths are consequences, not the primary user-facing cause.  Safety
+    violations unrelated to that expected cleanup remain visible unchanged.
+    """
+    if result.status != "fail":
+        return tuple(dict.fromkeys(gate_errors))
+
+    actionable_warnings = tuple(
+        warning
+        for warning in result.warnings
+        if warning in _ACTIONABLE_SELECTION_WARNINGS
+    )
+    messages = [
+        error
+        for error in gate_errors
+        if error not in _DERIVED_FAILED_RESULT_GATE_MESSAGES
+    ]
+    messages.extend(_translate_result_detail(warning) for warning in actionable_warnings)
+
+    bundle_protocol_error = (
+        "standalone review bundle failed: "
+        "deterministic public report protocol must be an object"
+    )
+    for error in result.errors:
+        if actionable_warnings and error == bundle_protocol_error:
+            continue
+        messages.append(_translate_result_detail(error))
+
+    if actionable_warnings:
+        messages.append(
+            "Отсутствие варианта в текущем ограниченном диагностическом переборе "
+            "не доказывает невозможность расчётного решения и не является "
+            "рекомендацией по изменению размеров или армирования."
+        )
+        messages.append(
+            "Проверьте корректность исходных данных и ограничения диагностического "
+            "перебора; передайте случай инженеру. Новый запуск выполняйте только "
+            "после обоснованного изменения данных."
+        )
+    if not messages:
+        messages.append("Расчётный маршрут завершился без доступного результата.")
+    messages.append(
+        "HTML-отчёт и пакет рецензента не сформированы и остаются заблокированными; "
+        "применение в проекте запрещено."
+    )
+    return tuple(dict.fromkeys(messages))
+
+
 def verify_review_bundle(
     result: StandaloneRunResult,
     bundle_path: Path,
@@ -1109,6 +1179,21 @@ def _translate_result_detail(message: str) -> str:
         ): (
             "Материалы готовности ML отсутствуют; сформирован только "
             "детерминированный указатель маршрута."
+        ),
+        _NO_LONGITUDINAL_SELECTION_WARNING: (
+            "Не выбран ни один проходящий диагностический вариант продольной "
+            "арматуры; публичная проверка изгиба остаётся вне подтверждённой "
+            "области применимости."
+        ),
+        _NO_TRANSVERSE_SELECTION_WARNING: (
+            "Не выбран ни один проходящий диагностический вариант поперечной "
+            "арматуры."
+        ),
+        (
+            "standalone review bundle failed: deterministic public report protocol "
+            "must be an object"
+        ): (
+            "Публичный пакет не сформирован: полный расчётный протокол отсутствует."
         ),
     }
     if message in known:

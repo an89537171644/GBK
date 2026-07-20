@@ -16,6 +16,11 @@ the interface and add a simpler graphical representation. Status: `CONFIRMED`
 as a software-usability requirement; all engineering interpretation remains
 subject to review.
 
+Additional source: `UAT-2026-07-20-GUI-03`, user screenshot of a failed
+diagnostic selection where derived missing-HTML/ZIP messages obscured the
+available selection reason. Status: `CONFIRMED` as a presentation defect; the
+engineering interpretation remains subject to review.
+
 ### Launch and usability
 
 - [ ] After a successful standalone installation, the engineer can start the
@@ -85,6 +90,13 @@ subject to review.
 - [ ] Any field edit, new run, failed run, or validation error disables all
       actions belonging to the previous result and clears the summary and
       conditional diagram.
+- [ ] If no diagnostic reinforcement option passes the existing selection,
+      the UI shows that known non-normative reason before derived missing-file
+      consequences, while the HTML/ZIP, summary, diagram, and file actions stay
+      blocked.
+- [ ] The failed-selection explanation does not assert that the section is
+      structurally unusable, does not prescribe a replacement dimension or
+      reinforcement, and does not mask independent safety/integrity failures.
 - [ ] The launcher rejects a `.gbk_build_id` that does not match the wheel
       identity recorded by the current package.
 - [ ] Each run uses a separate managed result directory and does not overwrite

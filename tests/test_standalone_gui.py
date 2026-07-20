@@ -18,6 +18,7 @@ from sp63_core.standalone import (
 )
 from sp63_core.standalone.gui import EngineerGui
 from sp63_core.standalone.gui_logic import (
+    blocked_result_messages,
     build_diagram_model,
     load_gui_result_summary,
     next_output_dir,
@@ -551,6 +552,69 @@ def test_verify_gui_result_rejects_failed_result_even_if_old_report_exists(tmp_p
 
     assert errors
     assert any("fail" in error.lower() for error in errors)
+
+
+def test_uat_failed_selection_prioritizes_actionable_reason(tmp_path):
+    input_data = parse_form_values(
+        _form_values(
+            b_mm="100",
+            stirrup_rebar_class="A400",
+            moment_kNm="150",
+            shear_kN="80",
+        )
+    )
+    output_dir = tmp_path / "uat-narrow-beam"
+
+    result = run_standalone_beam_case(input_data, output_dir)
+    gate_errors = verify_gui_result(result, output_dir)
+    messages = blocked_result_messages(result, gate_errors)
+    visible_text = "\n".join(messages).casefold()
+
+    assert result.status == "fail"
+    assert gate_errors
+    assert "не выбран ни один проходящий диагностический вариант" in visible_text
+    assert "вне подтверждённой области применимости" in visible_text
+    assert "отсутствует верхнеуровневый html-отчёт" not in visible_text
+    assert "отсутствует архив для инженерной рецензии" not in visible_text
+    assert "protocol must be an object" not in visible_text
+    assert "применение в проекте запрещено" in visible_text
+    assert "не доказывает невозможность расчётного решения" in visible_text
+    assert "не является рекомендацией" in visible_text
+
+
+def test_failed_selection_message_does_not_mask_safety_violation(tmp_path):
+    output_dir = tmp_path / "failed"
+    output_dir.mkdir()
+    failed = replace(
+        _run_result(None),
+        status="fail",
+        project_use=True,
+        errors=(
+            "standalone review bundle failed: "
+            "deterministic public report protocol must be an object",
+        ),
+        warnings=(
+            "no passing diagnostic longitudinal reinforcement options; "
+            "public ULS bending remains outside applicability",
+        ),
+    )
+
+    gate_errors = verify_gui_result(failed, output_dir)
+    messages = blocked_result_messages(failed, gate_errors)
+
+    assert "project_use=false" in messages[0]
+
+
+def test_missing_artifacts_remain_visible_for_exposable_result(tmp_path):
+    output_dir = tmp_path / "missing"
+    output_dir.mkdir()
+    result = _run_result(None)
+
+    gate_errors = verify_gui_result(result, output_dir)
+
+    assert blocked_result_messages(result, gate_errors) == gate_errors
+    assert any("HTML-отчёт" in message for message in gate_errors)
+    assert any("архив" in message.casefold() for message in gate_errors)
 
 
 @pytest.mark.parametrize("stale_kind", ("missing", "outside"))

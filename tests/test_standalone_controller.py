@@ -69,6 +69,36 @@ def test_controller_builds_public_review_package_without_ml(tmp_path):
     assert not (tmp_path / "workflow" / "ml_readiness").exists()
 
 
+def test_controller_preserves_actionable_reason_for_failed_diagnostic_selection(
+    tmp_path,
+):
+    result = run_standalone_beam_case(
+        beam_input(b_mm=100, stirrup_rebar_class="A400"),
+        tmp_path,
+    )
+
+    assert result.status == "fail"
+    assert result.calculation_status == "outside_applicability"
+    assert result.project_use is False
+    assert any(
+        "no passing diagnostic longitudinal reinforcement options" in warning
+        for warning in result.warnings
+    )
+    assert any("protocol must be an object" in error for error in result.errors)
+    assert result.report_dir is None
+    assert result.report_index_path is None
+    assert result.report_zip_path is None
+    assert result.deterministic_report_zip_path is None
+    assert not (tmp_path / "workflow").exists()
+
+    latest_status = json.loads(
+        Path(result.latest_status_path or "").read_text(encoding="utf-8")
+    )
+    assert latest_status["project_use"] is False
+    assert latest_status["report_index_path"] is None
+    assert latest_status["report_zip_path"] is None
+
+
 def test_controller_writes_canonical_internal_units(tmp_path):
     result = run_standalone_beam_case(
         beam_input(moment_kNm=12.5, shear_kN=7.25),

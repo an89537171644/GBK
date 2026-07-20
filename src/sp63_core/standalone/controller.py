@@ -49,6 +49,14 @@ DIAGNOSTIC_SELECTION_WARNING = (
     "Any selected longitudinal or transverse reinforcement scheme and any local "
     "'pass' are diagnostic proposals only, not an approved design decision."
 )
+NO_LONGITUDINAL_SELECTION_WARNING = (
+    "no passing diagnostic longitudinal reinforcement options; "
+    "public ULS bending remains outside applicability"
+)
+NO_TRANSVERSE_SELECTION_WARNING = "no passing transverse reinforcement options"
+_ACTIONABLE_REPORT_WARNINGS = frozenset(
+    (NO_LONGITUDINAL_SELECTION_WARNING, NO_TRANSVERSE_SELECTION_WARNING)
+)
 SLAB_STRIP_UNAVAILABLE_WARNING = (
     "Slab-strip mode is unavailable pending a separate engineering specification."
 )
@@ -237,6 +245,14 @@ def run_standalone_beam_case(
                 errors.append("standalone public report must contain a JSON object")
             else:
                 report_payload = loaded_report
+                warnings = tuple(
+                    dict.fromkeys(
+                        (
+                            *warnings,
+                            *_standalone_report_diagnostic_warnings(report_payload),
+                        )
+                    )
+                )
                 errors.extend(
                     f"standalone public report contract: {error}"
                     for error in public_report_contract_errors(report_payload)
@@ -424,6 +440,22 @@ def _design_input_mapping(design_input: RectangularDesignInput) -> dict[str, Any
         "check_deflection",
     )
     return {field: data[field] for field in allowed_fields}
+
+
+def _standalone_report_diagnostic_warnings(
+    report_payload: dict[str, Any],
+) -> tuple[str, ...]:
+    """Expose only known non-normative selection outcomes to the UI layer."""
+    raw_warnings = report_payload.get("warnings")
+    if not isinstance(raw_warnings, list):
+        return ()
+    return tuple(
+        dict.fromkeys(
+            warning
+            for warning in raw_warnings
+            if type(warning) is str and warning in _ACTIONABLE_REPORT_WARNINGS
+        )
+    )
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:

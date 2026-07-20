@@ -36,6 +36,7 @@ from sp63_core.standalone.gui_logic import (
     FORM_FIELDS,
     GuiDiagramModel,
     GuiResultSummary,
+    blocked_result_messages,
     build_diagram_model,
     load_gui_result_summary,
     load_gui_result_summary_from_bundle,
@@ -731,7 +732,10 @@ class EngineerGui:
         self.run_button.configure(state="normal", text="Выполнить исследовательскую проверку")
         gate_errors = verify_gui_result(result, output_dir)
         if gate_errors:
-            self._block_result(gate_errors)
+            self._block_result(
+                blocked_result_messages(result, gate_errors),
+                result=result if result.status == "fail" else None,
+            )
             return
 
         try:
@@ -767,7 +771,12 @@ class EngineerGui:
         ):
             button.configure(state="normal")
 
-    def _block_result(self, errors: tuple[str, ...]) -> None:
+    def _block_result(
+        self,
+        errors: tuple[str, ...],
+        *,
+        result: StandaloneRunResult | None = None,
+    ) -> None:
         self._current_result = None
         self._current_output_dir = None
         self._current_input = None
@@ -776,28 +785,53 @@ class EngineerGui:
         self.copy_summary_button.configure(state="disabled")
         self._render_summary(None)
         self._redraw_diagram()
-        self.result_title.configure(
-            text="Результат заблокирован защитной проверкой",
-            foreground="#9f1d20",
-        )
-        blocked_statuses = {
-            "overall": "Защитная проверка результата: НЕ ПРОЙДЕНА",
-            "preflight": "Статусы заблокированного результата не считаются доверенными",
-            "calculation": "Файлы расчётного маршрута не открываются",
-            "evidence": "Требуется разбор причины блокировки",
-            "project": (
-                "Применение в проекте ЗАПРЕЩЕНО; целостность результата не подтверждена"
-            ),
-            "review": "Требуется инженерная и техническая проверка",
-        }
+        calculation_failure = result is not None and result.status == "fail"
+        if calculation_failure:
+            view = status_view_model(result)
+            self.result_title.configure(
+                text="Диагностический результат не сформирован",
+                foreground="#9f1d20",
+            )
+            blocked_statuses = {
+                "overall": view.overall,
+                "preflight": view.preflight,
+                "calculation": view.calculation,
+                "evidence": view.evidence,
+                "project": view.project_use_text,
+                "review": view.review_text,
+            }
+            dialog_title = "ЖБК — результат не сформирован"
+            dialog_intro = (
+                "Расчётный маршрут не сформировал доступный результат. "
+                "Файлы остаются заблокированными:"
+            )
+        else:
+            self.result_title.configure(
+                text="Результат заблокирован защитной проверкой",
+                foreground="#9f1d20",
+            )
+            blocked_statuses = {
+                "overall": "Защитная проверка результата: НЕ ПРОЙДЕНА",
+                "preflight": (
+                    "Статусы заблокированного результата не считаются доверенными"
+                ),
+                "calculation": "Файлы расчётного маршрута не открываются",
+                "evidence": "Требуется разбор причины блокировки",
+                "project": (
+                    "Применение в проекте ЗАПРЕЩЕНО; целостность результата "
+                    "не подтверждена"
+                ),
+                "review": "Требуется инженерная и техническая проверка",
+            }
+            dialog_title = "ЖБК — результат заблокирован"
+            dialog_intro = "Файлы результата не открываются и не передаются:"
         for name, value in blocked_statuses.items():
             self.status_variables[name].set(value)
         self._set_details(errors)
         self.result_notebook.select(self.messages_tab)
         self.messagebox.showerror(
-            "ЖБК — результат заблокирован",
-            "Файлы результата не открываются и не передаются:\n\n"
-            + "\n".join(f"• {error}" for error in errors),
+            dialog_title,
+            dialog_intro + "\n\n" + "\n".join(f"• {error}" for error in errors),
             parent=self.root,
         )
 
@@ -1359,6 +1393,40 @@ def main(argv: list[str] | None = None) -> int:
                     raise RuntimeError("GUI did not clear a stale result after input editing")
                 if str(app.open_report_button.cget("state")) != "disabled":
                     raise RuntimeError("GUI left stale result actions enabled")
+
+                app.variables["b_mm"].set("100")
+                app.variables["moment_kNm"].set("150")
+                app.variables["stirrup_rebar_class"].set("A400")
+                app._start_run()
+                failure_deadline = time.monotonic() + 60.0
+                while app._running and time.monotonic() < failure_deadline:
+                    root.update()
+                    time.sleep(0.01)
+                root.update()
+                if app._running:
+                    raise TimeoutError("GUI failed-selection smoke exceeded 60 seconds")
+                if app._current_result is not None or app._current_summary is not None:
+                    raise RuntimeError("GUI exposed a failed diagnostic selection")
+                if str(app.result_title.cget("text")) != (
+                    "Диагностический результат не сформирован"
+                ):
+                    raise RuntimeError("GUI did not distinguish a failed calculation")
+                failure_text = app.details.get("1.0", "end").casefold()
+                if "не выбран ни один проходящий диагностический вариант" not in failure_text:
+                    raise RuntimeError("GUI did not explain the failed diagnostic selection")
+                if "отсутствует верхнеуровневый html-отчёт" in failure_text:
+                    raise RuntimeError("GUI prioritized a derived missing-report message")
+                if str(app.open_report_button.cget("state")) != "disabled":
+                    raise RuntimeError("GUI enabled report actions after a failed selection")
+                for action_button in (
+                    app.open_folder_button,
+                    app.export_button,
+                    app.copy_summary_button,
+                ):
+                    if str(action_button.cget("state")) != "disabled":
+                        raise RuntimeError(
+                            "GUI enabled another action after a failed selection"
+                        )
             root.destroy()
             mode = "calculation" if args.exercise_run else "window"
             print(f"engineer_gui_headless_smoke=pass; mode={mode}")
