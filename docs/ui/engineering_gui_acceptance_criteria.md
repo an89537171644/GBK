@@ -11,6 +11,11 @@ the standalone package on 2026-07-19. Status: `CONFIRMED` as a software-usabilit
 requirement. These criteria apply only to the rectangular-beam Windows research
 trial and require user and engineering review.
 
+Additional source: `UAT-2026-07-20-GUI-02`, request to show results directly in
+the interface and add a simpler graphical representation. Status: `CONFIRMED`
+as a software-usability requirement; all engineering interpretation remains
+subject to review.
+
 ### Launch and usability
 
 - [ ] After a successful standalone installation, the engineer can start the
@@ -27,6 +32,8 @@ trial and require user and engineering review.
 - [ ] Missing Tkinter or a startup failure produces a readable safe error and
       does not silently run a calculation or switch GUI technologies.
 - [ ] CLI/JSON launchers remain available for diagnosis and automation.
+- [ ] The run action remains outside the scrolled input area, while the result
+      area provides separate Summary, Conditional Diagram, and Messages tabs.
 
 ### Input boundary
 
@@ -54,6 +61,21 @@ trial and require user and engineering review.
       unambiguous Russian equivalents.
 - [ ] The UI never presents `pass` from an individual check as overall approval,
       certified capacity, or permission for project use.
+- [ ] The embedded summary is loaded only from the validated top-level public
+      review ZIP and is bound to the exact visible input used by the current run.
+- [ ] The summary exposes only user-unit inputs, public statuses, diagnostic
+      reinforcement proposal strings, disabled serviceability checks, and
+      mandatory safety labels. It does not expose bending capacity,
+      utilization, internal intermediate values, material properties, or
+      normative coefficients.
+- [ ] A local shear `pass` is explicitly labelled as a local technical status,
+      not a project or overall approval.
+- [ ] The graphical part of the conditional diagram shows only `b × h`, the
+      programming meaning of `cover`, stirrup diameter, local-face labels, and
+      textual `|M|`/`|Q|`. Checked diagnostic reinforcement proposals may appear
+      beside it as text; the UI does not draw bar layers or claim a layout.
+- [ ] The diagram continuously states that it is not to scale, is not a working
+      drawing, and does not establish the physical mapping of local faces.
 - [ ] `fail`, `outside_applicability`, and `review_required` remain visible and
       are not converted to a positive status.
 - [ ] Only after fail-closed revalidation of the current visible input, safe
@@ -61,7 +83,8 @@ trial and require user and engineering review.
       engineer open `standalone_index.html`, open the current folder, or export
       the top-level `standalone_review_bundle.zip`.
 - [ ] Any field edit, new run, failed run, or validation error disables all
-      actions belonging to the previous result.
+      actions belonging to the previous result and clears the summary and
+      conditional diagram.
 - [ ] The launcher rejects a `.gbk_build_id` that does not match the wheel
       identity recorded by the current package.
 - [ ] Each run uses a separate managed result directory and does not overwrite

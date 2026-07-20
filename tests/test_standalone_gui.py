@@ -7,15 +7,24 @@ from pathlib import Path
 
 import pytest
 
+import sp63_core.standalone.gui_logic as gui_logic_module
+from sp63_core.report import (
+    render_rectangular_design_report_html,
+    render_rectangular_design_report_markdown,
+)
 from sp63_core.standalone import (
     run_standalone_beam_case,
     validate_standalone_review_bundle,
 )
+from sp63_core.standalone.gui import EngineerGui
 from sp63_core.standalone.gui_logic import (
+    build_diagram_model,
+    load_gui_result_summary,
     next_output_dir,
     parse_decimal,
     parse_form_values,
     status_view_model,
+    summary_as_text,
     verify_gui_result,
 )
 from sp63_core.standalone.model import StandaloneBeamInput, StandaloneRunResult
@@ -68,6 +77,7 @@ def _rewrite_review_bundle_json(bundle_path: Path, mutate) -> None:
         entries = {name: archive.read(name) for name in archive.namelist()}
 
     json_names = {
+        "standalone_input.json",
         "standalone_bundle_status.json",
         "standalone_review_metadata.json",
         "workflow_summary.json",
@@ -83,6 +93,14 @@ def _rewrite_review_bundle_json(bundle_path: Path, mutate) -> None:
             entries[name] = (
                 json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
             ).encode()
+
+    nested_report = payloads["deterministic_report/report.json"]["report"]
+    entries["deterministic_report/report.md"] = render_rectangular_design_report_markdown(
+        nested_report
+    ).encode("utf-8")
+    entries["deterministic_report/report.html"] = render_rectangular_design_report_html(
+        nested_report
+    ).encode("utf-8")
 
     manifest = payloads["standalone_review_manifest.json"]
     for record in manifest["files"]:
@@ -602,3 +620,324 @@ def test_verify_gui_result_rejects_scope_expansion(
     )
 
     assert any(expected_fragment in error for error in errors)
+
+
+def test_result_summary_loads_only_whitelisted_values_from_validated_public_zip(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-run"
+    result = run_standalone_beam_case(input_data, output_dir)
+
+    summary = load_gui_result_summary(result, output_dir, input_data)
+    visible = summary_as_text(summary)
+
+    assert "300 × 500 мм" in visible
+    assert "|M| = 150.5 кН·м" in visible
+    assert "|Q| = 80.25 кН" in visible
+    assert "local_y_min" in visible
+    assert "6D14" in visible
+    assert "D8/200, 2 legs" in visible
+    assert "outside_applicability" in visible
+    assert "Локальная техническая проверка: pass" in visible
+    assert "не является проектным допуском" in visible
+    assert "project_use=false" in visible
+    assert "requires_engineer_review=true" in visible
+    assert "diagnostic_only" in visible
+
+    exposed_field_names: set[str] = set()
+
+    def collect_field_names(value):
+        if isinstance(value, dict):
+            exposed_field_names.update(value)
+            for item in value.values():
+                collect_field_names(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect_field_names(item)
+
+    collect_field_names(asdict(summary))
+    assert exposed_field_names.isdisjoint(
+        {
+            "Mult",
+            "Qult",
+            "utilization",
+            "x",
+            "xi",
+            "xi_R",
+            "Rb",
+            "Rs",
+            "As",
+            "Asw",
+            "intermediate_values",
+            "source_clause",
+        }
+    )
+
+
+def test_result_summary_reads_validated_zip_not_mutable_workflow_report(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "zip-source-run"
+    result = run_standalone_beam_case(input_data, output_dir)
+    local_report = output_dir / "workflow" / "deterministic_report" / "report.json"
+    assert local_report.is_file()
+    local_report.write_text('{"unsafe": true}\n', encoding="utf-8")
+
+    summary = load_gui_result_summary(result, output_dir, input_data)
+
+    assert "6D14" in summary_as_text(summary)
+
+
+def test_result_summary_rejects_tampered_public_report(tmp_path, monkeypatch):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-safety-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        report = payloads["deterministic_report/report.json"]
+        report["project_use"] = True
+        report["report"]["project_use"] = True
+        report["report"]["protocol"]["project_use"] = True
+
+    _rewrite_review_bundle_json(bundle, mutate)
+
+    with pytest.raises(ValueError, match="защитную проверку"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_rejects_bundle_input_not_matching_current_run(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-input-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        payloads["standalone_input.json"]["b_mm"] = 301.0
+
+    _rewrite_review_bundle_json(bundle, mutate)
+    assert verify_gui_result(result, output_dir) == ()
+
+    with pytest.raises(ValueError, match="не совпадают"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_rejects_overflowing_bundle_number_fail_closed(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-overflow-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        payloads["standalone_input.json"]["b_mm"] = 10**1000
+
+    _rewrite_review_bundle_json(bundle, mutate)
+
+    with pytest.raises(ValueError, match="конечным числом"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_gui_json_reader_rejects_duplicate_object_keys(tmp_path):
+    archive_path = tmp_path / "duplicate-key.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("payload.json", '{"field": 1, "field": 2}')
+
+    with (
+        zipfile.ZipFile(archive_path, "r") as archive,
+        pytest.raises(ValueError, match="повторяющийся ключ"),
+    ):
+        gui_logic_module._read_gui_json_member(archive, "payload.json")
+
+
+def test_result_summary_rejects_bundle_digest_change_during_read(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-digest-change"
+    result = run_standalone_beam_case(input_data, output_dir)
+    digests = iter(("a" * 64, "b" * 64))
+    monkeypatch.setattr(gui_logic_module, "_file_sha256", lambda _path: next(digests))
+
+    with pytest.raises(ValueError, match="изменился во время чтения"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_binds_hidden_selection_defaults(tmp_path, monkeypatch):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-selection-default-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        report = payloads["deterministic_report/report.json"]
+        report["input_data"]["main_bar_counts"] = [99]
+        report["report"]["input_data"]["main_bar_counts"] = [99]
+
+    _rewrite_review_bundle_json(bundle, mutate)
+    assert verify_gui_result(result, output_dir) == ()
+
+    with pytest.raises(ValueError, match="Полный набор исходных данных"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_rejects_self_consistent_arbitrary_scheme_text(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-scheme-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        report = payloads["deterministic_report/report.json"]
+        unsafe_scheme = "Mult=123; arbitrary"
+        report["reinforcement"]["longitudinal"]["scheme"] = unsafe_scheme
+        report["report"]["reinforcement"]["longitudinal"]["scheme"] = unsafe_scheme
+        report["geometry"]["selected_longitudinal_scheme"] = unsafe_scheme
+        report["report"]["geometry"]["selected_longitudinal_scheme"] = unsafe_scheme
+        report["report"]["protocol"]["reinforcement"]["main"] = unsafe_scheme
+
+    _rewrite_review_bundle_json(bundle, mutate)
+    assert verify_gui_result(result, output_dir) == ()
+
+    with pytest.raises(ValueError, match="scheme"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_rejects_suppressed_bending_values_at_any_depth(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-bending-intermediate-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        report = payloads["deterministic_report/report.json"]
+        for checks in (
+            report["checks"],
+            report["report"]["checks"],
+            report["report"]["protocol"]["checks"],
+        ):
+            checks["bending"]["intermediate_values"]["Mult"] = 123.0
+
+    _rewrite_review_bundle_json(bundle, mutate)
+    assert verify_gui_result(result, output_dir) == ()
+
+    with pytest.raises(ValueError, match="подавленную величину"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_summary_rejects_check_status_disagreement_with_protocol(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-check-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        report = payloads["deterministic_report/report.json"]
+        report["report"]["protocol"]["checks"]["shear"]["status"] = "fail"
+
+    _rewrite_review_bundle_json(bundle, mutate)
+    assert verify_gui_result(result, output_dir) == ()
+
+    with pytest.raises(ValueError, match="расходятся"):
+        load_gui_result_summary(result, output_dir, input_data)
+
+
+def test_result_action_revalidates_bundle_binding_after_display(tmp_path, monkeypatch):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-post-display-tamper"
+    result = run_standalone_beam_case(input_data, output_dir)
+    original_summary = load_gui_result_summary(result, output_dir, input_data)
+    bundle = Path(result.report_zip_path or "")
+
+    def mutate(payloads):
+        payloads["standalone_input.json"]["b_mm"] = 301.0
+
+    _rewrite_review_bundle_json(bundle, mutate)
+
+    app = object.__new__(EngineerGui)
+    app._current_result = result
+    app._current_output_dir = output_dir
+    app._current_input = input_data
+    app._current_summary = original_summary
+    app._form_values = lambda: _form_values()
+    invalidations = []
+    app._invalidate_action = lambda title, errors: invalidations.append((title, errors))
+
+    current = EngineerGui._validated_current_result(app, "Действие заблокировано")
+
+    assert current is None
+    assert invalidations
+    assert "не совпадают" in " ".join(invalidations[0][1])
+
+
+def test_result_summary_never_turns_local_pass_into_approval(tmp_path, monkeypatch):
+    monkeypatch.delenv("GBK_BUILD_ID", raising=False)
+    input_data = parse_form_values(_form_values())
+    output_dir = tmp_path / "summary-wording"
+    result = run_standalone_beam_case(input_data, output_dir)
+
+    visible = summary_as_text(load_gui_result_summary(result, output_dir, input_data))
+    lowered = visible.casefold()
+
+    assert "локальная техническая проверка: pass" in lowered
+    assert "не является проектным допуском" in lowered
+    assert "требуется инженерная проверка" in lowered
+    assert "расчёт утверждён" not in lowered
+    assert "разрешено проектное применение" not in lowered
+    assert "соответствует нормам" not in lowered
+
+
+@pytest.mark.parametrize("tension_face", ("local_y_min", "local_y_max"))
+def test_technical_diagram_model_echoes_only_validated_input(tension_face):
+    input_data = parse_form_values(_form_values(tension_face=tension_face))
+
+    diagram = build_diagram_model(input_data)
+
+    assert asdict(diagram) == {
+        "b_mm": 300.0,
+        "h_mm": 500.0,
+        "cover_mm": 32.0,
+        "stirrup_diameter_mm": 8.0,
+        "moment_kNm": 150.5,
+        "shear_kN": 80.25,
+        "tension_face": tension_face,
+    }
+
+
+def test_canvas_wording_marks_sketch_as_conditional_and_not_a_drawing():
+    source = Path("src/sp63_core/standalone/gui.py").read_text(encoding="utf-8")
+
+    assert "УСЛОВНАЯ СХЕМА ИСХОДНЫХ ДАННЫХ — НЕ В МАСШТАБЕ" in source
+    assert "Не является рабочим чертежом, схемой армирования" in source
+    assert "Ориентация local_y_min/local_y_max в реальном элементе не задана" in source
+    assert "Знак и направление усилий этой схемой не задаются" in source

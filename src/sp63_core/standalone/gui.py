@@ -34,9 +34,15 @@ from sp63_core.standalone import (
 from sp63_core.standalone.app import load_standalone_input
 from sp63_core.standalone.gui_logic import (
     FORM_FIELDS,
+    GuiDiagramModel,
+    GuiResultSummary,
+    build_diagram_model,
+    load_gui_result_summary,
+    load_gui_result_summary_from_bundle,
     next_output_dir,
     parse_form_values,
     status_view_model,
+    summary_as_text,
     verify_gui_result,
     verify_review_bundle,
 )
@@ -109,6 +115,8 @@ class EngineerGui:
         self._current_result: StandaloneRunResult | None = None
         self._current_output_dir: Path | None = None
         self._current_input: StandaloneBeamInput | None = None
+        self._current_summary: GuiResultSummary | None = None
+        self._current_diagram: GuiDiagramModel | None = None
         self._pending_input: StandaloneBeamInput | None = None
         self._worker_queue: queue.Queue[tuple[str, object, object | None]] = queue.Queue()
         self._suspend_form_events = False
@@ -122,8 +130,8 @@ class EngineerGui:
 
     def _configure_root(self) -> None:
         self.root.title(APP_TITLE)
-        self.root.geometry("1080x760")
-        self.root.minsize(920, 680)
+        self.root.geometry("1280x820")
+        self.root.minsize(1020, 720)
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=1)
 
@@ -140,6 +148,7 @@ class EngineerGui:
         style.configure("Hint.TLabel", foreground="#5d6470", font=("Segoe UI", 9))
         style.configure("Danger.TLabel", foreground="#9f1d20", font=("Segoe UI", 11, "bold"))
         style.configure("Warning.TLabel", foreground="#8a5300", font=("Segoe UI", 11, "bold"))
+        style.configure("ResultTabs.TNotebook.Tab", padding=(12, 7), font=("Segoe UI", 9, "bold"))
 
     def _build_window(self) -> None:
         banner = self.tk.Label(
@@ -160,8 +169,8 @@ class EngineerGui:
 
         left_shell = self.ttk.Frame(content)
         right = self.ttk.Frame(content, padding=(14, 0, 2, 0))
-        content.add(left_shell, weight=3)
-        content.add(right, weight=2)
+        content.add(left_shell, weight=5)
+        content.add(right, weight=6)
         left_shell.columnconfigure(0, weight=1)
         left_shell.rowconfigure(0, weight=1)
         self.input_canvas = self.tk.Canvas(left_shell, highlightthickness=0)
@@ -185,7 +194,7 @@ class EngineerGui:
         self.input_canvas.bind("<Leave>", self._deactivate_left_scroll)
         left.columnconfigure(0, weight=1)
         right.columnconfigure(0, weight=1)
-        right.rowconfigure(4, weight=1)
+        right.rowconfigure(2, weight=1)
 
         self.ttk.Label(left, text="Исходные данные балки", style="Title.TLabel").grid(
             row=0, column=0, sticky="w", pady=(0, 5)
@@ -306,8 +315,8 @@ class EngineerGui:
             justify="left",
         ).grid(row=3, column=0, columnspan=3, sticky="ew", pady=(4, 0))
 
-        command_bar = self.ttk.Frame(left)
-        command_bar.grid(row=6, column=0, sticky="ew", pady=(10, 2))
+        command_bar = self.ttk.Frame(left_shell, padding=(2, 8, 10, 0))
+        command_bar.grid(row=1, column=0, columnspan=2, sticky="ew")
         command_bar.columnconfigure(0, weight=1)
         self.run_button = self.ttk.Button(
             command_bar,
@@ -352,18 +361,32 @@ class EngineerGui:
             foreground="#5d6470",
             justify="left",
             anchor="w",
-            wraplength=400,
+            wraplength=620,
             font=("Segoe UI", 11, "bold"),
         )
         self.result_title.grid(row=1, column=0, sticky="ew", pady=(0, 8))
 
-        status_frame = self.ttk.LabelFrame(
+        self.result_notebook = self.ttk.Notebook(
             right,
-            text="Статусы",
-            style="Section.TLabelframe",
-            padding=10,
+            style="ResultTabs.TNotebook",
         )
-        status_frame.grid(row=2, column=0, sticky="ew", pady=4)
+        self.result_notebook.grid(row=2, column=0, sticky="nsew", pady=4)
+        self.summary_tab = self.ttk.Frame(self.result_notebook, padding=8)
+        self.diagram_tab = self.ttk.Frame(self.result_notebook, padding=8)
+        self.messages_tab = self.ttk.Frame(self.result_notebook, padding=8)
+        self.result_notebook.add(self.summary_tab, text="Сводка")
+        self.result_notebook.add(self.diagram_tab, text="Условная схема")
+        self.result_notebook.add(self.messages_tab, text="Сообщения")
+
+        self.summary_tab.columnconfigure(0, weight=1)
+        self.summary_tab.rowconfigure(1, weight=1)
+        status_frame = self.ttk.LabelFrame(
+            self.summary_tab,
+            text="Защитный статус текущего запуска",
+            style="Section.TLabelframe",
+            padding=8,
+        )
+        status_frame.grid(row=0, column=0, sticky="ew", pady=(0, 6))
         status_frame.columnconfigure(0, weight=1)
         self.status_variables = {
             name: self.tk.StringVar(value=value)
@@ -382,57 +405,117 @@ class EngineerGui:
             self.ttk.Label(
                 status_frame,
                 textvariable=self.status_variables[name],
-                wraplength=400,
+                wraplength=590,
                 justify="left",
             ).grid(row=row, column=0, sticky="ew", pady=2)
+
+        summary_frame = self.ttk.LabelFrame(
+            self.summary_tab,
+            text="Сводка проверенного диагностического пакета",
+            style="Section.TLabelframe",
+            padding=6,
+        )
+        summary_frame.grid(row=1, column=0, sticky="nsew")
+        summary_frame.columnconfigure(0, weight=1)
+        summary_frame.rowconfigure(0, weight=1)
+        self.summary_text = self.scrolledtext.ScrolledText(
+            summary_frame,
+            height=12,
+            wrap="word",
+            font=("Segoe UI", 9),
+            state="disabled",
+            padx=8,
+            pady=6,
+        )
+        self.summary_text.grid(row=0, column=0, sticky="nsew")
+        self.summary_text.tag_configure("heading", font=("Segoe UI", 9, "bold"))
+        self.summary_text.tag_configure(
+            "danger",
+            foreground="#9f1d20",
+            font=("Segoe UI", 9, "bold"),
+        )
+        self.summary_text.tag_configure("label", foreground="#39404a", font=("Segoe UI", 9, "bold"))
+        self.copy_summary_button = self.ttk.Button(
+            self.summary_tab,
+            text="Копировать сводку",
+            command=self._copy_summary,
+            state="disabled",
+        )
+        self.copy_summary_button.grid(row=2, column=0, sticky="e", pady=(6, 0))
+
+        self.diagram_tab.columnconfigure(0, weight=1)
+        self.diagram_tab.rowconfigure(0, weight=1)
+        self.diagram_canvas = self.tk.Canvas(
+            self.diagram_tab,
+            background="#fbfbfc",
+            highlightthickness=1,
+            highlightbackground="#c7cbd1",
+        )
+        self.diagram_canvas.grid(row=0, column=0, sticky="nsew")
+        diagram_vertical = self.ttk.Scrollbar(
+            self.diagram_tab,
+            orient="vertical",
+            command=self.diagram_canvas.yview,
+        )
+        diagram_vertical.grid(row=0, column=1, sticky="ns")
+        diagram_horizontal = self.ttk.Scrollbar(
+            self.diagram_tab,
+            orient="horizontal",
+            command=self.diagram_canvas.xview,
+        )
+        diagram_horizontal.grid(row=1, column=0, sticky="ew")
+        self.diagram_canvas.configure(
+            yscrollcommand=diagram_vertical.set,
+            xscrollcommand=diagram_horizontal.set,
+        )
+        self.diagram_canvas.bind("<Configure>", self._redraw_diagram)
+
+        self.messages_tab.columnconfigure(0, weight=1)
+        self.messages_tab.rowconfigure(0, weight=1)
+        self.details = self.scrolledtext.ScrolledText(
+            self.messages_tab,
+            height=12,
+            wrap="word",
+            font=("Segoe UI", 9),
+            state="disabled",
+            padx=8,
+            pady=6,
+        )
+        self.details.grid(row=0, column=0, sticky="nsew")
 
         result_actions = self.ttk.LabelFrame(
             right,
             text="Файлы результата",
             style="Section.TLabelframe",
-            padding=10,
+            padding=8,
         )
         result_actions.grid(row=3, column=0, sticky="ew", pady=4)
-        result_actions.columnconfigure(0, weight=1)
+        for column in range(3):
+            result_actions.columnconfigure(column, weight=1)
         self.open_report_button = self.ttk.Button(
             result_actions,
-            text="Открыть верхнеуровневый HTML-отчёт",
+            text="Открыть HTML-отчёт",
             command=self._open_report,
             state="disabled",
         )
-        self.open_report_button.grid(row=0, column=0, sticky="ew", pady=3)
+        self.open_report_button.grid(row=0, column=0, sticky="ew", padx=(0, 3))
         self.open_folder_button = self.ttk.Button(
             result_actions,
-            text="Открыть папку текущего результата",
+            text="Открыть папку",
             command=self._open_result_folder,
             state="disabled",
         )
-        self.open_folder_button.grid(row=1, column=0, sticky="ew", pady=3)
+        self.open_folder_button.grid(row=0, column=1, sticky="ew", padx=3)
         self.export_button = self.ttk.Button(
             result_actions,
-            text="Сохранить пакет для рецензента",
+            text="Пакет рецензенту",
             command=self._export_review_bundle,
             state="disabled",
         )
-        self.export_button.grid(row=2, column=0, sticky="ew", pady=3)
+        self.export_button.grid(row=0, column=2, sticky="ew", padx=(3, 0))
 
-        detail_frame = self.ttk.LabelFrame(
-            right,
-            text="Сообщения",
-            style="Section.TLabelframe",
-            padding=8,
-        )
-        detail_frame.grid(row=4, column=0, sticky="nsew", pady=4)
-        detail_frame.columnconfigure(0, weight=1)
-        detail_frame.rowconfigure(0, weight=1)
-        self.details = self.scrolledtext.ScrolledText(
-            detail_frame,
-            height=8,
-            wrap="word",
-            font=("Segoe UI", 9),
-            state="disabled",
-        )
-        self.details.grid(row=0, column=0, sticky="nsew")
+        self._render_summary(None)
+        self._redraw_diagram()
         self._set_details(
             (
                 "Введите или загрузите исходные данные.",
@@ -621,9 +704,15 @@ class EngineerGui:
         self._current_result = None
         self._current_output_dir = None
         self._current_input = None
+        self._current_summary = None
+        self._current_diagram = None
         self._pending_input = None
+        self.copy_summary_button.configure(state="disabled")
+        self._render_summary(None)
+        self._redraw_diagram()
         self.result_title.configure(text="Расчётный маршрут не выполнен", foreground="#9f1d20")
         self._set_details(("Внутренняя ошибка оболочки.", message))
+        self.result_notebook.select(self.messages_tab)
         self.messagebox.showerror(
             "ЖБК — ошибка",
             "Расчётный маршрут не выполнен. Старые ссылки на результат отключены.\n\n" + message,
@@ -642,33 +731,14 @@ class EngineerGui:
         self.run_button.configure(state="normal", text="Выполнить исследовательскую проверку")
         gate_errors = verify_gui_result(result, output_dir)
         if gate_errors:
-            self._current_result = None
-            self._current_output_dir = None
-            self._current_input = None
-            self.result_title.configure(
-                text="Результат заблокирован защитной проверкой",
-                foreground="#9f1d20",
-            )
-            blocked_statuses = {
-                "overall": "Защитная проверка результата: НЕ ПРОЙДЕНА",
-                "preflight": "Статусы заблокированного результата не считаются доверенными",
-                "calculation": "Файлы расчётного маршрута не открываются",
-                "evidence": "Требуется разбор причины блокировки",
-                "project": (
-                    "Применение в проекте ЗАПРЕЩЕНО; целостность результата "
-                    "не подтверждена"
-                ),
-                "review": "Требуется инженерная и техническая проверка",
-            }
-            for name, value in blocked_statuses.items():
-                self.status_variables[name].set(value)
-            self._set_details(gate_errors)
-            self.messagebox.showerror(
-                "ЖБК — результат заблокирован",
-                "Файлы результата не открываются и не передаются:\n\n"
-                + "\n".join(f"• {error}" for error in gate_errors),
-                parent=self.root,
-            )
+            self._block_result(gate_errors)
+            return
+
+        try:
+            summary = load_gui_result_summary(result, output_dir, input_data)
+            diagram = build_diagram_model(input_data)
+        except (OSError, TypeError, ValueError) as exc:
+            self._block_result((str(exc),))
             return
 
         view = status_view_model(result)
@@ -684,6 +754,12 @@ class EngineerGui:
         self._current_result = result
         self._current_output_dir = output_dir
         self._current_input = input_data
+        self._current_summary = summary
+        self._current_diagram = diagram
+        self._render_summary(summary)
+        self._redraw_diagram()
+        self.copy_summary_button.configure(state="normal")
+        self.result_notebook.select(self.summary_tab)
         for button in (
             self.open_report_button,
             self.open_folder_button,
@@ -691,10 +767,46 @@ class EngineerGui:
         ):
             button.configure(state="normal")
 
+    def _block_result(self, errors: tuple[str, ...]) -> None:
+        self._current_result = None
+        self._current_output_dir = None
+        self._current_input = None
+        self._current_summary = None
+        self._current_diagram = None
+        self.copy_summary_button.configure(state="disabled")
+        self._render_summary(None)
+        self._redraw_diagram()
+        self.result_title.configure(
+            text="Результат заблокирован защитной проверкой",
+            foreground="#9f1d20",
+        )
+        blocked_statuses = {
+            "overall": "Защитная проверка результата: НЕ ПРОЙДЕНА",
+            "preflight": "Статусы заблокированного результата не считаются доверенными",
+            "calculation": "Файлы расчётного маршрута не открываются",
+            "evidence": "Требуется разбор причины блокировки",
+            "project": (
+                "Применение в проекте ЗАПРЕЩЕНО; целостность результата не подтверждена"
+            ),
+            "review": "Требуется инженерная и техническая проверка",
+        }
+        for name, value in blocked_statuses.items():
+            self.status_variables[name].set(value)
+        self._set_details(errors)
+        self.result_notebook.select(self.messages_tab)
+        self.messagebox.showerror(
+            "ЖБК — результат заблокирован",
+            "Файлы результата не открываются и не передаются:\n\n"
+            + "\n".join(f"• {error}" for error in errors),
+            parent=self.root,
+        )
+
     def _clear_result(self, detail: str) -> None:
         self._current_result = None
         self._current_output_dir = None
         self._current_input = None
+        self._current_summary = None
+        self._current_diagram = None
         for button in (
             getattr(self, "open_report_button", None),
             getattr(self, "open_folder_button", None),
@@ -702,16 +814,23 @@ class EngineerGui:
         ):
             if button is not None:
                 button.configure(state="disabled")
+        if hasattr(self, "copy_summary_button"):
+            self.copy_summary_button.configure(state="disabled")
         if hasattr(self, "result_title"):
             self.result_title.configure(text="Расчёт ещё не запускался", foreground="#5d6470")
         if hasattr(self, "status_variables"):
             self._reset_status_variables()
+        if hasattr(self, "summary_text"):
+            self._render_summary(None)
+        if hasattr(self, "diagram_canvas"):
+            self._redraw_diagram()
         if hasattr(self, "details"):
             self._set_details((detail,))
 
     def _show_input_error(self, message: str) -> None:
         self.result_title.configure(text="Исправьте исходные данные", foreground="#9f1d20")
         self._set_details((message, "Расчётный маршрут не запускался."))
+        self.result_notebook.select(self.messages_tab)
         self.messagebox.showerror("ЖБК — исходные данные", message, parent=self.root)
 
     def _set_details(self, messages: tuple[str, ...]) -> None:
@@ -719,6 +838,229 @@ class EngineerGui:
         self.details.delete("1.0", "end")
         self.details.insert("1.0", "\n\n".join(message for message in messages if message))
         self.details.configure(state="disabled")
+
+    def _render_summary(self, summary: GuiResultSummary | None) -> None:
+        self.summary_text.configure(state="normal")
+        self.summary_text.delete("1.0", "end")
+        if summary is None:
+            self.summary_text.insert(
+                "end",
+                "Нет актуального проверенного результата.\n\n",
+                "danger",
+            )
+            self.summary_text.insert(
+                "end",
+                "После ввода или изменения данных выполните новую исследовательскую "
+                "проверку. Старые значения и схемы здесь не сохраняются.",
+            )
+            self.summary_text.configure(state="disabled")
+            return
+
+        if summary.outside_applicability:
+            self.summary_text.insert(
+                "end",
+                "ВНЕ ПОДТВЕРЖДЁННОЙ ОБЛАСТИ ПРИМЕНИМОСТИ\n"
+                "Несущая способность не подтверждена и не публикуется.\n\n",
+                "danger",
+            )
+        for heading, rows in (
+            ("ИСХОДНЫЕ ДАННЫЕ", summary.input_rows),
+            ("ПУБЛИЧНЫЕ СТАТУСЫ", summary.status_rows),
+            ("ДИАГНОСТИЧЕСКИЕ ПРЕДЛОЖЕНИЯ", summary.proposal_rows),
+        ):
+            self.summary_text.insert("end", heading + "\n", "heading")
+            for label, value in rows:
+                self.summary_text.insert("end", label + ": ", "label")
+                self.summary_text.insert("end", value + "\n")
+            self.summary_text.insert("end", "\n")
+
+        self.summary_text.insert("end", "НЕПРОВЕРЕННЫЕ УСЛОВИЯ\n", "heading")
+        for line in summary.unchecked_lines:
+            self.summary_text.insert("end", "• " + line + "\n")
+        self.summary_text.insert("end", "\nОБЯЗАТЕЛЬНЫЕ ОГРАНИЧЕНИЯ\n", "heading")
+        for line in summary.safety_lines:
+            self.summary_text.insert("end", "• " + line + "\n", "danger")
+        self.summary_text.configure(state="disabled")
+        self.summary_text.see("1.0")
+
+    def _copy_summary(self) -> None:
+        if self._current_summary is None:
+            return
+        if self._validated_current_result("Копирование сводки заблокировано") is None:
+            return
+        try:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(summary_as_text(self._current_summary))
+            self.root.update_idletasks()
+        except self.tk.TclError as exc:
+            self._show_action_error("Не удалось скопировать сводку", str(exc))
+            return
+        self._set_details(
+            (
+                "Сводка скопирована вместе с защитными ограничениями.",
+                "Копирование не является инженерным утверждением результата.",
+            )
+        )
+
+    def _redraw_diagram(self, _event: Any | None = None) -> None:
+        canvas = self.diagram_canvas
+        canvas.delete("all")
+        width = max(canvas.winfo_width(), 640)
+        height = max(canvas.winfo_height(), 500)
+        canvas.configure(scrollregion=(0, 0, width, height))
+        model = self._current_diagram
+        summary = self._current_summary
+        if model is None or summary is None:
+            canvas.create_text(
+                width / 2,
+                height / 2,
+                text=(
+                    "Нет актуальной условной схемы.\n"
+                    "Сначала выполните исследовательскую проверку."
+                ),
+                fill="#5d6470",
+                font=("Segoe UI", 11, "bold"),
+                justify="center",
+            )
+            return
+
+        canvas.create_text(
+            18,
+            16,
+            anchor="nw",
+            text="УСЛОВНАЯ СХЕМА ИСХОДНЫХ ДАННЫХ — НЕ В МАСШТАБЕ",
+            fill="#303640",
+            font=("Segoe UI", 10, "bold"),
+        )
+        notice_y = 44
+        if summary.outside_applicability:
+            canvas.create_text(
+                18,
+                notice_y,
+                anchor="nw",
+                text="ВНЕ ПОДТВЕРЖДЁННОЙ ОБЛАСТИ ПРИМЕНИМОСТИ",
+                fill="#9f1d20",
+                font=("Segoe UI", 10, "bold"),
+            )
+            notice_y += 28
+
+        available_height = max(150.0, height - notice_y - 155.0)
+        max_section_width = max(120.0, min(260.0, width * 0.38))
+        max_section_height = max(150.0, min(330.0, available_height))
+        display_scale = min(max_section_width / model.b_mm, max_section_height / model.h_mm)
+        section_width = model.b_mm * display_scale
+        section_height = model.h_mm * display_scale
+        x0 = 55.0 + (max_section_width - section_width) / 2.0
+        y0 = notice_y + 20.0 + (max_section_height - section_height) / 2.0
+        x1 = x0 + section_width
+        y1 = y0 + section_height
+
+        canvas.create_rectangle(x0, y0, x1, y1, width=3, outline="#303640", fill="#f2f3f5")
+        inset = max(6.0, model.cover_mm * display_scale)
+        inset = min(inset, max(7.0, min(section_width, section_height) * 0.34))
+        if x1 - x0 > 2 * inset + 4 and y1 - y0 > 2 * inset + 4:
+            canvas.create_rectangle(
+                x0 + inset,
+                y0 + inset,
+                x1 - inset,
+                y1 - inset,
+                width=2,
+                dash=(6, 4),
+                outline="#356f9f",
+            )
+        selected_y = y1 if model.tension_face == "local_y_min" else y0
+        canvas.create_line(x0, selected_y, x1, selected_y, width=6, fill="#b3262e")
+        canvas.create_text(
+            (x0 + x1) / 2,
+            selected_y + (14 if selected_y == y0 else -14),
+            text=f"выбрана {model.tension_face}",
+            fill="#9f1d20",
+            font=("Segoe UI", 9, "bold"),
+        )
+        canvas.create_text(
+            (x0 + x1) / 2,
+            y0 - 11,
+            text=f"b = {model.b_mm:g} мм",
+            fill="#303640",
+            font=("Segoe UI", 9),
+        )
+        canvas.create_text(
+            x0 - 12,
+            (y0 + y1) / 2,
+            text=f"h = {model.h_mm:g} мм",
+            angle=90,
+            fill="#303640",
+            font=("Segoe UI", 9),
+        )
+        canvas.create_text(
+            x1 + 10,
+            y0 + inset,
+            anchor="w",
+            text=f"cover = {model.cover_mm:g} мм",
+            fill="#356f9f",
+            font=("Segoe UI", 9),
+        )
+        canvas.create_text(
+            x1 + 10,
+            y0 + inset + 20,
+            anchor="w",
+            text=f"Ø хомута = {model.stirrup_diameter_mm:g} мм",
+            fill="#356f9f",
+            font=("Segoe UI", 9),
+        )
+        canvas.create_text(x0 - 8, y0, anchor="e", text="local_y_max", fill="#303640")
+        canvas.create_text(x0 - 8, y1, anchor="e", text="local_y_min", fill="#303640")
+
+        axes_x = x0 + 22
+        axes_y = y1 + 42
+        canvas.create_line(axes_x, axes_y, axes_x, axes_y - 28, arrow="last", fill="#505762")
+        canvas.create_line(axes_x, axes_y, axes_x + 34, axes_y, arrow="last", fill="#505762")
+        canvas.create_text(axes_x + 3, axes_y - 34, text="+y (условно)", anchor="w")
+        canvas.create_text(axes_x + 39, axes_y, text="+z (условно)", anchor="w")
+
+        info_x = max(x1 + 110.0, width * 0.58)
+        info_y = notice_y + 35.0
+        canvas.create_text(
+            info_x,
+            info_y,
+            anchor="nw",
+            width=max(180, width - info_x - 20),
+            text=(
+                "Введённые модули усилий\n"
+                f"|M| = {model.moment_kNm:g} кН·м\n"
+                f"|Q| = {model.shear_kN:g} кН\n\n"
+                "Знак и направление усилий этой схемой не задаются.\n"
+                "Программа не формирует расчётную модель здания."
+            ),
+            fill="#303640",
+            font=("Segoe UI", 9),
+        )
+        proposals = "\n".join(f"{label}: {value}" for label, value in summary.proposal_rows)
+        canvas.create_text(
+            info_x,
+            info_y + 145,
+            anchor="nw",
+            width=max(180, width - info_x - 20),
+            text=proposals,
+            fill="#8a5300",
+            font=("Segoe UI", 9, "bold"),
+        )
+
+        disclaimer = (
+            "Не является рабочим чертежом, схемой армирования или проверкой размещения.\n"
+            "Ориентация local_y_min/local_y_max в реальном элементе не задана.\n"
+            "cover — программное расстояние до наружной поверхности хомута; "
+            "нормативная трактовка требует инженерной проверки."
+        )
+        canvas.create_text(
+            18,
+            height - 18,
+            anchor="sw",
+            width=max(300, width - 36),
+            text=disclaimer,
+            fill="#9f1d20",
+            font=("Segoe UI", 9, "bold"),
+        )
 
     def _load_json(self) -> None:
         if self._running:
@@ -829,8 +1171,27 @@ class EngineerGui:
                     parent=self.root,
                 )
                 return
+            if self._current_input is None or self._current_summary is None:
+                self.messagebox.showerror(
+                    "ЖБК — экспорт заблокирован",
+                    "Текущая экранная сводка потеряна; выполните новый запуск.",
+                    parent=self.root,
+                )
+                return
+            copied_summary = load_gui_result_summary_from_bundle(
+                result,
+                temporary,
+                self._current_input,
+            )
+            if copied_summary != self._current_summary:
+                self.messagebox.showerror(
+                    "ЖБК — экспорт заблокирован",
+                    "Скопированный пакет не совпадает с текущей экранной сводкой.",
+                    parent=self.root,
+                )
+                return
             os.replace(temporary, destination)
-        except OSError as exc:
+        except (OSError, TypeError, ValueError) as exc:
             self.messagebox.showerror("ЖБК — экспорт", str(exc), parent=self.root)
             return
         finally:
@@ -869,6 +1230,17 @@ class EngineerGui:
         gate_errors = verify_gui_result(result, output_dir)
         if gate_errors:
             self._invalidate_action(action_title, gate_errors)
+            return None
+        try:
+            current_summary = load_gui_result_summary(result, output_dir, expected_input)
+        except (OSError, TypeError, ValueError) as exc:
+            self._invalidate_action(action_title, (str(exc),))
+            return None
+        if self._current_summary is None or current_summary != self._current_summary:
+            self._invalidate_action(
+                action_title,
+                ("Публичный пакет не совпадает с текущей экранной сводкой.",),
+            )
             return None
         return result, output_dir
 
@@ -965,6 +1337,28 @@ def main(argv: list[str] | None = None) -> int:
                     raise TimeoutError("GUI calculation smoke exceeded 60 seconds")
                 if app._current_result is None or app._current_output_dir is None:
                     raise RuntimeError("GUI calculation smoke did not expose a safe result")
+                if app._current_summary is None or app._current_diagram is None:
+                    raise RuntimeError("GUI calculation smoke did not expose the embedded result")
+                root.update_idletasks()
+                summary_text = app.summary_text.get("1.0", "end").casefold()
+                for required_text in (
+                    "project_use=false",
+                    "requires_engineer_review=true",
+                    "diagnostic_only",
+                    "не является проектным допуском",
+                ):
+                    if required_text not in summary_text:
+                        raise RuntimeError(
+                            f"GUI result summary is missing safety text: {required_text}"
+                        )
+                if len(app.diagram_canvas.find_all()) < 8:
+                    raise RuntimeError("GUI conditional diagram was not rendered")
+                app.variables["moment_kNm"].set("151")
+                root.update()
+                if app._current_result is not None or app._current_summary is not None:
+                    raise RuntimeError("GUI did not clear a stale result after input editing")
+                if str(app.open_report_button.cget("state")) != "disabled":
+                    raise RuntimeError("GUI left stale result actions enabled")
             root.destroy()
             mode = "calculation" if args.exercise_run else "window"
             print(f"engineer_gui_headless_smoke=pass; mode={mode}")
